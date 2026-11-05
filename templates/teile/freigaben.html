@@ -1,0 +1,27 @@
+{% load i18n teamplaner %}{# Gemeinsames Freigaben-Bauteil der Teamplaner- und Gantt-Ansichten; Filter und Sammelaktion in lib/freigaben.ts #}<section class="karte freigaben" aria-labelledby="freigaben-titel" data-freigaben>
+  <div class="karte__kopf">
+    <h2 id="freigaben-titel">{% translate "Freigaben" %}</h2>
+    <span class="klein gedaempft"><span data-zahl-sehen>{{ zusammenfassung.sehen }}</span> {% translate "sehen" %} · <span data-zahl-bearbeiten>{{ zusammenfassung.bearbeiten }}</span> {% translate "bearbeiten" %}</span>
+  </div>
+  <div class="filterleiste">
+    <label class="suchfeld"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input type="search" data-freigaben-suche aria-label="{% translate 'Person suchen' %}" placeholder="{% translate 'Person suchen' %}" autocomplete="off"></label>
+    <select data-freigaben-bereich aria-label="{% translate 'Bereich' %}">
+      <option value="">{% translate "Alle Bereiche" %}</option>
+      {% for b in bereiche %}<option value="{{ b.pk }}">{{ b.name }}</option>{% endfor %}
+    </select>
+    <label class="feld feld--zeile"><input type="checkbox" role="switch" class="schalter" data-freigaben-nur>{% translate "Nur Freigegebene" %}</label>
+    <span class="luecke"></span>
+    <button type="button" class="knopf knopf--klein" data-freigaben-alle="sehen">{% translate "Alle auf Sehen" %}</button>
+    <button type="button" class="knopf knopf--klein" data-freigaben-alle="">{% translate "Alle auf —" %}</button>
+  </div>
+  {% for z in zeilen %}{% with k=z.konto kid=z.konto.pk|stringformat:"s" %}
+    <div class="einstellungszeile freigabe-zeile" data-name="{{ k.person.anzeigename|lower }}" data-bereich="{{ k.person.bereich_id }}"{% if z.immer %} data-immer{% endif %}>
+      {% avatar k.person "klein" %}
+      <span class="luecke person__name"><strong>{{ k.person.anzeigename }}</strong> <span class="gedaempft klein">· {{ k.person.bereich }}</span></span>
+      <span class="rolle rolle--{{ k.rolle }} mobil-aus">{{ k.get_rolle_display }}</span>
+      {% include "teile/segment.html" with name="freigabe-"|add:kid wert=z.recht immer=z.immer darf_bearbeiten=z.darf_bearbeiten bezeichnung=k.person.anzeigename %}
+    </div>
+  {% endwith %}{% endfor %}
+  <div class="leer" data-freigaben-leer hidden>{% translate "Keine Person gefunden." %}</div>
+</section>

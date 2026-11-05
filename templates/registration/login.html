@@ -1,0 +1,21 @@
+{% extends "registration/einfach.html" %}
+{% load i18n %}
+{% block titel %}{% translate "Anmelden" %}{% endblock %}
+{% block karte %}
+<h1>{% translate "Anmelden" %}</h1>
+<form method="post" class="formular" novalidate>
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="meldung meldung--error" role="alert">{% for f in form.non_field_errors %}{{ f }}{% endfor %}</div>{% endif %}
+  {% include "teile/feld.html" with feld=form.username %}
+  {% include "teile/feld.html" with feld=form.password %}
+  <input type="hidden" name="next" value="{{ next }}">
+  <button type="submit" class="knopf knopf--primaer">{% translate "Anmelden" %}</button>
+</form>
+<form method="post" action="{% url 'set_language' %}" class="zeile klein" aria-label="{% translate 'Sprache' %}">
+  {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+  {% get_current_language as aktuell %}{% get_available_languages as sprachen %}
+  {% for code, name in sprachen %}{% get_language_info for code as info %}<button type="submit" name="language" value="{{ code }}" lang="{{ code }}" class="knopf knopf--text" {% if code == aktuell %}aria-current="true" style="font-weight:600; color: var(--text)"{% endif %}>{{ info.name_local|capfirst }}</button>{% endfor %}
+</form>
+{% if mail_aktiv %}<a class="klein" href="{% url 'passwort_vergessen' %}">{% translate "Passwort vergessen?" %}</a>
+{% else %}<p class="gedaempft klein" style="margin:0">{% translate "Passwort vergessen? Bitte bei der Bereichsleitung oder Administration einen neuen Link anfordern." %}</p>{% endif %}
+{% endblock %}

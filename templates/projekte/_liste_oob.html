@@ -1,0 +1,3 @@
+{# Zeilen der Projektliste, die sich durch eine Aktion in der Seitenleiste geändert haben #}{% for z in oob_zeilen %}{% include "projekte/_aufgabe_zeile.html" with a=z zeile_oob=True fehler=None %}{% endfor %}
+{% if oob_block %}{% include "projekte/_aufgabe_block.html" with a=oob_block block_oob=True fehler=None %}{% endif %}
+{% if oob_weg %}<div id="aufgabe-block-{{ oob_weg }}" hx-swap-oob="delete"></div>{% endif %}

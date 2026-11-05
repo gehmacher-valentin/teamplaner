@@ -1,0 +1,21 @@
+{% load i18n teamplaner %}<li id="eintrag-{{ art }}-{{ e.objekt.pk }}" class="einst-zeile{% if frage %} einst-zeile--frage{% endif %}" data-id="{{ e.objekt.pk }}">
+  {% if frage %}
+    <div class="einst-zeile__frage" role="alertdialog" aria-label="{{ frage }}">
+      <span class="luecke">{{ frage }}</span>
+      <button type="button" class="knopf knopf--klein" hx-get="{% url 'einst_liste_eintrag' art e.objekt.pk %}" hx-target="closest li" hx-swap="outerHTML" autofocus>{% translate "Abbrechen" %}</button>
+      <button type="button" class="knopf knopf--klein knopf--gefahr-voll" hx-post="{% url 'einst_liste_loeschen' art e.objekt.pk %}" hx-target="#liste-{{ art }}" hx-swap="outerHTML">{% translate "Löschen" %}</button>
+    </div>
+  {% else %}
+    {% if ziehbar %}<button type="button" class="ziehgriff einst-zeile__griff" aria-label="{% blocktranslate with name=e.objekt %}{{ name }} verschieben{% endblocktranslate %}" data-reihenfolge-griff><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></button>{% else %}<span class="einst-zeile__ohne-griff"></span>{% endif %}
+    <button type="button" class="einst-zeile__name" hx-get="{% url 'einst_liste_eintrag' art e.objekt.pk %}?ansicht=bearbeiten" hx-target="closest li" hx-swap="outerHTML"
+      aria-label="{% blocktranslate with name=e.objekt %}{{ name }} bearbeiten{% endblocktranslate %}">
+      {% if art == "status" %}<span class="{{ e.objekt|status_klasse }}">{{ e.objekt }}</span>{% if e.objekt.ist_erledigt %}<span class="einst-zeile__erledigt"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>{% translate "zählt als erledigt" %}</span>{% endif %}
+      {% else %}<span>{{ e.objekt }}</span>{% endif %}
+    </button>
+    <span class="einst-zeile__verwendung">{{ e.verwendung }}</span>
+    <button type="button" class="einst-zeile__loeschen" aria-label="{% blocktranslate with name=e.objekt %}{{ name }} löschen{% endblocktranslate %}"
+      {% if e.gesperrt %}disabled{% else %}hx-get="{% url 'einst_liste_eintrag' art e.objekt.pk %}?ansicht=frage" hx-target="closest li" hx-swap="outerHTML"{% endif %}>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>
+    </button>
+  {% endif %}
+</li>

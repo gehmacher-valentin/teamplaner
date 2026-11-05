@@ -1,0 +1,19 @@
+{% load i18n teamplaner %}<div class="mitteilungen__kopf">
+  <h2>{% translate "Posteingang" %}</h2>
+  {% if ungelesen %}
+    <button type="button" class="knopf knopf--text knopf--klein" hx-post="{% url 'posteingang_feld' %}" hx-target="#mitteilungen-feld" hx-swap="innerHTML">{% translate "Alle als gelesen markieren" %}</button>
+  {% endif %}
+</div>
+<div class="mitteilungen__liste">
+  {% for b in eintraege %}
+    <a href="{% url 'benachrichtigung_oeffnen' b.pk %}" class="mitteilung{% if not b.gelesen_am %} mitteilung--neu{% endif %}">
+      {% avatar b.ausloeser "klein" %}
+      <span class="mitteilung__text">{{ b.text }}<span class="mitteilung__zeit mono">{{ b.erstellt_am|date:"d.m. H:i" }}</span></span>
+      {% if not b.gelesen_am %}<span class="mitteilung__punkt" aria-label="{% translate 'ungelesen' %}"></span>{% endif %}
+    </a>
+  {% empty %}
+    <div class="leer">{% translate "Keine Benachrichtigungen." %}</div>
+  {% endfor %}
+</div>
+<a class="mitteilungen__alle" href="{% url 'posteingang' %}">{% translate "Alle Benachrichtigungen anzeigen" %}</a>
+{% include "kern/_ungelesen.html" with oob=True %}

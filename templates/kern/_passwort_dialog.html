@@ -1,0 +1,12 @@
+{% load i18n %}<dialog id="{{ id }}" aria-labelledby="{{ id }}-titel">
+  <form method="post" action="{% url 'zwei_faktor_aendern' aktion %}" class="dialog__inhalt">
+    {% csrf_token %}
+    <h2 id="{{ id }}-titel">{{ titel }}</h2>
+    <p class="ohne-rand">{{ text }}</p>
+    <label class="feld">{% translate "Ihr Passwort" %}<input type="password" name="passwort" autocomplete="current-password" required></label>
+    <div class="formular__aktionen formular__aktionen--rechts">
+      <button type="button" class="knopf" data-dialog-schliessen>{% translate "Abbrechen" %}</button>
+      <button type="submit" class="knopf {% if gefahr %}knopf--gefahr-voll{% else %}knopf--primaer{% endif %}">{{ knopf }}</button>
+    </div>
+  </form>
+</dialog>

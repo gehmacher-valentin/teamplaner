@@ -1,0 +1,4 @@
+{% load i18n %}{# Formularseiten: genau ein Speichern (primär) und daneben Abbrechen, unten rechts; mit stehend=True bleibt die Leiste beim Scrollen unten #}<div class="speicherleiste{% if stehend %} speicherleiste--stehend{% endif %}">
+  <a class="knopf" href="{{ abbrechen }}">{% translate "Abbrechen" %}</a>
+  <button type="submit" class="knopf knopf--primaer"{% if formular %} form="{{ formular }}"{% endif %}>{{ speichern|default:_("Speichern") }}</button>
+</div>

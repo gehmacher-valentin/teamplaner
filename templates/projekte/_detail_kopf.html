@@ -1,0 +1,22 @@
+{% load i18n teamplaner %}<div id="aufgabe-kopf" class="zeile"{% if oob %} hx-swap-oob="true"{% endif %}>
+  {% if darf_abschliessen %}
+    {% url 'aufgabe_erledigt' aufgabe.pk as ziel %}<form method="post" action="{{ ziel }}" {% include "projekte/_seitenleiste_form.html" %}
+      {% if offene_unteraufgaben and not aufgabe.status.ist_erledigt %}data-unteraufgaben-offen="{{ offene_unteraufgaben }}"{% endif %}>
+      {% csrf_token %}
+      <input type="hidden" name="erledigt" value="{% if aufgabe.status.ist_erledigt %}0{% else %}1{% endif %}">
+      <input type="hidden" name="unteraufgaben" value="">
+      <button type="submit" class="knopf">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>
+        {% if aufgabe.status.ist_erledigt %}{% translate "Wieder öffnen" %}{% else %}{% translate "Als erledigt markieren" %}{% endif %}
+      </button>
+    </form>
+  {% endif %}
+  <span class="{{ aufgabe.status|status_klasse }}">{{ aufgabe.status }}</span>
+  <span class="luecke"></span>
+  <button type="button" class="knopf knopf--klein" data-kopieren="{{ request.scheme }}://{{ request.get_host }}{{ aufgabe.get_absolute_url }}" data-kopiert-text="{% translate 'Link kopiert' %}">{% translate "Link kopieren" %}</button>
+  {% if darf_bearbeiten %}
+    {% url 'aufgabe_loeschen' aufgabe.pk as ziel %}<form method="post" action="{{ ziel }}" {% include "projekte/_seitenleiste_form.html" %} data-bestaetigen="{% translate 'Aufgabe mit allen Einteilungen, Kommentaren und Anhängen löschen?' %}">
+      {% csrf_token %}<button type="submit" class="knopf knopf--klein knopf--gefahr">{% translate "Löschen" %}</button>
+    </form>
+  {% endif %}
+</div>

@@ -1,0 +1,104 @@
+{% extends "kern/einstellungen_basis.html" %}
+{% load i18n teamplaner %}
+{% block titel %}{{ ziel.person.anzeigename }}{% endblock %}
+{% block einstellungen %}
+<nav class="pfad" aria-label="{% translate 'Pfad' %}"><a href="{% url 'einst_personen' %}">{% translate "Personen" %}</a><span aria-hidden="true">/</span><span>{{ ziel.person.anzeigename }}</span></nav>
+<div class="einst-kopf einst-kopf--person">
+  {% avatar ziel.person "gross" %}<h1>{{ ziel.person.anzeigename }}</h1>
+  {% if not ziel.is_active %}<span class="badge">{% translate "deaktiviert" %}</span>{% elif not ziel.has_usable_password %}<span class="badge badge--warn">{% translate "Einladung offen" %}</span>{% endif %}
+  {% if ziel.systemkonto %}<span class="badge">{% translate "Systemkonto" %}</span>{% endif %}
+</div>
+{% if link %}
+  <div class="meldung meldung--success passwort-link" role="status">
+    <div class="stapel passwort-link__text">
+      <strong>{% translate "Link zum Festlegen des Passworts" %}</strong>
+      <div class="zeile"><code class="umbruch">{{ link }}</code><button type="button" class="knopf knopf--klein" data-kopieren="{{ link }}">{% translate "Link kopieren" %}</button></div>
+    </div>
+    <div class="passwort-link__qr" role="img" aria-label="{% translate 'QR-Code' %}">{{ link_qr }}</div>
+  </div>
+{% endif %}
+
+<form method="post" action="{% url 'einst_person' ziel.pk %}" novalidate class="stapel">
+  {% csrf_token %}
+  <section class="karte" aria-labelledby="stamm-titel">
+    <div class="karte__kopf"><h2 id="stamm-titel">{% translate "Stammdaten" %}</h2></div>
+    <div class="karte--innen formular">
+      <div class="formular__zeile">
+        {% include "teile/feld.html" with feld=form.anzeigename %}
+        {% include "teile/feld.html" with feld=form.email %}
+      </div>
+      <div class="formular__zeile">
+        {% include "teile/feld.html" with feld=form.rolle %}
+        {% include "kern/_bereich_fest.html" with bereich=ziel.person.bereich %}
+      </div>
+      {% include "teile/chips.html" with feld=form.gewerke %}
+      {% include "teile/feld.html" with feld=form.systemkonto zeile=True %}
+    </div>
+    {% url 'einst_personen' as zurueck %}{% include "teile/speicherleiste.html" with abbrechen=zurueck %}
+  </section>
+</form>
+
+<section class="karte" aria-labelledby="anm-titel">
+  <div class="karte__kopf"><h2 id="anm-titel">{% translate "Anmeldung" %}</h2></div>
+  {% if ziel.daten_entfernt_am %}<div class="karte--innen"><div class="meldung meldung--info klein">{% blocktranslate with datum=ziel.daten_entfernt_am|date:"d.m.Y" %}Persönliche Daten am {{ datum }} entfernt (Frist nach der Deaktivierung). Zum Reaktivieren eine neue E-Mail-Adresse eintragen und eine Einladung schicken.{% endblocktranslate %}</div></div>{% endif %}
+  <div class="einstellungszeile">
+    <div class="luecke">
+      <div>{% if ziel.has_usable_password %}{% translate "Passwort gesetzt" %}{% else %}{% translate "Einladung noch nicht angenommen" %}{% endif %}</div>
+      {% if ziel.last_login %}<div class="klein gedaempft">{% translate "Letzte Anmeldung" %} <span class="mono">{{ ziel.last_login|date:"d.m.Y H:i" }}</span></div>{% endif %}
+    </div>
+    {% if ziel.pk != user.pk %}
+      <form method="post" action="{% url 'person_aktion' ziel.pk 'link' %}"{% if ziel.has_usable_password and not mail_aktiv %} data-bestaetigen="{% translate 'Das bisherige Passwort gilt danach nicht mehr, bis die Person über den Link ein neues festlegt. Fortfahren?' %}"{% endif %}>{% csrf_token %}
+        <button type="submit" class="knopf">{% if not ziel.has_usable_password %}{% translate "Neuen Einladungslink erzeugen" %}{% elif mail_aktiv %}{% translate "Link zum Zurücksetzen schicken" %}{% else %}{% translate "Passwort zurücksetzen und Link erzeugen" %}{% endif %}</button>
+      </form>
+    {% endif %}
+  </div>
+  <div class="einstellungszeile">
+    <div class="luecke">{% translate "Zwei-Faktor-Anmeldung" %}</div>
+    {% if zwei_faktor_aktiv %}
+      <span class="badge badge--ok">{% blocktranslate with seit=ziel.totp_seit|date:"d.m.Y" %}Eingerichtet seit {{ seit }}{% endblocktranslate %}</span>
+      {% if ziel.pk != user.pk %}
+        <form method="post" action="{% url 'person_aktion' ziel.pk 'zwei_faktor_zuruecksetzen' %}" data-bestaetigen="{% if mail_aktiv %}{% translate 'Zwei-Faktor-Anmeldung zurücksetzen, z. B. weil das Telefon verloren ist? Die Person bekommt eine E-Mail.' %}{% else %}{% translate 'Zwei-Faktor-Anmeldung zurücksetzen, z. B. weil das Telefon verloren ist?' %}{% endif %}">{% csrf_token %}
+          <button type="submit" class="knopf knopf--klein">{% translate "Zurücksetzen" %}</button>
+        </form>
+      {% endif %}
+    {% else %}<span class="badge">{% translate "Nicht eingerichtet" %}</span>{% endif %}
+  </div>
+  {% if ziel.person.foto and ziel.pk != user.pk %}
+  <div class="einstellungszeile">
+    <div class="luecke">{% translate "Profilbild" %}</div>
+    <form method="post" action="{% url 'person_aktion' ziel.pk 'foto_entfernen' %}" data-bestaetigen="{% translate 'Profilbild entfernen?' %}">{% csrf_token %}<button type="submit" class="knopf knopf--klein">{% translate "Entfernen" %}</button></form>
+  </div>
+  {% endif %}
+</section>
+
+{% if freigaben %}
+<section class="karte" aria-labelledby="fg-titel" data-sofort-bereich>
+  <div class="karte__kopf"><h2 id="fg-titel">{% translate "Freigaben" %}</h2></div>
+  {% for gruppe in freigaben %}
+    <div class="freigabe-gruppe">
+      <div class="freigabe-gruppe__titel">{% if gruppe.art == "gantt" %}{% translate "Gantt-Diagramm" %}{% else %}{% translate "Teamplaner" %}{% endif %}</div>
+      {% for f in gruppe.ansichten %}
+        <form class="einstellungszeile" hx-post="{% url 'einst_person_freigabe' ziel.pk %}" hx-trigger="change" hx-swap="none" hx-vals='{"art": "{{ gruppe.art }}", "ansicht": "{{ f.ansicht.pk }}"}'>
+          <a class="luecke" href="{% url gruppe.url_name f.ansicht.pk %}">{{ f.ansicht.name }}</a>
+          {% include "teile/segment.html" with name="recht" wert=f.recht immer=immer_bearbeiten darf_bearbeiten=ab_planer bezeichnung=f.ansicht.name %}
+        </form>
+      {% empty %}<div class="einstellungszeile gedaempft klein">{% translate "Noch keine Ansichten." %}</div>{% endfor %}
+    </div>
+  {% endfor %}
+</section>
+{% endif %}
+
+{% if ziel.pk != user.pk %}
+  {% if ziel.is_active %}
+    {% url 'person_aktion' ziel.pk 'deaktivieren' as aktion %}{% translate "Konto deaktivieren" as titel %}{% translate "Deaktivieren" as knopf %}
+    {% blocktranslate asvar frage with name=ziel.person.anzeigename %}Konto von {{ name }} deaktivieren?{% endblocktranslate %}
+    {% translate "Die Person kann sich nicht mehr anmelden; Aufgaben und Einteilungen bleiben erhalten." as text %}
+    {% include "teile/gefahrenabschnitt.html" with id="deaktivieren" %}
+  {% else %}
+    <section class="karte einstellungszeile" aria-label="{% translate 'Konto reaktivieren' %}">
+      <span class="luecke">{% translate "Konto reaktivieren" %}</span>
+      <form method="post" action="{% url 'person_aktion' ziel.pk 'reaktivieren' %}">{% csrf_token %}<button type="submit" class="knopf">{% translate "Reaktivieren" %}</button></form>
+    </section>
+  {% endif %}
+{% endif %}
+{% endblock %}

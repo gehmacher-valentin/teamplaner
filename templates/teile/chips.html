@@ -1,0 +1,5 @@
+{% load i18n %}{# Mehrfachauswahl als Chips (Gewerke, Bereiche): Kästchen, die wie Knöpfe aussehen #}<fieldset class="chips">
+  <legend>{{ feld.label }}</legend>
+  <div class="chips__liste">{% for option in feld %}<label class="chip"><input type="checkbox" name="{{ option.data.name }}" value="{{ option.data.value }}"{% if option.data.selected %} checked{% endif %}{% if feld.field.disabled %} disabled{% endif %}><svg class="chip__haken" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>{{ option.choice_label }}</label>{% empty %}<span class="gedaempft klein">–</span>{% endfor %}</div>
+  {% if feld.errors %}<ul class="fehlerliste">{% for f in feld.errors %}<li>{{ f }}</li>{% endfor %}</ul>{% endif %}
+</fieldset>

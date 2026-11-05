@@ -1,0 +1,13 @@
+{% load i18n %}<fieldset class="personenauswahl" data-personenauswahl>
+  <legend>{{ feld.label }} <span class="zaehler" data-personenauswahl-zahl aria-live="polite"></span></legend>
+  <div class="personenauswahl__suche">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+    <input type="search" data-personenauswahl-suche placeholder="{% translate 'Personen suchen …' %}" aria-label="{% translate 'Personen suchen' %}" autocomplete="off">
+  </div>
+  {# option.tag gibt nur das Kästchen aus, die Beschriftung setzen wir selbst (Name · Bereich) #}
+  <div class="personenauswahl__liste" role="group" aria-label="{{ feld.label }}">
+    {% for option in feld %}<label class="personenauswahl__eintrag">{{ option.tag }}<span>{{ option.choice_label }}</span></label>{% endfor %}
+  </div>
+  <div class="personenauswahl__leer klein gedaempft" data-personenauswahl-leer hidden>{% translate "Keine Person gefunden." %}</div>
+  {% if feld.errors %}<ul class="fehlerliste">{% for f in feld.errors %}<li>{{ f }}</li>{% endfor %}</ul>{% endif %}
+</fieldset>

@@ -1,0 +1,19 @@
+{% extends "registration/einfach.html" %}
+{% load i18n %}
+{% block titel %}{% translate "Passwort festlegen" %}{% endblock %}
+{% block karte %}
+{% if validlink %}
+  <h1>{% translate "Passwort festlegen" %}</h1>
+  <p class="gedaempft klein" style="margin:0">{% blocktranslate with email=form.user.email %}Konto: {{ email }}{% endblocktranslate %}</p>
+  <form method="post" class="formular">
+    {% csrf_token %}
+    {% include "teile/feld.html" with feld=form.new_password1 %}
+    {% include "teile/feld.html" with feld=form.new_password2 %}
+    <button type="submit" class="knopf knopf--primaer">{% translate "Passwort speichern" %}</button>
+  </form>
+{% else %}
+  <h1>{% translate "Link ungültig" %}</h1>
+  <p>{% translate "Dieser Link ist abgelaufen oder wurde bereits verwendet. Bitte einen neuen Link anfordern." %}</p>
+  <a class="knopf" href="{% url 'login' %}">{% translate "Zur Anmeldung" %}</a>
+{% endif %}
+{% endblock %}

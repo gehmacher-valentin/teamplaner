@@ -1,0 +1,1 @@
+{# Formular im Aufgabendetail: in der Seitenleiste per HTMX, Antwort ersetzt ihren Inhalt; nacheinander mit den Feldern. Erwartet: ziel #}{% if seitenleiste %}hx-post="{{ ziel }}" hx-target="#seitenleiste-inhalt" hx-swap="outerHTML" hx-sync="#aufgabe-felder:queue all"{% endif %}

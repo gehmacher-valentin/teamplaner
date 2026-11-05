@@ -1,0 +1,13 @@
+{% extends "registration/einfach.html" %}
+{% load i18n %}
+{% block titel %}{% translate "Anmelden" %}{% endblock %}
+{% block karte %}
+<h1>{% translate "Code eingeben" %}</h1>
+<p class="gedaempft klein" style="margin:0">{% translate "Öffnen Sie Ihre Authenticator-App und geben Sie den sechsstelligen Code für den Teamplaner ein. Ohne Telefon geht auch einer Ihrer Ersatzcodes." %}</p>
+<form method="post" class="formular" novalidate>
+  {% csrf_token %}
+  {% include "teile/feld.html" with feld=form.code %}
+  <button type="submit" class="knopf knopf--primaer">{% translate "Anmelden" %}</button>
+</form>
+<a class="klein" href="{% url 'login' %}">{% translate "Abbrechen" %}</a>
+{% endblock %}

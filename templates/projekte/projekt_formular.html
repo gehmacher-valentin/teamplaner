@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block titel %}{% if projekt %}{{ projekt.name }}{% else %}{% translate "Neues Projekt" %}{% endif %}{% endblock %}
+{% block inhalt %}
+<nav class="pfad" aria-label="{% translate 'Pfad' %}"><a href="{% url 'projekte' %}">{% translate "Projekte" %}</a><span aria-hidden="true">/</span>{% if projekt %}<a href="{% url 'projekt' projekt.pk %}">{{ projekt.name }}</a><span aria-hidden="true">/</span><span>{% translate "Bearbeiten" %}</span>{% else %}<span>{% translate "Neu" %}</span>{% endif %}</nav>
+<div class="seitenkopf"><div class="seitenkopf__titel"><h1>{% if projekt %}{% translate "Projekt bearbeiten" %}{% else %}{% translate "Neues Projekt" %}{% endif %}</h1></div></div>
+<form method="post" class="karte karte--innen formular" style="max-width: 820px" novalidate>
+  {% csrf_token %}
+  <div class="formular__zeile">
+    {% include "teile/feld.html" with feld=form.name %}
+    {% include "teile/feld.html" with feld=form.farbe breite="160px" %}
+    {% include "teile/feld.html" with feld=form.prioritaet breite="120px" %}
+    {% include "teile/feld.html" with feld=form.projektleitung %}
+  </div>
+  <div class="formular__zeile">
+    {% include "teile/feld.html" with feld=form.beginn breite="200px" %}
+    {% include "teile/feld.html" with feld=form.ende breite="200px" %}
+  </div>
+  <label class="feld">{{ form.tags_text.label }}
+    <input type="text" name="tags_text" value="{{ form.tags_text.value|default:'' }}" list="tag-vorschlaege" autocomplete="off">
+    <datalist id="tag-vorschlaege">{% for t in tags %}<option value="{{ t.name }}">{% endfor %}</datalist>
+  </label>
+  {% include "teile/personenauswahl.html" with feld=form.mitglieder %}
+  {% include "teile/feld.html" with feld=form.beschreibung %}
+  <div class="formular__aktionen">
+    <button type="submit" class="knopf knopf--primaer">{% translate "Speichern" %}</button>
+    <a class="knopf" href="{% if projekt %}{% url 'projekt' projekt.pk %}{% else %}{% url 'projekte' %}{% endif %}">{% translate "Abbrechen" %}</a>
+    <span class="luecke"></span>
+    {% if projekt %}
+      {% if projekt.archiviert %}<button type="submit" name="wiederherstellen" value="1" class="knopf">{% translate "Wiederherstellen" %}</button>
+      {% else %}<button type="submit" name="archivieren" value="1" class="knopf knopf--gefahr">{% translate "Projekt archivieren" %}</button>{% endif %}
+    {% endif %}
+  </div>
+</form>
+{% endblock %}

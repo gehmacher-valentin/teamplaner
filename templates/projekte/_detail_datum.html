@@ -1,0 +1,7 @@
+{% load i18n teamplaner %}{# Beginn oder Fälligkeit; bei Hauptaufgaben ergeben sich die Termine aus den Unteraufgaben (nur Anzeige) #}{% if darf_bearbeiten and not sammelaufgabe %}
+<form {% include "projekte/_detail_form.html" %}>
+  <input id="{{ eid }}" type="date" name="wert" value="{% if eingabe is not None %}{{ eingabe }}{% else %}{{ datum|date:'Y-m-d' }}{% endif %}"
+    class="{% if ueberfaellig and not aufgabe.status.ist_erledigt %}faellig--ueberfaellig{% endif %}"
+    aria-label="{% if feld == 'faellig_am' %}{% translate 'Fällig' %}{% else %}{% translate 'Geplanter Beginn' %}{% endif %}">
+</form>
+{% else %}<span class="mono{% if ueberfaellig and not aufgabe.status.ist_erledigt %} faellig--ueberfaellig{% endif %}">{{ datum|datum_lang|default:"–" }}</span>{% endif %}

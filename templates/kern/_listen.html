@@ -1,0 +1,14 @@
+{% load i18n %}{# Listen-Editor: Einträge als Text, Klick bearbeitet, Hinzufügen-Zeile am Ende #}<section class="karte einst-liste" id="liste-{{ l.art }}" aria-labelledby="liste-{{ l.art }}-titel">
+  <div class="karte__kopf"><h2 id="liste-{{ l.art }}-titel">{{ l.titel }}</h2><span class="zaehler">{{ l.eintraege|length }}</span></div>
+  <ul class="einst-liste__eintraege"{% if l.ziehbar %} data-reihenfolge="{% url 'einst_liste_sortieren' l.art %}"{% endif %}>
+    {% for e in l.eintraege %}{% include "kern/_listen_zeile.html" with art=l.art ziehbar=l.ziehbar %}{% endfor %}
+  </ul>
+  <form class="einst-liste__neu" hx-post="{% url 'einst_liste_neu' l.art %}" hx-target="#liste-{{ l.art }}" hx-swap="outerHTML">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+    {% with feld=l.neu_form.name %}
+      <input type="text" name="{{ feld.html_name }}" value="{{ feld.value|default:'' }}" maxlength="{{ feld.field.max_length }}" required
+        aria-label="{% blocktranslate with titel=l.titel %}{{ titel }}: hinzufügen{% endblocktranslate %}" placeholder="{% translate 'Hinzufügen' %}"{% if l.fokus %} autofocus{% endif %}>
+      {% if feld.errors %}<ul class="fehlerliste" role="alert">{% for f in feld.errors %}<li>{{ f }}</li>{% endfor %}</ul>{% endif %}
+    {% endwith %}
+  </form>
+</section>

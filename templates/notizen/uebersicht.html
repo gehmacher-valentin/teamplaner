@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% load i18n teamplaner %}
+{% block titel %}{% if ordner %}{{ ordner.name }}{% else %}{% translate "Persönliche Notizen" %}{% endif %}{% endblock %}
+{% block inhalt %}
+<div class="seitenkopf">
+  <div class="seitenkopf__titel">
+    <h1>{% translate "Notizen" %}</h1>
+  </div>
+</div>
+<div class="notizen">
+  {% include "notizen/_ordnerliste.html" %}
+  <section class="karte notizen__haupt" aria-label="{% if ordner %}{{ ordner.name }}{% else %}{% translate 'Persönliche Notizen' %}{% endif %}">
+    <div class="karte__kopf">
+      <h2>{% if ordner %}{{ ordner.name }}{% else %}{% translate "Persönliche Notizen" %}{% endif %}</h2>
+      <span class="zaehler">{{ notizen|length }}</span>
+      <form method="get" class="notizen__suche" role="search">
+        <label class="sr-only" for="notiz-suche">{% translate "Notizen durchsuchen" %}</label>
+        <input id="notiz-suche" type="search" name="q" value="{{ suche }}" placeholder="{% translate 'Durchsuchen …' %}">
+      </form>
+      {% if darf_verwalten %}<a class="knopf knopf--klein" href="{% url 'notizordner_bearbeiten' ordner.pk %}">{% translate "Ordner bearbeiten" %}</a>{% endif %}
+      {% if darf_schreiben %}<a class="knopf knopf--klein knopf--primaer" href="{% url 'notiz_neu' %}{% if ordner %}?ordner={{ ordner.pk }}{% endif %}">{% translate "Neue Notiz" %}</a>{% endif %}
+    </div>
+    {% if ordner %}
+      <div class="notizen__mitglieder klein gedaempft">
+        {% translate "Freigegeben für" %}:
+        {% for k in mitglieder %}<span class="person">{% avatar k.person "klein" %}<span>{{ k.person.anzeigename }}</span></span>{% endfor %}
+      </div>
+    {% endif %}
+    <div class="liste">
+      {% for n in notizen %}
+        <a class="liste__zeile notiz-zeile" href="{% url 'notiz' n.pk %}">
+          <strong class="zelle-text">{% if n.anzahl_anhaenge %}<svg class="notiz-zeile__anhang" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="{% blocktranslate count n=n.anzahl_anhaenge %}{{ n }} Anhang{% plural %}{{ n }} Anhänge{% endblocktranslate %}"><path d="M21 11.5l-8.6 8.6a5.5 5.5 0 0 1-7.8-7.8l8.6-8.6a3.7 3.7 0 0 1 5.2 5.2l-8.6 8.6a1.8 1.8 0 0 1-2.6-2.6l7.9-7.9"/></svg>{% endif %}{{ n.titel }}</strong>
+          <span class="zelle-text gedaempft notiz-zeile__auszug">{{ n.auszug|truncatechars:140 }}</span>
+          <span class="klein gedaempft notiz-zeile__stand">{{ n.geaendert_am|date:"d.m.Y H:i" }}{% if ordner and n.geaendert_von %} · {{ n.geaendert_von }}{% endif %}</span>
+        </a>
+      {% empty %}
+        <div class="leer">{% if suche %}{% translate "Keine Notiz gefunden." %}{% else %}{% translate "Noch keine Notizen." %}{% endif %}</div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

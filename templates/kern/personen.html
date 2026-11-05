@@ -1,0 +1,67 @@
+{% extends "kern/einstellungen_basis.html" %}
+{% load i18n teamplaner %}
+{% block titel %}{% translate "Personen" %}{% endblock %}
+{% block einst_breit %} einst__inhalt--breit{% endblock %}
+{% block einstellungen %}
+<div class="einst-kopf">
+  <h1>{% translate "Personen" %}</h1>
+  <div class="zeile">
+    <a class="knopf" href="{% url 'einst_platzhalter_neu' %}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>{% translate "Platzhalter" %}</a>
+    {% if mit_konten %}<a class="knopf knopf--primaer" href="{% url 'einst_person_einladen' %}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>{% translate "Person einladen" %}</a>{% endif %}
+  </div>
+</div>
+<section class="karte" id="personen-liste" aria-label="{% translate 'Personen' %}">
+  {# Filter per HTMX: nur die Liste wird ersetzt (Spaltenbreiten bleiben) #}
+  <form method="get" class="filterleiste" hx-get="{% url 'einst_personen' %}" hx-target="#personen-liste" hx-select="#personen-liste" hx-swap="outerHTML" hx-push-url="true"
+    hx-trigger="submit, change, input changed delay:300ms from:find .suchfeld input">
+    <label class="suchfeld"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input type="search" name="q" value="{{ suche }}" aria-label="{% translate 'Personen suchen' %}" placeholder="{% if mit_konten %}{% translate 'Name oder E-Mail' %}{% else %}{% translate 'Name' %}{% endif %}">
+    </label>
+    <input type="hidden" name="bereich" value="{{ filter_bereich|default:'' }}">
+    <div class="chipgruppe" role="group" aria-label="{% translate 'Bereich' %}">
+      <button type="submit" name="bereich" value="" class="filterchip" aria-pressed="{% if not filter_bereich %}true{% else %}false{% endif %}">{% translate "Alle" %}<span>{{ gesamt }}</span></button>
+      {% for b in bereiche %}<button type="submit" name="bereich" value="{{ b.bereich.pk }}" class="filterchip" aria-pressed="{% if filter_bereich == b.bereich.pk %}true{% else %}false{% endif %}">{{ b.bereich.name }}<span>{{ b.anzahl }}</span></button>{% endfor %}
+    </div>
+    {% if mit_konten %}
+      <input type="hidden" name="art" value="{{ filter_art }}">
+      <div class="knopfgruppe" role="group" aria-label="{% translate 'Art' %}">
+        <button type="submit" name="art" value="alle" aria-pressed="{% if filter_art == 'alle' %}true{% else %}false{% endif %}">{% translate "Alle" %}</button>
+        <button type="submit" name="art" value="konten" aria-pressed="{% if filter_art == 'konten' %}true{% else %}false{% endif %}">{% translate "Konten" %}</button>
+        <button type="submit" name="art" value="platzhalter" aria-pressed="{% if filter_art == 'platzhalter' %}true{% else %}false{% endif %}">{% translate "Platzhalter" %}</button>
+      </div>
+    {% endif %}
+    <label class="sr-only" for="zustand">{% translate "Zustand" %}</label>
+    <select id="zustand" name="zustand">
+      <option value="aktiv"{% if not inaktiv %} selected{% endif %}>{% translate "Aktiv" %}</option>
+      <option value="inaktiv"{% if inaktiv %} selected{% endif %}>{% translate "Deaktiviert und archiviert" %}</option>
+    </select>
+    <noscript><button type="submit" class="knopf">{% translate "Anzeigen" %}</button></noscript>
+  </form>
+  <div class="liste liste--mobil" style="--spalten: minmax(0,2.2fr) minmax(0,1.4fr) minmax(0,1.6fr) minmax(0,1fr) 40px; --liste-min: 760px">
+    <div class="liste__inner">
+      <div class="liste__kopf"><div>{% translate "Person" %}</div><div>{% translate "Rolle" %}</div><div>{% translate "Gewerke" %}</div><div>{% translate "Bereich" %}</div><div></div></div>
+      {% for p in personen %}
+        <div class="liste__zeile{% if p.archiviert %} liste__zeile--gedaempft{% endif %}">
+          <div class="person">{% avatar p %}<span class="person__name">{% if p.bearbeitbar %}<a href="{% url 'einst_person' p.pk %}">{{ p.anzeigename }}</a>{% else %}{{ p.anzeigename }}{% endif %}<br><span class="gedaempft klein">{% if p.ist_platzhalter %}{{ p.notiz|default:_("kein Konto") }}{% else %}{{ p.konto.email }}{% endif %}</span></span></div>
+          <div class="zeile zeile--eng">
+            {% if p.ist_platzhalter %}<span class="rolle rolle--platzhalter">{% translate "Platzhalter" %}</span>
+            {% else %}<span class="rolle rolle--{{ p.konto.rolle }}">{{ p.konto.get_rolle_display }}</span>
+              {% if p.konto.systemkonto %}<span class="badge">{% translate "Systemkonto" %}</span>{% endif %}
+              {% if not p.archiviert and not p.konto.has_usable_password %}<span class="badge badge--warn">{% translate "Einladung offen" %}</span>{% endif %}
+            {% endif %}
+            {% if p.archiviert %}<span class="badge">{% if p.ist_platzhalter %}{% translate "archiviert" %}{% else %}{% translate "deaktiviert" %}{% endif %}</span>{% endif %}
+          </div>
+          <div class="tags mobil-aus">{% for g in p.gewerke.all %}<span class="tag">{{ g.name }}</span>{% endfor %}</div>
+          <div class="mobil-aus">{{ p.bereich }}</div>
+          <div>{% if p.bearbeitbar %}<a class="symbolknopf" href="{% url 'einst_person' p.pk %}" aria-label="{% blocktranslate with name=p.anzeigename %}{{ name }} öffnen{% endblocktranslate %}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>{% endif %}</div>
+        </div>
+      {% empty %}
+        <div class="leer stapel">
+          <span>{% translate "Keine Person gefunden." %}</span>
+          {% if not suche and not filter_bereich and not inaktiv %}<div><a class="knopf knopf--klein" href="{% url 'einst_platzhalter_neu' %}">{% translate "Platzhalter anlegen" %}</a></div>{% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

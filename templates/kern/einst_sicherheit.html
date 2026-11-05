@@ -1,0 +1,48 @@
+{% extends "kern/einstellungen_basis.html" %}
+{% load i18n %}
+{% block titel %}{% translate "Anmeldung & Sicherheit" %}{% endblock %}
+{% block einstellungen %}
+<h1>{% translate "Anmeldung & Sicherheit" %}</h1>
+<section class="karte" aria-labelledby="pw-titel">
+  <div class="karte__kopf"><h2 id="pw-titel">{% translate "Passwort" %}</h2></div>
+  <form method="post" action="{% url 'einst_sicherheit' %}" class="formular karte--innen" novalidate>
+    {% csrf_token %}
+    {% include "teile/feld.html" with feld=form.old_password %}
+    <div class="formular__zeile">
+      {% include "teile/feld.html" with feld=form.new_password1 %}
+      {% include "teile/feld.html" with feld=form.new_password2 %}
+    </div>
+    {% if form.non_field_errors %}<ul class="fehlerliste">{% for f in form.non_field_errors %}<li>{{ f }}</li>{% endfor %}</ul>{% endif %}
+    <div class="formular__aktionen formular__aktionen--rechts"><button type="submit" class="knopf knopf--primaer">{% translate "Passwort ändern" %}</button></div>
+  </form>
+</section>
+
+<section class="karte" aria-labelledby="zf-titel" id="zwei-faktor">
+  <div class="karte__kopf">
+    <h2 id="zf-titel">{% translate "Zwei-Faktor-Anmeldung" %}</h2>
+    {% if zwei_faktor.eingerichtet %}<span class="badge badge--ok">{% translate "Eingerichtet" %}</span>{% else %}<span class="badge">{% translate "Nicht eingerichtet" %}</span>{% endif %}
+    {% if zwei_faktor.pflicht %}<span class="badge">{% translate "Pflicht" %}</span>{% endif %}
+  </div>
+  <div class="karte--innen zeile">
+    {% if zwei_faktor.eingerichtet %}
+      <div class="luecke klein">{% blocktranslate with seit=zwei_faktor.seit|date:"d.m.Y" n=zwei_faktor.uebrig %}Seit {{ seit }} · {{ n }} Ersatzcodes übrig{% endblocktranslate %}</div>
+      <a class="knopf" href="{% url 'zwei_faktor_einrichten' %}">{% translate "Neues Telefon einrichten" %}</a>
+      <button type="button" class="knopf" data-dialog-oeffnen="#dlg-ersatzcodes">{% translate "Neue Ersatzcodes" %}</button>
+      {% if not zwei_faktor.pflicht %}<button type="button" class="knopf knopf--gefahr" data-dialog-oeffnen="#dlg-ausschalten">{% translate "Ausschalten …" %}</button>{% endif %}
+    {% else %}
+      <span class="luecke"></span>
+      <a class="knopf knopf--primaer" href="{% url 'zwei_faktor_einrichten' %}">{% translate "Einrichten" %}</a>
+    {% endif %}
+  </div>
+</section>
+
+{% if zwei_faktor.eingerichtet %}
+  {# Das Passwort wird erst hier abgefragt #}
+  {% translate "Neue Ersatzcodes erzeugen?" as titel %}{% translate "Die bisherigen Ersatzcodes gelten danach nicht mehr." as text %}{% translate "Erzeugen" as knopf %}
+  {% include "kern/_passwort_dialog.html" with id="dlg-ersatzcodes" aktion="ersatzcodes" gefahr=False %}
+  {% if not zwei_faktor.pflicht %}
+    {% translate "Zwei-Faktor-Anmeldung ausschalten?" as titel %}{% translate "Danach genügt wieder das Passwort zur Anmeldung." as text %}{% translate "Ausschalten" as knopf %}
+    {% include "kern/_passwort_dialog.html" with id="dlg-ausschalten" aktion="ausschalten" gefahr=True %}
+  {% endif %}
+{% endif %}
+{% endblock %}

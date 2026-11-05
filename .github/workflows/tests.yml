@@ -1,0 +1,74 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # Vor jeder Veröffentlichung (release.yml)
+  workflow_call:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    # Container-Betrieb (3.13/PG 17) und älteste Linux-Server-Kombination (Debian 12: 3.11/PG 15)
+    strategy:
+      matrix:
+        include:
+          - python: "3.13"
+            postgres: "17"
+          - python: "3.11"
+            postgres: "15"
+    name: backend (Python ${{ matrix.python }}, PostgreSQL ${{ matrix.postgres }})
+    services:
+      postgres:
+        image: postgres:${{ matrix.postgres }}
+        env:
+          POSTGRES_DB: teamplaner
+          POSTGRES_USER: teamplaner
+          POSTGRES_PASSWORD: teamplaner-ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U teamplaner"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DJANGO_SECRET_KEY: ci-nur-fuer-tests
+      POSTGRES_HOST: localhost
+      POSTGRES_DB: teamplaner
+      POSTGRES_USER: teamplaner
+      POSTGRES_PASSWORD: teamplaner-ci
+      TEAMPLANER_STATIC_MANIFEST: "0"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - run: pip install -r requirements-dev.txt
+      - name: Code-Stil (ruff)
+        if: matrix.python == '3.13'
+        run: ruff check .
+      - name: Betriebsskripte (shellcheck)
+        if: matrix.python == '3.13'
+        run: shellcheck --severity=warning docker/*.sh betrieb/linux/teamplaner betrieb/linux/*.sh pruefung/linux/*.sh
+      - name: Migrationen vollständig
+        run: python manage.py makemigrations --check --dry-run
+      - name: Tests (Rechteprüfung, Einteilungslogik, Abläufe, Übersetzung)
+        run: pytest
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% load static i18n teamplaner %}
+{% block titel %}{% if notiz.pk %}{{ notiz.titel }}{% else %}{% translate "Neue Notiz" %}{% endif %}{% endblock %}
+{% block inhalt %}
+<nav class="pfad" aria-label="{% translate 'Pfad' %}"><a href="{% url 'notizen' %}">{% translate "Notizen" %}</a><span aria-hidden="true">/</span>{% if ordner %}<a href="{% url 'notizordner' ordner.pk %}">{{ ordner.name }}</a>{% else %}<a href="{% url 'notizen' %}">{% translate "Persönliche Notizen" %}</a>{% endif %}</nav>
+<div class="notizen">
+  {% include "notizen/_ordnerliste.html" %}
+  <article class="karte notizen__haupt" id="notiz-felder">
+    {% if darf_schreiben %}{% include "notizen/_zustand.html" %}{% endif %}
+    <div class="karte__kopf notiz-kopf">
+      {% include "notizen/_titel.html" %}
+      {% include "notizen/_aktionen.html" %}
+    </div>
+    {% if darf_schreiben %}
+      <div class="karte--innen stapel">
+        <form hx-post="{% url 'notiz_speichern' %}" hx-trigger="change" hx-swap="none" hx-include="#notiz-zustand, #notiz-titel-eingabe" hx-sync="#notiz-felder:queue all" class="detailfeld__form">
+          <textarea id="notiz-text" name="text" hidden aria-label="{% translate 'Text' %}" placeholder="{% translate 'Text' %}">{{ notiz.text }}</textarea>
+          <div data-editor="notiz-text" data-format="markdown"></div>
+        </form>
+        <div id="notiz-konflikt"></div>
+      </div>
+    {% else %}
+      <div class="karte--innen markdown">{% if html %}{{ html|safe }}{% else %}<p class="gedaempft">{% translate "Noch kein Text." %}</p>{% endif %}</div>
+    {% endif %}
+    {% include "notizen/_anhaenge.html" %}
+    {% include "notizen/_fuss.html" %}
+  </article>
+</div>
+{% endblock %}
+{% block skripte %}{% if darf_schreiben %}<script type="module" src="{% static 'dist/editor.js' %}"></script>{% endif %}{% endblock %}

@@ -1,0 +1,105 @@
+{% load i18n teamplaner %}{% comment %}
+Ein Feld der Aufgaben-Detailseite: direkt bearbeitbar, speichert beim Verlassen bzw. Auswählen
+(projekte.views.aufgabe_feld, ansicht=detail). Ohne Bearbeitungsrecht nur Anzeige.
+{% endcomment %}{% with fid="feld-"|add:feld eid="eingabe-"|add:feld %}
+{% if feld == "titel" %}
+<div id="{{ fid }}" class="detailfeld detailfeld--titel"{% if oob %} hx-swap-oob="true"{% endif %}>
+  {% if darf_bearbeiten %}
+    <form {% include "projekte/_detail_form.html" %}>
+      <label class="sr-only" for="{{ eid }}">{% translate "Titel" %}</label>
+      <h1 class="detail__titel" aria-label="{{ aufgabe.titel }}"><input id="{{ eid }}" type="text" name="wert" class="titel-eingabe" maxlength="300" required data-inline
+        value="{% if eingabe is not None %}{{ eingabe }}{% else %}{{ aufgabe.titel }}{% endif %}"></h1>
+    </form>
+  {% else %}<h1 class="detail__titel">{{ aufgabe.titel }}</h1>{% endif %}
+  {% include "projekte/_detail_fehler.html" %}
+</div>
+{% elif feld == "verantwortlich" %}
+<dd id="{{ fid }}" class="detailfeld"{% if oob %} hx-swap-oob="true"{% endif %}>
+  {% if darf_bearbeiten %}
+    <form {% include "projekte/_detail_form.html" %}>
+      <select id="{{ eid }}" name="wert" aria-label="{% translate 'Verantwortlich' %}" data-personenwahl>
+        {% translate "Nicht zugewiesen" as leer %}{% include "teile/personen_optionen.html" with personen=personenliste aktuell=aufgabe.verantwortlich %}
+      </select>
+    </form>
+  {% else %}
+    <span class="person">{% avatar aufgabe.verantwortlich "klein" %}<span>{% person_name aufgabe.verantwortlich %}{% if aufgabe.verantwortlich %} · {{ aufgabe.verantwortlich.bereich }}{% endif %}</span></span>
+  {% endif %}
+  {% include "projekte/_detail_fehler.html" %}
+</dd>
+{% elif feld == "abschnitt" %}
+<dd id="{{ fid }}" class="detailfeld"{% if oob %} hx-swap-oob="true"{% endif %}>
+  {% if darf_bearbeiten %}
+    <form {% include "projekte/_detail_form.html" %}>
+      <select id="{{ eid }}" name="wert" aria-label="{% translate 'Abschnitt' %}">
+        <option value="">{% translate "– ohne Abschnitt –" %}</option>
+        {% for ab in abschnitte %}<option value="{{ ab.pk }}"{% if ab.pk == aufgabe.abschnitt_id %} selected{% endif %}>{{ ab.name }}</option>{% endfor %}
+      </select>
+    </form>
+  {% else %}{{ aufgabe.abschnitt|default:"–" }}{% endif %}
+  {% include "projekte/_detail_fehler.html" %}
+</dd>
+{% elif feld == "status" %}
+<dd id="{{ fid }}" class="detailfeld"{% if oob %} hx-swap-oob="true"{% endif %}>
+  {% if darf_bearbeiten %}
+    <form {% include "projekte/_detail_form.html" %}{% if offene_unteraufgaben and not aufgabe.status.ist_erledigt %} data-unteraufgaben-offen="{{ offene_unteraufgaben }}"{% endif %}>
+      <input type="hidden" name="unteraufgaben" value="">
+      <select id="{{ eid }}" name="wert" class="status-wahl {{ aufgabe.status|status_klasse }}" aria-label="{% translate 'Status' %}" data-erledigt-status="{{ erledigt_status }}">
+        {% for st in statusliste %}<option value="{{ st.pk }}"{% if st.pk == aufgabe.status_id %} selected{% endif %}>{{ st.name }}</option>{% endfor %}
+      </select>
+    </form>
+  {% else %}<span class="{{ aufgabe.status|status_klasse }}">{{ aufgabe.status }}</span>{% endif %}
+  {% include "projekte/_detail_fehler.html" %}
+</dd>
+{% elif feld == "beginn_am" or feld == "faellig_am" %}
+<dd id="{{ fid }}" class="detailfeld"{% if oob %} hx-swap-oob="true"{% endif %}>
+  {% if feld == "faellig_am" %}{% with datum=aufgabe.faellig_am %}{% include "projekte/_detail_datum.html" with ueberfaellig=datum|ueberfaellig %}{% endwith %}
+  {% else %}{% with datum=aufgabe.beginn_am %}{% include "projekte/_detail_datum.html" with ueberfaellig=False %}{% endwith %}{% endif %}
+  {% include "projekte/_detail_fehler.html" %}
+</dd>
+{% elif feld == "schaetzung_personentage" %}
+<span id="{{ fid }}" class="detailfeld detailfeld--zahl"{% if oob %} hx-swap-oob="true"{% endif %}>
+  {% if darf_bearbeiten %}
+    <form {% include "projekte/_detail_form.html" %}>
+      <input id="{{ eid }}" type="number" name="wert" step="0.5" min="0" max="9999" inputmode="decimal" placeholder="–" data-inline
+        value="{% if eingabe is not None %}{{ eingabe }}{% elif aufgabe.schaetzung_personentage is not None %}{{ aufgabe.schaetzung_personentage|floatformat:'-1u' }}{% endif %}">
+      <span>{% translate "Personentage" %}</span>
+    </form>
+  {% elif aufgabe.schaetzung_personentage is not None %}{% blocktranslate with n=aufgabe.schaetzung_personentage|floatformat:"-1" %}{{ n }} Personentage{% endblocktranslate %}{% else %}–{% endif %}
+  {% include "projekte/_detail_fehler.html" %}
+</span>
+{% elif feld == "gewerk" %}
+<dd id="{{ fid }}" class="detailfeld"{% if oob %} hx-swap-oob="true"{% endif %}>
+  {% if darf_bearbeiten %}
+    <form {% include "projekte/_detail_form.html" %}>
+      <select id="{{ eid }}" name="wert" aria-label="{% translate 'Gewerk' %}">
+        <option value="">{% translate "– kein Gewerk –" %}</option>
+        {% for g in gewerke %}<option value="{{ g.pk }}"{% if g.pk == aufgabe.gewerk_id %} selected{% endif %}>{{ g.name }}</option>{% endfor %}
+      </select>
+    </form>
+  {% elif aufgabe.gewerk %}<span class="tag">{{ aufgabe.gewerk }}</span>{% else %}–{% endif %}
+  {% include "projekte/_detail_fehler.html" %}
+</dd>
+{% elif feld == "beschreibung" %}
+<section id="{{ fid }}" class="stapel detailfeld"{% if oob %} hx-swap-oob="true"{% endif %}>
+  <h2 id="{{ eid }}-titel">{% translate "Beschreibung" %}</h2>
+  {% if darf_bearbeiten %}
+    <form {% include "projekte/_detail_form.html" with trigger="change, submit" %}>
+      <textarea id="{{ eid }}" name="wert" hidden aria-labelledby="{{ eid }}-titel" placeholder="{% translate 'Beschreibung' %}">{% if eingabe is not None %}{{ eingabe }}{% else %}{{ aufgabe.beschreibung }}{% endif %}</textarea>
+      <div data-editor="{{ eid }}" data-format="html"></div>
+      {% if konflikt %}
+        <div class="konflikt" role="alert">
+          <div class="fehlerliste">{{ konflikt }}</div>
+          <div class="gedaempft klein">{% translate "Aktuelle Fassung" %}</div>
+          {% if aufgabe.beschreibung %}<div class="beschreibung">{{ aufgabe.beschreibung|safe }}</div>{% else %}<div class="gedaempft klein">{% translate "Keine Beschreibung." %}</div>{% endif %}
+          <div class="formular__aktionen">
+            <button type="submit" class="knopf knopf--klein knopf--primaer">{% translate "Meine Fassung speichern" %}</button>
+            <button type="submit" name="verwerfen" value="1" class="knopf knopf--klein">{% translate "Aktuelle Fassung übernehmen" %}</button>
+          </div>
+        </div>
+      {% endif %}
+    </form>
+  {% elif aufgabe.beschreibung %}<div class="beschreibung">{{ aufgabe.beschreibung|safe }}</div>
+  {% else %}<div class="gedaempft klein">{% translate "Keine Beschreibung." %}</div>{% endif %}
+</section>
+{% endif %}
+{% endwith %}

@@ -1,0 +1,52 @@
+{% extends "kern/einstellungen_basis.html" %}
+{% load i18n teamplaner %}
+{% block titel %}{{ person.anzeigename }}{% endblock %}
+{% block einstellungen %}
+<nav class="pfad" aria-label="{% translate 'Pfad' %}"><a href="{% url 'einst_personen' %}">{% translate "Personen" %}</a><span aria-hidden="true">/</span><span>{{ person.anzeigename }}</span></nav>
+<div class="einst-kopf einst-kopf--person">
+  {% avatar person "gross" %}<h1>{{ person.anzeigename }}</h1><span class="badge badge--platzhalter">{% translate "kein Konto" %}</span>
+  {% if person.archiviert %}<span class="badge">{% translate "archiviert" %}</span>{% endif %}
+</div>
+
+<form method="post" action="{% url 'einst_person' person.pk %}" novalidate class="stapel">
+  {% csrf_token %}
+  <section class="karte" aria-labelledby="stamm-titel">
+    <div class="karte__kopf"><h2 id="stamm-titel">{% translate "Stammdaten" %}</h2></div>
+    <div class="karte--innen formular">
+      <div class="formular__zeile">
+        {% include "teile/feld.html" with feld=form.anzeigename %}
+        {% include "kern/_bereich_fest.html" with bereich=person.bereich %}
+      </div>
+      {% include "teile/feld.html" with feld=form.notiz %}
+      {% include "teile/chips.html" with feld=form.gewerke %}
+    </div>
+    {% url 'einst_personen' as zurueck %}{% include "teile/speicherleiste.html" with abbrechen=zurueck %}
+  </section>
+</form>
+
+{% if umwandeln %}
+<form method="post" action="{% url 'platzhalter_umwandeln' person.pk %}" class="karte" novalidate aria-labelledby="umw-titel">
+  {% csrf_token %}
+  <div class="karte__kopf"><h2 id="umw-titel">{% translate "In Benutzerkonto umwandeln" %}</h2></div>
+  <div class="karte--innen formular">
+    <div class="formular__zeile">
+      {% include "teile/feld.html" with feld=umwandeln.email %}
+      {% include "teile/feld.html" with feld=umwandeln.rolle %}
+    </div>
+    <div class="formular__aktionen formular__aktionen--rechts"><button type="submit" class="knopf">{% translate "Konto anlegen" %}</button></div>
+  </div>
+</form>
+{% endif %}
+
+{% if person.archiviert %}
+  <section class="karte einstellungszeile" aria-label="{% translate 'Wiederherstellen' %}">
+    <span class="luecke">{% translate "Platzhalter wiederherstellen" %}</span>
+    <form method="post" action="{% url 'platzhalter_aktion' person.pk 'wiederherstellen' %}">{% csrf_token %}<button type="submit" class="knopf">{% translate "Wiederherstellen" %}</button></form>
+  </section>
+{% else %}
+  {% url 'platzhalter_aktion' person.pk 'archivieren' as aktion %}{% translate "Platzhalter archivieren" as titel %}{% translate "Archivieren" as knopf %}
+  {% blocktranslate asvar frage with name=person.anzeigename %}„{{ name }}“ archivieren?{% endblocktranslate %}
+  {% if eingeteilt_bis %}{% blocktranslate asvar text with datum=eingeteilt_bis|date:"d.m.Y" %}Eingeteilt bis {{ datum }}; die Einteilungen bleiben sichtbar.{% endblocktranslate %}{% else %}{% firstof "" as text %}{% endif %}
+  {% include "teile/gefahrenabschnitt.html" with id="archivieren" %}
+{% endif %}
+{% endblock %}

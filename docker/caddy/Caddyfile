@@ -1,0 +1,52 @@
+# HTTPS-Reverse-Proxy. TLS_ART=auto: Let's-Encrypt-Zertifikat (Domain muss öffentlich
+# erreichbar sein); TLS_ART=intern: eigenes Zertifikat von Caddy (nur intern, Browser-Warnung,
+# bis das Caddy-Stammzertifikat verteilt ist); eigenes Zertifikat siehe docs/betrieb.md.
+{
+	# Vorgeschaltete Reverse Proxies senden oft keinen Servernamen (SNI) –
+	# ohne diese Angabe scheitert dann der TLS-Aufbau
+	default_sni {$TEAMPLANER_DOMAIN}
+}
+
+(tls_auto) {
+}
+(tls_intern) {
+	tls internal
+}
+
+{$TEAMPLANER_DOMAIN} {
+	import tls_{$TLS_ART}
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "same-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+
+	# Anhänge bis zum konfigurierten Limit plus Formulardaten
+	request_body {
+		max_size 30MB
+	}
+
+	reverse_proxy app:8000 {
+		# Live-Aktualisierung (Server-Sent Events) nicht puffern
+		flush_interval -1
+	}
+
+	# Während Updates und Neustarts: Hinweisseite statt Fehlermeldung, lädt sich selbst neu
+	handle_errors 502 503 504 {
+		header Content-Type "text/html; charset=utf-8"
+		header Retry-After "20"
+		header Cache-Control "no-store"
+		respond `<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="refresh" content="15"><title>Teamplaner – Wartung</title></head>
+<body style="font-family: system-ui, sans-serif; max-width: 34rem; margin: 18vh auto; padding: 0 16px; color: #1f2328">
+<h1 style="font-size: 1.4rem">Teamplaner wird gerade aktualisiert</h1>
+<p>Das dauert meist nur eine Minute. Die Seite lädt sich von selbst neu.</p>
+<p lang="en" style="color: #59636e">Teamplaner is being updated. This page reloads automatically.</p>
+</body></html>` 503
+	}
+}

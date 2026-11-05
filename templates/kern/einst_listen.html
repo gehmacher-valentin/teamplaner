@@ -1,0 +1,7 @@
+{% extends "kern/einstellungen_basis.html" %}
+{% load i18n %}
+{% block titel %}{% translate "Listen" %}{% endblock %}
+{% block einstellungen %}
+<h1>{% translate "Listen" %}</h1>
+{% for l in listen %}{% include "kern/_listen.html" %}{% endfor %}
+{% endblock %}

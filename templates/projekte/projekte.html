@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load i18n teamplaner %}
+{% block titel %}{% translate "Projekte" %}{% endblock %}
+{% block inhalt %}
+<div class="seitenkopf">
+  <div class="seitenkopf__titel">
+    <h1>{% if archiv %}{% translate "Archivierte Projekte" %}{% else %}{% translate "Projekte" %}{% endif %}</h1>
+  </div>
+  <form method="get" class="zeile">
+    <label class="feld">{% translate "Tag" %}
+      <select name="tag" data-auto-absenden>
+        <option value="">{% translate "Alle Tags" %}</option>
+        {% for t in tags %}<option value="{{ t.pk }}" {% if t.pk == tag_id %}selected{% endif %}>{{ t.name }}</option>{% endfor %}
+      </select>
+    </label>
+    {% if archiv %}<input type="hidden" name="archiv" value="1">{% endif %}
+    <noscript><button class="knopf" type="submit">{% translate "Filtern" %}</button></noscript>
+  </form>
+  <a class="knopf" href="{% if archiv %}{% url 'projekte' %}{% else %}?archiv=1{% endif %}">{% if archiv %}{% translate "Aktive Projekte" %}{% else %}{% translate "Archiv" %}{% endif %}</a>
+  {% if nav.projekte_verwalten %}<a class="knopf knopf--primaer" href="{% url 'projekt_anlegen' %}">{% translate "Neues Projekt" %}</a>{% endif %}
+</div>
+<section class="karte liste liste--mobil" style="--spalten: 76px minmax(0,2fr) minmax(0,1.2fr) minmax(0,2fr) 110px 100px; --liste-min: 800px">
+  <div class="liste__inner">
+    <div class="liste__kopf"><div>{% translate "Prio" %}</div><div>{% translate "Projekt" %}</div><div>{% translate "Projektleitung" %}</div><div>{% translate "Tags" %}</div><div>{% translate "Offene Aufgaben" %}</div><div>{% translate "Mitglieder" %}</div></div>
+    {% for p in projekte %}
+      <div class="liste__zeile liste__zeile--prio">
+        {% if nav.projekte_verwalten %}
+          <form method="post" action="{% url 'projekt_prioritaet' p.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="weiter" value="{{ request.get_full_path }}">
+            <label class="sr-only" for="prio-{{ p.pk }}">{% blocktranslate with name=p.name %}Priorität von {{ name }}{% endblocktranslate %}</label>
+            <select id="prio-{{ p.pk }}" name="prioritaet" class="prio-wahl{% if p.prioritaet %} prio-wahl--{{ p.prioritaet }}{% endif %}" data-auto-absenden>
+              <option value="">–</option>
+              {% for wert, text in prioritaeten %}<option value="{{ wert }}" {% if wert == p.prioritaet %}selected{% endif %}>{{ text }}</option>{% endfor %}
+            </select>
+            <noscript><button type="submit" class="knopf knopf--klein">{% translate "Speichern" %}</button></noscript>
+          </form>
+        {% else %}
+          <div class="mono">{% if p.prioritaet %}<span class="prio prio--{{ p.prioritaet }}">{{ p.prioritaet }}</span>{% else %}–{% endif %}</div>
+        {% endif %}
+        <a href="{% url 'projekt' p.pk %}" class="zeile pf-{{ p.farbe }}" style="text-decoration:none; color:inherit; flex-wrap:nowrap"><span class="farbpunkt"></span><strong class="zelle-text">{{ p.name }}</strong></a>
+        <div class="zelle-text mobil-aus">{{ p.projektleitung|default:"–" }}</div>
+        <div class="tags mobil-aus">{% for t in p.tags.all %}<a class="tag" href="?tag={{ t.pk }}" style="text-decoration:none">{{ t.name }}</a>{% endfor %}</div>
+        <div class="mono">{{ p.offen }}</div>
+        <div class="mono mobil-aus">{{ p.anzahl_mitglieder }}</div>
+      </div>
+    {% empty %}
+      <div class="leer">{% translate "Keine Projekte." %}</div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

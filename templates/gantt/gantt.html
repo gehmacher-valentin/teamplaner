@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% load static i18n %}
+{% block titel %}{% translate "Gantt-Diagramm" %}{% endblock %}
+{% block kopf %}<link rel="stylesheet" href="{% static 'dist/gantt.css' %}">{% endblock %}
+{% block inhalt %}
+  <div id="gantt"><noscript>{% translate "Das Gantt-Diagramm benötigt JavaScript." %}</noscript></div>
+{% endblock %}
+{% block skripte %}<script type="module" src="{% static 'dist/gantt.js' %}"></script>{% endblock %}

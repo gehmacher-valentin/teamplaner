@@ -1,0 +1,23 @@
+{% extends "kern/einstellungen_basis.html" %}
+{% load i18n %}
+{% block titel %}{% translate "Person einladen" %}{% endblock %}
+{% block einstellungen %}
+<nav class="pfad" aria-label="{% translate 'Pfad' %}"><a href="{% url 'einst_personen' %}">{% translate "Personen" %}</a><span aria-hidden="true">/</span><span>{% translate "Person einladen" %}</span></nav>
+<h1>{% translate "Person einladen" %}</h1>
+<form method="post" action="{% url 'einst_person_einladen' %}" novalidate class="stapel">
+  {% csrf_token %}
+  <section class="karte karte--innen formular" aria-label="{% translate 'Stammdaten' %}">
+    <div class="formular__zeile">
+      {% include "teile/feld.html" with feld=form.anzeigename %}
+      {% include "teile/feld.html" with feld=form.email %}
+    </div>
+    <div class="formular__zeile">
+      {% include "teile/feld.html" with feld=form.rolle %}
+      {% include "teile/feld.html" with feld=form.bereich %}
+      {% include "teile/feld.html" with feld=form.sprache %}
+    </div>
+    {% include "teile/chips.html" with feld=form.gewerke %}
+  </section>
+  {% url 'einst_personen' as zurueck %}{% translate "Konto anlegen und Link erzeugen" as knopf %}{% include "teile/speicherleiste.html" with abbrechen=zurueck speichern=knopf %}
+</form>
+{% endblock %}

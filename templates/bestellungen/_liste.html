@@ -1,0 +1,32 @@
+{% load i18n %}<div id="bestellungen">
+  {% for b in bestellungen %}
+    {% if b.trenner %}<div class="liste__gruppe klein gedaempft">{% translate "Erhalten" %}</div>{% endif %}
+    <form method="post" action="{% url 'bestellung' b.pk %}" class="liste__zeile bestellzeile bestellzeile--{{ b.status }}"
+      hx-post="{% url 'bestellung' b.pk %}" hx-trigger="change, submit" hx-target="#bestellungen" hx-swap="outerHTML"
+      aria-label="{{ b.bedarf }}" title="{% blocktranslate with name=b.erstellt_von|default:'–' datum=b.erstellt_am|date:'d.m.Y' %}Eingetragen von {{ name }} am {{ datum }}{% endblocktranslate %}">
+      {% csrf_token %}
+      <fieldset class="bestellzeile__felder" {% if not darf_bearbeiten %}disabled{% endif %}>
+      <input type="hidden" name="prio" value="false">
+      <label class="prio-schalter"><input id="b{{ b.pk }}-prio" type="checkbox" name="prio" value="true" {% if b.prio %}checked{% endif %} aria-label="{% translate 'Prio' %}"><span class="prio prio--1">{% translate "Prio" %}</span></label>
+      <textarea id="b{{ b.pk }}-bedarf" name="bedarf" rows="1" maxlength="500" required aria-label="{% translate 'Bedarf' %}" class="inline-eingabe" data-inline data-mitwachsen>{{ b.bedarf }}</textarea>
+      <input id="b{{ b.pk }}-aufnahmedatum" type="date" name="aufnahmedatum" value="{{ b.aufnahmedatum|date:'Y-m-d' }}" required aria-label="{% translate 'Aufnahmedatum' %}" class="inline-eingabe">
+      <select id="b{{ b.pk }}-eingetragen_von" name="eingetragen_von" aria-label="{% translate 'Eingetragen von' %}" class="inline-eingabe" data-personenwahl>{% include "teile/personen_optionen.html" with personen=personenliste aktuell=b.eingetragen_von %}</select>
+      <textarea id="b{{ b.pk }}-projekt" name="projekt" rows="1" maxlength="200" aria-label="{% translate 'Projekt' %}" class="inline-eingabe" data-inline data-mitwachsen>{{ b.projekt }}</textarea>
+      <input id="b{{ b.pk }}-bestellt_am" type="date" name="bestellt_am" value="{{ b.bestellt_am|date:'Y-m-d' }}" aria-label="{% translate 'Bestellt am' %}" class="inline-eingabe">
+      <select id="b{{ b.pk }}-bestellt_von" name="bestellt_von" aria-label="{% translate 'Bestellt von' %}" class="inline-eingabe" data-personenwahl>{% include "teile/personen_optionen.html" with personen=personenliste aktuell=b.bestellt_von %}</select>
+      <textarea id="b{{ b.pk }}-lieferant" name="lieferant" rows="1" maxlength="200" aria-label="{% translate 'Lieferant' %}" class="inline-eingabe" data-inline data-mitwachsen data-vorschlaege="lieferanten-vorschlaege">{{ b.lieferant }}</textarea>
+      <input id="b{{ b.pk }}-liefertermin" type="date" name="liefertermin" value="{{ b.liefertermin|date:'Y-m-d' }}" aria-label="{% translate 'Liefertermin' %}" class="inline-eingabe{% if b.termin_ueberfaellig %} bestelltermin--ueberfaellig{% endif %}">
+      <select id="b{{ b.pk }}-status" name="status" aria-label="{% translate 'Status' %}" class="inline-eingabe bestellstatus bestellstatus--{{ b.status }}">
+        {% for wert, text in statusliste %}<option value="{{ wert }}" {% if wert == b.status %}selected{% endif %}>{{ text }}</option>{% endfor %}
+      </select>
+      </fieldset>
+      {% if b.loeschbar %}
+        <button type="button" class="knopf knopf--text knopf--klein" hx-post="{% url 'bestellung_loeschen' b.pk %}" hx-target="#bestellungen" hx-swap="outerHTML"
+          hx-confirm="{% translate 'Zeile löschen?' %}" title="{% translate 'Löschen' %}" aria-label="{% translate 'Löschen' %}">×</button>
+      {% else %}<span></span>{% endif %}
+    </form>
+  {% empty %}
+    <div class="leer">{% translate "Noch keine Bestellungen." %}</div>
+  {% endfor %}
+  <datalist id="lieferanten-vorschlaege">{% for l in lieferanten %}<option value="{{ l }}"></option>{% endfor %}</datalist>
+</div>

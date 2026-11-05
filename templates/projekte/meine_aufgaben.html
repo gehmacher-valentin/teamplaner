@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% load i18n teamplaner %}
+{% block titel %}{% translate "Meine Aufgaben" %}{% endblock %}
+{% block inhalt %}
+<div class="seitenkopf">
+  <div class="seitenkopf__titel">
+    <h1>{% translate "Meine Aufgaben" %}</h1>
+  </div>
+</div>
+
+<div class="meine-raster">
+<section class="karte" aria-label="{% translate 'Eingeteilt' %}">
+  <div class="karte__kopf"><h2>{% translate "Eingeteilt" %}</h2><span class="gedaempft klein">{% translate "nächste zwei Wochen" %}</span></div>
+  {% for t in tage %}
+    <div class="liste__zeile tageszeile{% if t.heute %} tageszeile--heute{% endif %}">
+      <div>
+        <div class="tageszeile__tag">{{ t.datum|date:"l" }}{% if t.heute %} · {% translate "heute" %}{% endif %}</div>
+        <div class="mono klein gedaempft">{{ t.datum|date:"d.m." }}</div>
+      </div>
+      <div class="stapel stapel--eng">
+        {% if t.frei %}<span class="badge badge--feiertag">{{ t.frei }}</span>{% endif %}
+        {% if t.abwesend %}<span class="badge">{% translate "Abwesend" %}</span>{% endif %}
+        {% for e in t.einteilungen %}
+          <a href="{% url 'aufgabe' e.aufgabe.pk %}" class="tageskarte pf-{{ e.aufgabe.projekt.farbe }}">
+            <span class="tageskarte__titel zelle-text">{{ e.aufgabe.titel }}</span>
+            <span class="tageskarte__projekt klein">{{ e.aufgabe.projekt.name }}</span>
+          </a>
+        {% empty %}
+          {% if not t.frei and not t.abwesend %}<span class="gedaempft klein">–</span>{% endif %}
+        {% endfor %}
+      </div>
+    </div>
+  {% endfor %}
+</section>
+
+<div class="meine-raster__spalte">
+<section class="karte zugewiesen" aria-label="{% translate 'Verantwortlich' %}">
+  <div class="karte__kopf"><h2>{% translate "Mir zugewiesen" %}</h2><span class="zaehler">{{ anzahl_offen }}</span></div>
+  {% for titel, liste in gruppen %}
+    <div class="liste__gruppe">{{ titel }} <span class="gedaempft klein">{{ liste|length }}</span></div>
+    {% for a in liste %}
+      <div class="liste__zeile zugewiesen__zeile">
+        <form method="post" action="{% url 'aufgabe_erledigt' a.pk %}" class="zugewiesen__haken"
+          {% if a.unter_offen %}data-unteraufgaben-offen="{{ a.unter_offen }}"{% endif %}>{% csrf_token %}
+          <input type="hidden" name="erledigt" value="1"><input type="hidden" name="weiter" value="{% url 'meine_aufgaben' %}">
+          <input type="hidden" name="unteraufgaben" value="">
+          <button type="submit" class="haken" {% if not darf_abschliessen %}disabled{% endif %} aria-label="{% translate 'Als erledigt markieren' %}: {{ a.titel }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></button>
+        </form>
+        <div class="zugewiesen__titel">
+          <a class="aufgabe-titel" href="{% url 'aufgabe' a.pk %}">{{ a.titel }}</a>
+          <div class="zugewiesen__unter klein">
+            <a href="{% url 'projekt' a.projekt_id %}" class="zugewiesen__projekt pf-{{ a.projekt.farbe }}"><span class="farbpunkt"></span><span class="zelle-text">{{ a.projekt.name }}</span></a>
+            {% if a.eltern_id %}<a class="eltern-hinweis" href="{% url 'aufgabe' a.eltern_id %}" title="{% translate 'Unteraufgabe von' %} {{ a.eltern.titel }}">↳ {{ a.eltern.titel }}</a>{% endif %}
+          </div>
+        </div>
+        <div class="mono klein{% if a.faellig_am|ueberfaellig %} faellig--ueberfaellig{% endif %}">{{ a.faellig_am|date:"d.m."|default:"–" }}</div>
+        <div class="zugewiesen__status"><span class="{{ a.status|status_klasse }}">{{ a.status }}</span></div>
+      </div>
+    {% endfor %}
+  {% empty %}
+    <div class="leer">{% translate "Keine offenen Aufgaben – sehr gut." %}</div>
+  {% endfor %}
+</section>
+
+{% if erledigt %}
+<details class="karte">
+  <summary class="karte__kopf aufklapper"><h2>{% translate "Zuletzt erledigt" %}</h2></summary>
+  {% for a in erledigt %}
+    <div class="liste__zeile liste__zeile--flex">
+      <span class="haken haken--erledigt" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5 9-10"/></svg></span>
+      <a class="aufgabe-titel aufgabe-titel--erledigt" href="{% url 'aufgabe' a.pk %}">{{ a.titel }}</a>
+      {% if a.eltern_id %}<span class="eltern-hinweis gedaempft klein">↳ {{ a.eltern.titel }}</span>{% endif %}
+      <span class="gedaempft klein">{{ a.projekt.name }}</span>
+    </div>
+  {% endfor %}
+</details>
+{% endif %}
+</div>
+</div>
+{% endblock %}

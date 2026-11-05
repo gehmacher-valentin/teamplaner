@@ -1,0 +1,24 @@
+{% load i18n teamplaner %}{# Anhänge als Kacheln: Fotos mit Vorschau, alles öffnet in einem neuen Tab.
+   Erwartet: anhaenge, url_name, loeschen_name, alle_loeschbar (sonst nur eigene); seitenleiste: per HTMX #}
+<div class="anhaenge">
+  {% for d in anhaenge %}
+    {% url url_name d.pk as adresse %}
+    <div class="anhang-kachel{% if d.hat_vorschau %} anhang-kachel--bild{% endif %}">
+      <a class="anhang-kachel__vorschau" href="{{ adresse }}" target="_blank" rel="noopener" title="{% blocktranslate with name=d.dateiname %}{{ name }} in neuem Tab öffnen{% endblocktranslate %}">
+        {% if d.hat_vorschau %}
+          <img src="{{ adresse }}" alt="{{ d.dateiname }}" loading="lazy" decoding="async">
+        {% else %}
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg>
+          <span class="anhang-kachel__endung">{{ d.dateiname|dateiendung }}</span>
+        {% endif %}
+      </a>
+      <div class="anhang-kachel__fuss">
+        <a href="{{ adresse }}" target="_blank" rel="noopener" class="zelle-text" title="{{ d.dateiname }}">{{ d.dateiname }}</a>
+        <span class="gedaempft klein">{{ d.groesse|dateigroesse }}</span>
+        {% if alle_loeschbar or d.hochgeladen_von_id == user.person_id %}
+          {% url loeschen_name d.pk as ziel %}<form method="post" action="{{ ziel }}" {% include "projekte/_seitenleiste_form.html" %} data-bestaetigen="{% translate 'Anhang löschen?' %}">{% csrf_token %}<button type="submit" class="knopf knopf--text klein" aria-label="{% translate 'Anhang löschen' %}: {{ d.dateiname }}">×</button></form>
+        {% endif %}
+      </div>
+    </div>
+  {% endfor %}
+</div>

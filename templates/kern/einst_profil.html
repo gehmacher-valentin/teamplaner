@@ -1,0 +1,36 @@
+{% extends "kern/einstellungen_basis.html" %}
+{% load i18n teamplaner %}
+{% block titel %}{% translate "Profil" %}{% endblock %}
+{% block einstellungen %}
+<h1>{% translate "Profil" %}</h1>
+<section class="karte" aria-label="{% translate 'Profil' %}">
+  <div class="profil">
+    {# Klick auf das Bild öffnet die Dateiauswahl, die Datei wird gleich hochgeladen #}
+    <form method="post" action="{% url 'konto_foto' %}" enctype="multipart/form-data" class="profil__foto">
+      {% csrf_token %}
+      <input id="foto" class="sr-only profil__datei" type="file" name="foto" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" data-auto-absenden>
+      <label for="foto" class="profilbild" title="{% translate 'Profilbild ändern' %}">
+        {% avatar user.person "profil" %}
+        <span class="profilbild__kamera" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></span>
+        <span class="sr-only">{% translate "Profilbild ändern" %}</span>
+      </label>
+    </form>
+    <div class="profil__kopf">
+      <div class="profil__name">{{ user.person.anzeigename }}</div>
+      <div class="zeile zeile--eng8"><span class="rolle rolle--{{ user.rolle }}">{{ user.get_rolle_display }}</span><span>{{ user.person.bereich }}</span></div>
+      <div class="zeile zeile--eng">
+        <label for="foto" class="knopf knopf--link">{% translate "Foto wählen" %}</label>
+        {% if user.person.foto %}
+          <form method="post" action="{% url 'konto_foto' %}">{% csrf_token %}<button type="submit" name="entfernen" value="1" class="knopf knopf--link knopf--link-gedaempft">{% translate "Entfernen" %}</button></form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <dl class="einst-daten">
+    <dt>{% translate "E-Mail" %}</dt><dd>{{ user.email }}</dd>
+    <dt>{% translate "Rolle" %}</dt><dd>{{ user.get_rolle_display }}</dd>
+    <dt>{% translate "Bereich" %}</dt><dd>{{ user.person.bereich }}</dd>
+    <dt>{% translate "Gewerke" %}</dt><dd class="tags">{% for g in user.person.gewerke.all %}<span class="tag">{{ g.name }}</span>{% empty %}–{% endfor %}</dd>
+  </dl>
+</section>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block titel %}{% if bearbeitet %}{{ bearbeitet.name }}{% else %}{% translate "Neuer Gruppenordner" %}{% endif %}{% endblock %}
+{% block inhalt %}
+<nav class="pfad" aria-label="{% translate 'Pfad' %}"><a href="{% url 'notizen' %}">{% translate "Notizen" %}</a><span aria-hidden="true">/</span><span>{% if bearbeitet %}{{ bearbeitet.name }}{% else %}{% translate "Neuer Gruppenordner" %}{% endif %}</span></nav>
+<div class="notizen">
+  {% include "notizen/_ordnerliste.html" %}
+  <div class="notizen__haupt stapel">
+    <form method="post" class="karte karte--innen formular" novalidate>
+      {% csrf_token %}
+      <h2>{% if bearbeitet %}{% translate "Gruppenordner bearbeiten" %}{% else %}{% translate "Neuer Gruppenordner" %}{% endif %}</h2>
+      {% include "teile/feld.html" with feld=form.name %}
+      {% include "teile/personenauswahl.html" with feld=form.mitglieder %}
+      <div class="formular__aktionen">
+        <button type="submit" class="knopf knopf--primaer">{% translate "Speichern" %}</button>
+        <a class="knopf" href="{% if bearbeitet %}{% url 'notizordner' bearbeitet.pk %}{% else %}{% url 'notizen' %}{% endif %}">{% translate "Abbrechen" %}</a>
+      </div>
+    </form>
+    {% if bearbeitet %}
+      <form method="post" action="{% url 'notizordner_loeschen' bearbeitet.pk %}" data-bestaetigen="{% translate 'Ordner samt allen Notizen darin endgültig löschen?' %}">
+        {% csrf_token %}<button type="submit" class="knopf knopf--gefahr">{% translate "Ordner löschen" %}</button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

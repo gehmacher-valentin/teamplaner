@@ -1,0 +1,4 @@
+{% load i18n %}<nav id="aufgabe-pfad" class="pfad" aria-label="{% translate 'Pfad' %}"{% if oob %} hx-swap-oob="true"{% endif %}>
+  <a href="{% url 'projekt' aufgabe.projekt_id %}">{{ aufgabe.projekt.name }}</a>{% if aufgabe.abschnitt %}<span aria-hidden="true">/</span><span>{{ aufgabe.abschnitt.name }}</span>{% endif %}
+  {% for v in vorfahren %}<span aria-hidden="true">/</span><a href="{% url 'aufgabe' v.pk %}"{% if seitenleiste %} data-aufgabe-link="{{ v.pk }}"{% endif %}>{{ v.titel }}</a>{% endfor %}
+</nav>

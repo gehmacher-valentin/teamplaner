@@ -1,0 +1,5 @@
+{# Welche Notiz, in welchem Ordner, welche Version – bei jedem Speichern mitgeschickt #}<div id="notiz-zustand" hidden{% if oob %} hx-swap-oob="true"{% endif %}>
+  <input type="hidden" name="notiz" value="{{ notiz.pk|default:'' }}">
+  <input type="hidden" name="ordner" value="{{ notiz.ordner_id|default:'' }}">
+  <input type="hidden" name="version" value="{{ notiz.version }}">
+</div>

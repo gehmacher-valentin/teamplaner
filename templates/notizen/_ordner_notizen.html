@@ -1,0 +1,7 @@
+{% load i18n %}{# Notizen eines Ordners in der Ordnerspalte; nach dem Speichern per hx-swap-oob erneuert #}<ul id="notizbaum-{{ e.schluessel }}" class="notiz-ordner__notizen"{% if oob %} hx-swap-oob="true"{% endif %}>
+  {% for n in e.notizen %}
+    <li><a href="{% url 'notiz' n.pk %}"{% if n.aktuell %} aria-current="page"{% endif %}><span class="zelle-text">{{ n.titel }}</span></a></li>
+  {% empty %}
+    <li class="notiz-ordner__leer klein gedaempft">{% translate "Noch keine Notizen." %}</li>
+  {% endfor %}
+</ul>

@@ -1,0 +1,6 @@
+{% load i18n %}<fieldset>
+  <legend>{{ feld.label }}</legend>
+  {# {{ option }} gibt Kästchen samt Beschriftung aus (<label><input> Name</label>), option.tag nur das Kästchen #}
+  <div class="auswahlliste">{% for option in feld %}{{ option }}{% endfor %}</div>
+  {% if feld.errors %}<ul class="fehlerliste">{% for f in feld.errors %}<li>{{ f }}</li>{% endfor %}</ul>{% endif %}
+</fieldset>

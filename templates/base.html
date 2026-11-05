@@ -1,0 +1,105 @@
+{% load static i18n teamplaner %}<!doctype html>
+<html lang="{{ LANGUAGE_CODE|default:'de' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>{% block titel %}{% endblock %} – {% translate "Teamplaner" %}</title>
+  <link rel="icon" href="{% static 'favicon.svg' %}" type="image/svg+xml">
+  <link rel="stylesheet" href="{% static 'dist/main.css' %}">
+  {% block kopf %}{% endblock %}
+  <script type="module" src="{% static 'dist/main.js' %}"></script>
+</head>
+<body{% if feiern %} data-feiern="1"{% endif %}>
+{% if user.is_authenticated %}
+  <a class="sr-only" href="#inhalt">{% translate "Zum Inhalt springen" %}</a>
+  <header class="kopf">
+    <button type="button" class="kopf__menue" data-menue="seitennav" aria-expanded="false" aria-controls="seitennav">{% translate "Menü" %}</button>
+    <a class="kopf__marke" href="{% url 'start' %}">{% translate "Teamplaner" %}</a>
+    {% if organisation %}<div class="kopf__org">{{ organisation }}</div>{% endif %}
+    <div class="kopf__luecke"></div>
+    <form class="suche" role="search" action="{% url 'suche' %}" method="get">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B9C0BB" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+      <label class="sr-only" for="suche-kopf">{% translate "Suche" %}</label>
+      <input id="suche-kopf" type="search" name="q" value="{{ request.GET.q|default:'' }}" placeholder="{% translate 'Aufgaben, Projekte, Kommentare suchen' %}"
+        maxlength="100" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="suchvorschlaege"
+        hx-get="{% url 'suche_vorschlaege' %}" hx-trigger="input changed delay:200ms, search" hx-target="#suchvorschlaege" hx-swap="innerHTML"
+        hx-sync="this:replace" data-suchvorschlaege>
+      {# Vorschläge beim Tippen (lib/suchvorschlaege.ts) #}
+      <div id="suchvorschlaege" class="suchvorschlaege" role="listbox" aria-label="{% translate 'Vorschläge' %}" hidden></div>
+    </form>
+    {% if request.sitzung_ablauf %}
+    {# Admins: Restzeit bis zur Abmeldung ohne Aktivität, Klick setzt sie zurück (lib/sitzungsfrist.ts) #}
+    <button type="button" class="kopf__frist" data-sitzungsfrist data-ablauf="{{ request.sitzung_ablauf }}"
+      data-jetzt="{{ request.sitzung_jetzt }}" data-url="{% url 'sitzung_frist' %}">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      <span class="kopf__frist-zeit mono" data-frist-zeit></span>
+      <span class="sr-only">{% translate "Sitzung verlängern" %}</span>
+    </button>
+    {% endif %}
+    <div class="mitteilungen" data-mitteilungen>
+      <button type="button" class="mitteilungen__knopf" aria-expanded="false" aria-controls="mitteilungen-feld" aria-haspopup="dialog"
+        data-url="{% url 'posteingang_feld' %}"
+        title="{% translate 'Posteingang' %}">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+        <span class="sr-only">{% translate "Posteingang" %}</span>
+        {% include "kern/_ungelesen.html" with ungelesen=nav.ungelesen %}
+      </button>
+      <div id="mitteilungen-feld" class="mitteilungen__feld" role="dialog" aria-label="{% translate 'Posteingang' %}" hidden></div>
+    </div>
+    {# Menü der Kopfzeile: Einstellungen und Abmelden #}
+    <div class="kopfmenue" data-kopfmenue>
+      <button type="button" class="kopf__nutzer" aria-haspopup="menu" aria-expanded="false" aria-controls="kopfmenue-liste">
+        <span class="kopf__nutzer-text">
+          <span class="kopf__name">{{ user.person.anzeigename }}</span>
+          <span class="kopf__rolle">{{ user.get_rolle_display }} · {{ user.person.bereich }}</span>
+        </span>
+        {% avatar user.person "gross" %}
+        <svg class="kopf__pfeil" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+        <span class="sr-only">{% translate "Konto-Menü" %}</span>
+      </button>
+      <div id="kopfmenue-liste" class="kopfmenue__liste" role="menu" aria-label="{% translate 'Konto' %}" hidden>
+        <div class="kopfmenue__wer"><div class="kopfmenue__name">{{ user.person.anzeigename }}</div><div class="kopfmenue__email">{{ user.email }}</div></div>
+        <a role="menuitem" href="{% url 'einst_profil' %}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>{% translate "Einstellungen" %}</a>
+        <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button role="menuitem" type="submit"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>{% translate "Abmelden" %}</button></form>
+      </div>
+    </div>
+  </header>
+  <div class="layout">
+    <nav id="seitennav" class="seitennav" aria-label="{% translate 'Hauptnavigation' %}">
+      <a href="{% url 'meine_aufgaben' %}" {% if aktiv == "meine" %}aria-current="page"{% endif %}><span>{% translate "Meine Aufgaben" %}</span></a>
+      <a href="{% url 'kalender' %}" {% if aktiv == "kalender" %}aria-current="page"{% endif %}><span>{% translate "Kalender" %}</span></a>
+      <a href="{% url 'notizen' %}" {% if aktiv == "notizen" %}aria-current="page"{% endif %}><span>{% translate "Notizen" %}</span></a>
+      <a href="{% url 'bestellungen' %}" {% if aktiv == "bestellungen" %}aria-current="page"{% endif %}><span>{% translate "Bestellungen" %}</span></a>
+      {% if nav.teamplaner or nav.gantt %}<hr class="seitennav__trenner">{% endif %}
+      {% if nav.teamplaner %}<a href="{% url 'teamplaner' %}" {% if aktiv == "teamplaner" %}aria-current="page"{% endif %}><span>{% translate "Teamplaner" %}</span></a>{% endif %}
+      {% if nav.gantt %}<a href="{% url 'gantt' %}" {% if aktiv == "gantt" %}aria-current="page"{% endif %}><span>{% translate "Gantt-Diagramm" %}</span></a>{% endif %}
+      <div class="seitennav__titel seitennav__titel--projekte">
+        <a href="{% url 'projekte' %}" title="{% translate 'Alle Projekte' %}" {% if aktiv == "projekte" %}aria-current="page"{% endif %}>{% if nav.projekte_verwalten %}{% translate "Projekte" %}{% else %}{% translate "Meine Projekte" %}{% endif %}</a>
+        {% if nav.projekte_verwalten %}<a class="seitennav__neu" href="{% url 'projekt_anlegen' %}" title="{% translate 'Neues Projekt' %}" aria-label="{% translate 'Neues Projekt' %}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></a>{% endif %}
+      </div>
+      {% for p in nav.projekte %}
+        <a href="{% url 'projekt' p.pk %}" class="pf-{{ p.farbe }}" {% if aktives_projekt == p.pk %}aria-current="page"{% endif %}><span><span class="farbpunkt"></span><span class="zelle-text">{{ p.name }}</span></span></a>
+      {% endfor %}
+      {% if nav.verwaltung or nav.protokoll %}
+        <div class="seitennav__titel">{% translate "Verwaltung" %}</div>
+        {% if nav.verwaltung %}<a href="{{ nav.verwaltung }}" {% if aktiv == "einstellungen" %}aria-current="page"{% endif %}><span>{% translate "Einstellungen" %}</span></a>{% endif %}
+        {% if nav.protokoll %}<a href="{% url 'protokoll' %}" {% if aktiv == "protokoll" %}aria-current="page"{% endif %}><span>{% translate "Protokoll" %}</span></a>{% endif %}
+      {% endif %}
+      <div class="nur-mobil">
+        <div class="seitennav__titel">{% translate "Konto" %}</div>
+        <a href="{% url 'einst_profil' %}" {% if aktiv == "konto" %}aria-current="page"{% endif %}><span>{% translate "Einstellungen" %}</span></a>
+        <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit" class="seitennav__knopf"><span>{% translate "Abmelden" %}</span></button></form>
+      </div>
+    </nav>
+    <main id="inhalt" class="inhalt {% block inhalt_klasse %}{% endblock %}">
+      {% block inhalt %}{% endblock %}
+    </main>
+  </div>
+  {% include "teile/toasts.html" %}
+{% else %}
+  {% block ohne_anmeldung %}{% endblock %}
+{% endif %}
+{% block skripte %}{% endblock %}
+</body>
+</html>

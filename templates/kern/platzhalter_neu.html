@@ -1,0 +1,19 @@
+{% extends "kern/einstellungen_basis.html" %}
+{% load i18n %}
+{% block titel %}{% translate "Platzhalter anlegen" %}{% endblock %}
+{% block einstellungen %}
+<nav class="pfad" aria-label="{% translate 'Pfad' %}"><a href="{% url 'einst_personen' %}">{% translate "Personen" %}</a><span aria-hidden="true">/</span><span>{% translate "Platzhalter anlegen" %}</span></nav>
+<h1>{% translate "Platzhalter anlegen" %}</h1>
+<form method="post" action="{% url 'einst_platzhalter_neu' %}" novalidate class="stapel">
+  {% csrf_token %}
+  <section class="karte karte--innen formular" aria-label="{% translate 'Stammdaten' %}">
+    <div class="formular__zeile">
+      {% include "teile/feld.html" with feld=form.anzeigename %}
+      {% include "teile/feld.html" with feld=form.bereich %}
+    </div>
+    {% include "teile/feld.html" with feld=form.notiz %}
+    {% include "teile/chips.html" with feld=form.gewerke %}
+  </section>
+  {% url 'einst_personen' as zurueck %}{% translate "Anlegen" as knopf %}{% include "teile/speicherleiste.html" with abbrechen=zurueck speichern=knopf %}
+</form>
+{% endblock %}

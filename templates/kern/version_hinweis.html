@@ -1,0 +1,9 @@
+{% load i18n %}{% if stand == "neu" %}
+<div class="meldung meldung--warning" role="status">
+  {% blocktranslate %}Neue Version <span class="mono">{{ neu }}</span> verfügbar. Einspielen auf dem Server im Installationsverzeichnis mit <code>./teamplaner update</code> (vorher wird automatisch gesichert).{% endblocktranslate %}
+</div>
+{% elif stand == "aktuell" %}
+<div class="klein gedaempft">{% translate "Das ist die neueste Version." %}</div>
+{% else %}
+<div class="klein gedaempft">{% translate "Ob es eine neuere Version gibt, lässt sich gerade nicht prüfen (Internetverbindung oder Zugang zur Paketquelle in der .env)." %}</div>
+{% endif %}

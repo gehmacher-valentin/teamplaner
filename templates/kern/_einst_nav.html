@@ -1,0 +1,8 @@
+{% load i18n %}<nav class="einst-nav" aria-label="{% translate 'Einstellungen' %}">
+  {% for g in gruppen %}
+    <div class="einst-nav__gruppe{% if not g.titel %} einst-nav__gruppe--ende{% endif %}">
+      {% if g.titel %}<div class="einst-nav__titel">{{ g.titel }}</div>{% endif %}
+      {% for e in g.eintraege %}<a href="{{ e.url }}"{% if e.aktiv %} aria-current="page"{% endif %}>{{ e.beschriftung }}</a>{% endfor %}
+    </div>
+  {% endfor %}
+</nav>

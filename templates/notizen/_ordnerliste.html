@@ -1,0 +1,23 @@
+{% load i18n %}<nav class="karte notiz-ordner" aria-label="{% translate 'Notizordner' %}" data-notizbaum>
+  {% for e in notizbaum %}
+    {% if forloop.counter == 2 %}<div class="notiz-ordner__titel">{% translate "Gruppenordner" %}</div>{% endif %}
+    <div class="notiz-ordner__gruppe">
+      <button type="button" class="notiz-ordner__schalter" aria-expanded="{% if e.aktuell %}true{% else %}false{% endif %}" aria-controls="notizbaum-{{ e.schluessel }}"
+        data-ordner-schalter="{{ e.schluessel }}" aria-label="{% blocktranslate with name=e.name %}Notizen in {{ name }}{% endblocktranslate %}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+      <a href="{{ e.url }}" data-ordner-link="{{ e.schluessel }}"{% if e.aktuell and not notiz_offen %} aria-current="page"{% endif %}>
+        {% if e.persoenlich %}<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+        {% else %}<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>{% endif %}
+        <span class="zelle-text">{{ e.name }}</span>
+      </a>
+      {% include "notizen/_ordner_notizen.html" %}
+    </div>
+  {% endfor %}
+  {% if darf_ordner_anlegen %}
+    <a class="notiz-ordner__neu" href="{% url 'notizordner_neu' %}">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      <span>{% translate "Gruppenordner anlegen" %}</span>
+    </a>
+  {% endif %}
+</nav>

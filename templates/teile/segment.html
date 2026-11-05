@@ -1,0 +1,6 @@
+{% load i18n %}{# Umschalter „— | Sehen | Bearbeiten“ einer Freigabe; Admin und Bereichsleitung fest „Bearbeiten“ #}{% if immer %}<span class="segment segment--fest" aria-label="{{ bezeichnung }}: {% translate 'Bearbeiten' %}"><span class="segment__option segment__option--an"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>{% translate "Bearbeiten" %}</span></span>
+{% else %}<span class="segment" role="radiogroup" aria-label="{{ bezeichnung }}">
+  <label class="segment__option"><input type="radio" name="{{ name }}" value=""{% if not wert %} checked{% endif %}><span aria-hidden="true">—</span><span class="sr-only">{% translate "keine Freigabe" %}</span></label>
+  <label class="segment__option"><input type="radio" name="{{ name }}" value="sehen"{% if wert == "sehen" %} checked{% endif %}>{% translate "Sehen" %}</label>
+  <label class="segment__option"><input type="radio" name="{{ name }}" value="bearbeiten"{% if wert == "bearbeiten" and darf_bearbeiten %} checked{% endif %}{% if not darf_bearbeiten %} disabled{% endif %}>{% translate "Bearbeiten" %}</label>
+</span>{% endif %}

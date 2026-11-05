@@ -1,0 +1,68 @@
+{% load i18n teamplaner %}<div class="liste__zeile aufgabe-zeile{% if a.eltern_id %} aufgabe-zeile--unter{% endif %}" id="aufgabe-{{ a.pk }}"{% if zeile_oob %} hx-swap-oob="true"{% endif %}>
+  <div class="zeile" style="flex-wrap:nowrap; min-width:0; gap:8px">
+    {% if darf_bearbeiten %}<span class="ziehgriff aufgabe-griff" aria-hidden="true"><svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor"><circle cx="2" cy="3" r="1.5"/><circle cx="8" cy="3" r="1.5"/><circle cx="2" cy="8" r="1.5"/><circle cx="8" cy="8" r="1.5"/><circle cx="2" cy="13" r="1.5"/><circle cx="8" cy="13" r="1.5"/></svg></span>{% endif %}
+    {% if a.eltern_id %}<span class="unter-pfeil" aria-hidden="true">↳</span>{% endif %}
+    <form hx-post="{% url 'aufgabe_erledigt' a.pk %}" hx-target="closest .aufgabe-zeile" hx-swap="outerHTML" style="display:contents"
+      {% if a.unter_offen and not a.status.ist_erledigt %}data-unteraufgaben-offen="{{ a.unter_offen }}"{% endif %}>
+      <input type="hidden" name="erledigt" value="{% if a.status.ist_erledigt %}0{% else %}1{% endif %}">
+      <input type="hidden" name="zeile" value="1">
+      <input type="hidden" name="unteraufgaben" value="">
+      <button type="submit" class="haken{% if a.status.ist_erledigt %} haken--erledigt{% endif %}" {% if not darf_abschliessen %}disabled{% endif %}
+        aria-label="{% if a.status.ist_erledigt %}{% translate 'Als offen markieren' %}{% else %}{% translate 'Als erledigt markieren' %}{% endif %}: {{ a.titel }}">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>
+      </button>
+    </form>
+    <a class="aufgabe-titel{% if a.status.ist_erledigt %} aufgabe-titel--erledigt{% endif %}" href="{% url 'aufgabe' a.pk %}" data-aufgabe-link="{{ a.pk }}">{{ a.titel }}</a>
+    {% if a.eltern_id %}<a class="eltern-hinweis gedaempft klein" href="{% url 'aufgabe' a.eltern_id %}" data-aufgabe-link="{{ a.eltern_id }}" title="{% translate 'Unteraufgabe von' %} {{ a.eltern.titel }}">↳ {{ a.eltern.titel }}</a>{% endif %}
+    {% if a.unter_gesamt %}<button type="button" class="unter-zaehler" data-unter-umschalten="{{ a.pk }}" aria-expanded="true"
+      title="{% translate 'Unteraufgaben ein- oder ausblenden' %}" aria-label="{% blocktranslate with e=a.unter_erledigt g=a.unter_gesamt %}{{ e }} von {{ g }} Unteraufgaben erledigt – ein- oder ausblenden{% endblocktranslate %}">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>{{ a.unter_erledigt }} / {{ a.unter_gesamt }}</button>{% endif %}
+  </div>
+  <div class="mobil-aus" style="min-width:0">
+    {% if darf_bearbeiten %}
+      <form hx-post="{% url 'aufgabe_feld' a.pk %}" hx-trigger="change" hx-target="closest .aufgabe-zeile" hx-swap="outerHTML">
+        <input type="hidden" name="feld" value="verantwortlich"><input type="hidden" name="version" value="{{ a.version }}">
+        <select name="wert" class="inline-eingabe" aria-label="{% translate 'Verantwortlich' %}" data-personenwahl>
+          {% translate "Nicht zugewiesen" as leer %}{% include "teile/personen_optionen.html" with personen=personenliste aktuell=a.verantwortlich %}
+        </select>
+      </form>
+    {% else %}
+      <span class="person">{% avatar a.verantwortlich "klein" %}<span class="person__name">{% person_name a.verantwortlich %}</span></span>
+    {% endif %}
+  </div>
+  <div class="mobil-aus" style="min-width:0">
+    {% if darf_bearbeiten %}
+      <form hx-post="{% url 'aufgabe_feld' a.pk %}" hx-trigger="change" hx-target="closest .aufgabe-zeile" hx-swap="outerHTML">
+        <input type="hidden" name="feld" value="gewerk"><input type="hidden" name="version" value="{{ a.version }}">
+        <select name="wert" class="inline-eingabe" aria-label="{% translate 'Gewerk' %}">
+          <option value="">–</option>
+          {% for g in gewerke %}<option value="{{ g.pk }}" {% if g.pk == a.gewerk_id %}selected{% endif %}>{{ g.name }}</option>{% endfor %}
+        </select>
+      </form>
+    {% else %}<span class="gedaempft">{{ a.gewerk|default:"–" }}</span>{% endif %}
+  </div>
+  <div class="mono klein mobil-aus eingeteilt" style="color: var(--text-2)">
+    {% if a.eingeteilt_pt or a.schaetzung_personentage %}<span>{{ a.eingeteilt_pt }}{% if a.schaetzung_personentage %} / {{ a.schaetzung_personentage|floatformat:"-1" }}{% endif %} {% translate "Tage" %}</span>{% if a.eingeteilt_personen %}<span>{{ a.eingeteilt_personen }} {% translate "Pers." %}</span>{% endif %}{% else %}—{% endif %}
+  </div>
+  <div class="mobil-aus">
+    {% if darf_bearbeiten and not a.unter_termine %}
+      <form hx-post="{% url 'aufgabe_feld' a.pk %}" hx-trigger="change" hx-target="closest .aufgabe-zeile" hx-swap="outerHTML">
+        <input type="hidden" name="feld" value="faellig_am"><input type="hidden" name="version" value="{{ a.version }}">
+        <input type="date" name="wert" value="{{ a.faellig_am|date:'Y-m-d' }}" class="inline-eingabe{% if a.faellig_am|ueberfaellig and not a.status.ist_erledigt %} faellig--ueberfaellig{% endif %}" aria-label="{% translate 'Fällig am' %}">
+      </form>
+    {% else %}<span class="{% if a.faellig_am|ueberfaellig and not a.status.ist_erledigt %}faellig--ueberfaellig{% endif %}">{{ a.faellig_am|date:"d.m."|default:"–" }}</span>{% endif %}
+  </div>
+  <div>
+    {% if darf_bearbeiten %}
+      <form hx-post="{% url 'aufgabe_feld' a.pk %}" hx-trigger="change" hx-target="closest .aufgabe-zeile" hx-swap="outerHTML"
+        {% if a.unter_offen and not a.status.ist_erledigt %}data-unteraufgaben-offen="{{ a.unter_offen }}"{% endif %}>
+        <input type="hidden" name="feld" value="status"><input type="hidden" name="version" value="{{ a.version }}">
+        <input type="hidden" name="unteraufgaben" value="">
+        <select name="wert" class="inline-eingabe status-wahl {{ a.status|status_klasse }}" aria-label="{% translate 'Status' %}" data-erledigt-status="{{ erledigt_status }}">
+          {% for s in statusliste %}<option value="{{ s.pk }}" {% if s.pk == a.status_id %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
+        </select>
+      </form>
+    {% else %}<span class="{{ a.status|status_klasse }}">{{ a.status }}</span>{% endif %}
+  </div>
+  {% if fehler %}<div class="fehlerliste" role="alert" style="grid-column: 1 / -1">{{ fehler }}</div>{% endif %}
+</div>

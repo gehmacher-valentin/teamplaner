@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% load i18n teamplaner %}
+{% block titel %}{% translate "Suche" %}{% endblock %}
+{% block inhalt %}
+<div class="seitenkopf">
+  <div class="seitenkopf__titel">
+    <h1>{% translate "Suche" %}</h1>
+    {% if text %}<div class="seitenkopf__text">{% blocktranslate count n=anzahl %}{{ n }} Treffer für „{{ text }}“{% plural %}{{ n }} Treffer für „{{ text }}“{% endblocktranslate %}</div>{% endif %}
+  </div>
+  <form method="get" class="zeile" role="search">
+    <label class="sr-only" for="suche-seite">{% translate "Suchbegriff" %}</label>
+    <input id="suche-seite" type="search" name="q" value="{{ text }}" placeholder="{% translate 'Aufgaben, Projekte, Kommentare' %}" autofocus>
+    <button type="submit" class="knopf knopf--primaer">{% translate "Suchen" %}</button>
+  </form>
+</div>
+{% if text %}
+  <section class="karte" aria-label="{% translate 'Aufgaben' %}">
+    <div class="karte__kopf"><h2>{% translate "Aufgaben" %}</h2><span class="zaehler">{{ aufgaben|length }}</span></div>
+    {% for a in aufgaben %}
+      <div class="liste__zeile" style="display:flex; gap:10px; align-items:center">
+        <span style="flex:1; min-width:0"><a class="aufgabe-titel{% if a.status.ist_erledigt %} aufgabe-titel--erledigt{% endif %}" href="{% url 'aufgabe' a.pk %}">{{ a.titel }}</a>
+          {% if a.eltern_id %}<span class="eltern-hinweis gedaempft klein">↳ {{ a.eltern.titel }}</span>{% endif %}</span>
+        <span class="zeile pf-{{ a.projekt.farbe }} klein"><span class="farbpunkt"></span>{{ a.projekt.name }}</span>
+        <span class="{{ a.status|status_klasse }}">{{ a.status }}</span>
+      </div>
+    {% empty %}<div class="leer">{% translate "Keine Aufgaben gefunden." %}</div>{% endfor %}
+  </section>
+  <section class="karte" aria-label="{% translate 'Projekte' %}">
+    <div class="karte__kopf"><h2>{% translate "Projekte" %}</h2><span class="zaehler">{{ projekte|length }}</span></div>
+    {% for p in projekte %}
+      <div class="liste__zeile" style="display:flex; gap:10px; align-items:center">
+        <a href="{% url 'projekt' p.pk %}" class="zeile pf-{{ p.farbe }}" style="flex:1; text-decoration:none; color:inherit"><span class="farbpunkt"></span><strong>{{ p.name }}</strong>{% if p.archiviert %} <span class="badge">{% translate "archiviert" %}</span>{% endif %}</a>
+        <span class="tags">{% for t in p.tags.all %}<span class="tag">{{ t.name }}</span>{% endfor %}</span>
+      </div>
+    {% empty %}<div class="leer">{% translate "Keine Projekte gefunden." %}</div>{% endfor %}
+  </section>
+  <section class="karte" aria-label="{% translate 'Kommentare' %}">
+    <div class="karte__kopf"><h2>{% translate "Kommentare" %}</h2><span class="zaehler">{{ kommentare|length }}</span></div>
+    {% for k in kommentare %}
+      <a class="liste__zeile" style="display:block; color:inherit; text-decoration:none" href="{% url 'aufgabe' k.aufgabe_id %}#kommentar-{{ k.pk }}">
+        <div class="klein gedaempft">{{ k.autor.anzeigename }} · {{ k.erstellt_am|date:"d.m.Y" }} · {{ k.aufgabe.titel }} ({{ k.aufgabe.projekt.name }})</div>
+        <div class="zelle-text">{{ k.anzeige_text|truncatechars:160 }}</div>
+      </a>
+    {% empty %}<div class="leer">{% translate "Keine Kommentare gefunden." %}</div>{% endfor %}
+  </section>
+{% endif %}
+{% endblock %}

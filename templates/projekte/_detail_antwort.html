@@ -1,0 +1,6 @@
+{# Antwort auf das Speichern eines Felds der Detailseite: das Feld selbst, dazu out of band Version, Kopf und Abhängiges #}{% include "projekte/_detail_feld.html" %}
+<input type="hidden" id="aufgabe-version" name="version" value="{{ aufgabe.version }}" hx-swap-oob="true">
+{% include "projekte/_detail_kopf.html" with oob=True %}
+{% if feld == "abschnitt" %}{% include "projekte/_detail_pfad.html" with oob=True %}{% endif %}
+{% if feld == "status" %}{% include "projekte/_detail_feld.html" with feld="faellig_am" oob=True fehler=None konflikt=None eingabe=None %}{% endif %}
+{% if seitenleiste %}{% include "projekte/_liste_oob.html" %}{% endif %}

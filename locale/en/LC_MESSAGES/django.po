@@ -1,0 +1,3372 @@
+# Englische Übersetzung des Teamplaners.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Teamplaner\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-05 21:28+0100\n"
+"PO-Revision-Date: 2026-10-21 21:10+0200\n"
+"Last-Translator: Teamplaner\n"
+"Language-Team: English\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: bestellungen/forms.py:27
+msgid "–"
+msgstr "–"
+
+#: bestellungen/models.py:11
+msgid "offen"
+msgstr "open"
+
+#: bestellungen/models.py:12
+msgid "Recherche"
+msgstr "Research"
+
+#: bestellungen/models.py:13
+msgid "bestellt"
+msgstr "ordered"
+
+#: bestellungen/models.py:14
+msgid "erhalten"
+msgstr "received"
+
+#: bestellungen/models.py:15
+msgid "Achtung"
+msgstr "Attention"
+
+#: bestellungen/models.py:27 templates/bestellungen/_liste.html:10
+#: templates/bestellungen/liste.html:12 templates/bestellungen/liste.html:16
+#: templates/projekte/projekte.html:24
+msgid "Prio"
+msgstr "Prio"
+
+#: bestellungen/models.py:28 templates/bestellungen/_liste.html:11
+#: templates/bestellungen/liste.html:12 templates/bestellungen/liste.html:17
+msgid "Bedarf"
+msgstr "Requirement"
+
+#: bestellungen/models.py:29 templates/bestellungen/_liste.html:12
+#: templates/bestellungen/liste.html:12 templates/bestellungen/liste.html:18
+msgid "Aufnahmedatum"
+msgstr "Date added"
+
+#: bestellungen/models.py:30 kern/templatetags/teamplaner.py:127
+#: planung/views.py:39 projekte/models.py:78
+#: templates/bestellungen/_liste.html:14 templates/bestellungen/liste.html:12
+#: templates/bestellungen/liste.html:20 templates/kern/protokoll.html:32
+#: templates/projekte/projekte.html:24
+msgid "Projekt"
+msgstr "Project"
+
+#: bestellungen/models.py:31 templates/bestellungen/_liste.html:15
+#: templates/bestellungen/liste.html:12 templates/bestellungen/liste.html:21
+msgid "Bestellt am"
+msgstr "Ordered on"
+
+#: bestellungen/models.py:32 templates/bestellungen/_liste.html:17
+#: templates/bestellungen/liste.html:12 templates/bestellungen/liste.html:23
+msgid "Lieferant"
+msgstr "Supplier"
+
+#: bestellungen/models.py:34 templates/bestellungen/_liste.html:18
+#: templates/bestellungen/liste.html:12 templates/bestellungen/liste.html:24
+msgid "Liefertermin"
+msgstr "Delivery date"
+
+#: bestellungen/models.py:37 kern/einstellungen.py:257
+#: kern/templatetags/teamplaner.py:127 projekte/models.py:126
+#: projekte/models.py:127 projekte/models.py:173
+#: templates/bestellungen/_liste.html:19 templates/bestellungen/liste.html:12
+#: templates/bestellungen/liste.html:25
+#: templates/projekte/_aufgabe_detail.html:15
+#: templates/projekte/_aufgabe_zeile.html:61
+#: templates/projekte/_detail_feld.html:46 templates/projekte/projekt.html:41
+#: templates/projekte/projekt.html:75 zusammenarbeit/views.py:57
+msgid "Status"
+msgstr "Status"
+
+#: bestellungen/models.py:40 templates/bestellungen/_liste.html:13
+#: templates/bestellungen/liste.html:19
+msgid "Eingetragen von"
+msgstr "Entered by"
+
+#: bestellungen/models.py:42 templates/bestellungen/_liste.html:16
+#: templates/bestellungen/liste.html:12 templates/bestellungen/liste.html:22
+msgid "Bestellt von"
+msgstr "Ordered by"
+
+#: bestellungen/models.py:50 kern/templatetags/teamplaner.py:130
+msgid "Bestellung"
+msgstr "Order"
+
+#: bestellungen/models.py:51 templates/base.html:73
+#: templates/bestellungen/liste.html:3 templates/bestellungen/liste.html:7
+#: templates/bestellungen/liste.html:10 zusammenarbeit/mail.py:44
+msgid "Bestellungen"
+msgstr "Orders"
+
+#: bestellungen/views.py:112 bestellungen/views.py:132
+#, python-format
+msgid "Nicht gespeichert: %(fehler)s"
+msgstr "Not saved: %(fehler)s"
+
+#: bestellungen/warnungen.py:41
+#, python-format
+msgid "Liefertermin überschritten: „%(bedarf)s“ (Liefertermin %(termin)s)."
+msgstr "Delivery date passed: “%(bedarf)s” (delivery date %(termin)s)."
+
+#: gantt/api.py:29
+msgid "Ungültiges Datum."
+msgstr "Invalid date."
+
+#: gantt/api.py:36 planung/api.py:60
+msgid "Diese Ansicht ist für Sie nicht freigegeben."
+msgstr "This view has not been shared with you."
+
+#: gantt/api.py:58
+msgid "Ungültiger Wert."
+msgstr "Invalid value."
+
+#: gantt/api.py:126 planung/api.py:67
+msgid "Keine Berechtigung."
+msgstr "Permission denied."
+
+#: gantt/dienste.py:32
+msgid "Sie dürfen diese Gantt-Ansicht nicht bearbeiten."
+msgstr "You are not allowed to edit this Gantt view."
+
+#: gantt/dienste.py:35
+msgid "Das Projekt gehört nicht zu dieser Ansicht."
+msgstr "The project is not part of this view."
+
+#: gantt/dienste.py:40 planung/dienste.py:84 projekte/forms.py:77
+msgid "Das Ende liegt vor dem Beginn."
+msgstr "The end is before the start."
+
+#: gantt/dienste.py:53
+msgid "Die Aufgabe wurde inzwischen von jemand anderem geändert. Die Ansicht wurde aktualisiert."
+msgstr "The task has been changed by someone else in the meantime. The view has been refreshed."
+
+#: gantt/dienste.py:91
+msgid "Eine Aufgabe kann nicht von sich selbst abhängen."
+msgstr "A task cannot depend on itself."
+
+#: gantt/dienste.py:93
+msgid "Eine Hauptaufgabe umfasst ihre Unteraufgaben – zwischen ihnen gibt es keine Abhängigkeit."
+msgstr "A parent task spans its subtasks – there is no dependency between them."
+
+#: gantt/dienste.py:97
+msgid "Diese Abhängigkeit gibt es bereits."
+msgstr "This dependency already exists."
+
+#: gantt/dienste.py:99
+#, python-format
+msgid "Das ergäbe einen Ringschluss: „%(b)s“ liegt bereits vor „%(a)s“."
+msgstr "That would create a cycle: “%(b)s” already comes before “%(a)s”."
+
+#: gantt/models.py:14 kern/forms.py:46 kern/forms.py:66 kern/models.py:22
+#: kern/models.py:35 notizen/models.py:23 planung/models.py:108
+#: planung/models.py:143 projekte/models.py:30 projekte/models.py:50
+#: projekte/models.py:94 projekte/models.py:117
+#: templates/kern/_listen_bearbeiten.html:6 templates/kern/personen.html:18
+msgid "Name"
+msgstr "Name"
+
+#: gantt/models.py:15 kern/models.py:23 planung/models.py:109
+#: planung/models.py:144 projekte/models.py:118
+msgid "Sortierung"
+msgstr "Sort order"
+
+#: gantt/models.py:16 projekte/models.py:79 templates/base.html:78
+#: templates/projekte/_suchvorschlaege.html:12
+#: templates/projekte/projekt_formular.html:5
+#: templates/projekte/projekte.html:3 templates/projekte/projekte.html:7
+#: templates/projekte/suche.html:28 templates/projekte/suche.html:29
+msgid "Projekte"
+msgstr "Projects"
+
+#: gantt/models.py:17
+msgid "Neue Projekte automatisch aufnehmen"
+msgstr "Add new projects automatically"
+
+#: gantt/models.py:24 kern/templatetags/teamplaner.py:127
+msgid "Gantt-Ansicht"
+msgstr "Gantt view"
+
+#: gantt/models.py:25
+msgid "Gantt-Ansichten"
+msgstr "Gantt views"
+
+#: gantt/models.py:36 planung/models.py:183 templates/kern/einst_rollen.html:9
+msgid "Recht"
+msgstr "Permission"
+
+#: gantt/models.py:39
+msgid "Gantt-Freigabe"
+msgstr "Gantt access"
+
+#: gantt/models.py:40
+msgid "Gantt-Freigaben"
+msgstr "Gantt access"
+
+#: gantt/views.py:67
+#, python-format
+msgid "Gantt-Ansicht „%(name)s“ gespeichert."
+msgstr "Gantt view “%(name)s” saved."
+
+#: gantt/views.py:81
+msgid "Gantt-Ansicht gelöscht."
+msgstr "Gantt view deleted."
+
+#: kern/einstellungen.py:45 templates/kern/einst_profil.html:3
+#: templates/kern/einst_profil.html:5 templates/kern/einst_profil.html:6
+msgid "Profil"
+msgstr "Profile"
+
+#: kern/einstellungen.py:46 templates/kern/einst_sicherheit.html:3
+#: templates/kern/einst_sicherheit.html:5
+#: templates/kern/zwei_faktor_einrichten.html:5
+msgid "Anmeldung & Sicherheit"
+msgstr "Sign-in & security"
+
+#: kern/einstellungen.py:47 templates/kern/einst_benachrichtigungen.html:3
+#: templates/kern/einst_benachrichtigungen.html:5 zusammenarbeit/models.py:128
+msgid "Benachrichtigungen"
+msgstr "Notifications"
+
+#: kern/einstellungen.py:48 templates/kern/einst_darstellung.html:3
+#: templates/kern/einst_darstellung.html:5
+#: templates/kern/einst_darstellung.html:6
+msgid "Darstellung"
+msgstr "Appearance"
+
+#: kern/einstellungen.py:49 kern/models.py:99
+#: templates/kern/person_bearbeiten.html:5
+#: templates/kern/person_einladen.html:5 templates/kern/personen.html:3
+#: templates/kern/personen.html:7 templates/kern/personen.html:13
+#: templates/kern/platzhalter_bearbeiten.html:5
+#: templates/kern/platzhalter_neu.html:5
+msgid "Personen"
+msgstr "People"
+
+#: kern/einstellungen.py:50 templates/gantt/ansicht_bearbeiten.html:5
+#: templates/kern/einst_ansichten.html:3 templates/kern/einst_ansichten.html:7
+#: templates/planung/ansicht_bearbeiten.html:5
+msgid "Ansichten & Freigaben"
+msgstr "Views & sharing"
+
+#: kern/einstellungen.py:51 templates/kern/einst_rollen.html:3
+#: templates/kern/einst_rollen.html:6
+msgid "Rollen & Rechte"
+msgstr "Roles & permissions"
+
+#: kern/einstellungen.py:52 templates/kern/einst_allgemein.html:3
+#: templates/kern/einst_allgemein.html:5 templates/kern/einst_allgemein.html:6
+msgid "Allgemein"
+msgstr "General"
+
+#: kern/einstellungen.py:53 templates/kern/einst_listen.html:3
+#: templates/kern/einst_listen.html:5
+msgid "Listen"
+msgstr "Lists"
+
+#: kern/einstellungen.py:54 templates/base.html:71
+#: templates/kern/einst_kalender.html:3 templates/kern/einst_kalender.html:5
+#: templates/planung/teamplaner.html:3
+msgid "Kalender"
+msgstr "Calendar"
+
+#: kern/einstellungen.py:55 templates/kern/anhaenge.html:3
+#: templates/kern/anhaenge.html:6
+msgid "Speicherplatz"
+msgstr "Storage"
+
+#: kern/einstellungen.py:56 templates/kern/einst_ueber.html:3
+#: templates/kern/einst_ueber.html:5 templates/kern/einst_ueber.html:6
+msgid "Über"
+msgstr "About"
+
+#: kern/einstellungen.py:58
+msgid "Persönlich"
+msgstr "Personal"
+
+#: kern/einstellungen.py:58
+msgid "Team"
+msgstr "Team"
+
+#: kern/einstellungen.py:58 templates/kern/protokoll.html:36
+#: templates/kern/protokoll.html:51 templates/projekte/_aufgabe_detail.html:111
+msgid "System"
+msgstr "System"
+
+#: kern/einstellungen.py:93 kern/einstellungen.py:183
+msgid "Gespeichert"
+msgstr "Saved"
+
+#: kern/einstellungen.py:258 templates/projekte/projekt.html:106
+#, python-format
+msgid "%(n)s Aufgabe"
+msgid_plural "%(n)s Aufgaben"
+msgstr[0] "%(n)s task"
+msgstr[1] "%(n)s tasks"
+
+#: kern/einstellungen.py:259 kern/models.py:40 kern/models.py:83
+#: templates/kern/einst_profil.html:33 templates/kern/personen.html:42
+msgid "Gewerke"
+msgstr "Trades"
+
+#: kern/einstellungen.py:261 kern/einstellungen.py:267
+#, python-format
+msgid "%(n)s Person"
+msgid_plural "%(n)s Personen"
+msgstr[0] "%(n)s person"
+msgstr[1] "%(n)s people"
+
+#: kern/einstellungen.py:262 templates/projekte/_aufgabe_detail.html:25
+msgid "Projekt-Tags"
+msgstr "Project tags"
+
+#: kern/einstellungen.py:264
+#, python-format
+msgid "%(n)s Projekt"
+msgid_plural "%(n)s Projekte"
+msgstr[0] "%(n)s project"
+msgstr[1] "%(n)s projects"
+
+#: kern/einstellungen.py:265 kern/models.py:28 planung/models.py:146
+msgid "Bereiche"
+msgstr "Units"
+
+#: kern/einstellungen.py:268 planung/models.py:114
+msgid "Freigabestufen"
+msgstr "Clearance levels"
+
+#: kern/einstellungen.py:270 templates/kern/einst_kalender.html:29
+#, python-format
+msgid "%(n)s Tag"
+msgid_plural "%(n)s Tage"
+msgstr[0] "%(n)s day"
+msgstr[1] "%(n)s days"
+
+#: kern/einstellungen.py:276
+#, python-format
+msgid "Status „%(name)s“ löschen?"
+msgstr "Delete status “%(name)s”?"
+
+#: kern/einstellungen.py:276
+#, python-format
+msgid "Gewerk „%(name)s“ löschen?"
+msgstr "Delete trade “%(name)s”?"
+
+#: kern/einstellungen.py:277
+#, python-format
+msgid "Tag „%(name)s“ löschen?"
+msgstr "Delete tag “%(name)s”?"
+
+#: kern/einstellungen.py:277
+#, python-format
+msgid "Bereich „%(name)s“ löschen?"
+msgstr "Delete unit “%(name)s”?"
+
+#: kern/einstellungen.py:278
+#, python-format
+msgid "Freigabestufe „%(name)s“ löschen?"
+msgstr "Delete clearance level “%(name)s”?"
+
+#: kern/einstellungen.py:281
+#, python-format
+msgid "Es ist %(n)s Person zugeordnet."
+msgid_plural "Es ist %(n)s Personen zugeordnet."
+msgstr[0] "It is assigned to %(n)s person."
+msgstr[1] "It is assigned to %(n)s people."
+
+#: kern/einstellungen.py:283
+#, python-format
+msgid "Er hängt an %(n)s Projekt."
+msgid_plural "Er hängt an %(n)s Projekten."
+msgstr[0] "It is attached to %(n)s project."
+msgstr[1] "It is attached to %(n)s projects."
+
+#: kern/einstellungen.py:379 kern/einstellungen.py:387
+#, python-format
+msgid "„%(name)s“ wird noch verwendet und kann nicht gelöscht werden."
+msgstr "“%(name)s” is still in use and cannot be deleted."
+
+#: kern/einstellungen.py:385 kern/einstellungen.py:571 kern/views.py:751
+#, python-format
+msgid "„%(name)s“ gelöscht."
+msgstr "“%(name)s” deleted."
+
+#: kern/einstellungen.py:428 templates/base.html:7 templates/base.html:18
+#: templates/base.html:75 templates/kern/person_bearbeiten.html:79
+#: templates/planung/ansicht_bearbeiten.html:6
+#: templates/planung/teamplaner.html:3 templates/projekte/projekt.html:21
+#: templates/registration/einfach.html:6 templates/registration/einfach.html:15
+#: zusammenarbeit/mail.py:77 zusammenarbeit/mail.py:91
+#: zusammenarbeit/mail.py:175 zusammenarbeit/mail.py:193
+#: zusammenarbeit/mail.py:224
+msgid "Teamplaner"
+msgstr "Team planner"
+
+#: kern/einstellungen.py:428 templates/base.html:76
+#: templates/gantt/ansicht_bearbeiten.html:6 templates/gantt/gantt.html:3
+#: templates/kern/person_bearbeiten.html:79
+msgid "Gantt-Diagramm"
+msgstr "Gantt chart"
+
+#: kern/einstellungen.py:506
+msgid "Bitte ein gültiges Datum eingeben."
+msgstr "Please enter a valid date."
+
+#: kern/einstellungen.py:508
+msgid "„Bis“ liegt vor „Von“."
+msgstr "“To” is before “From”."
+
+#: kern/einstellungen.py:510
+msgid "Höchstens ein Jahr auf einmal."
+msgstr "At most one year at a time."
+
+#: kern/einstellungen.py:512 kern/einstellungen.py:553
+msgid "Bitte eine Bezeichnung eingeben."
+msgstr "Please enter a label."
+
+#: kern/einstellungen.py:520
+#, python-format
+msgid "%(n)s freier Tag eingetragen."
+msgid_plural "%(n)s freie Tage eingetragen."
+msgstr[0] "%(n)s day off added."
+msgstr[1] "%(n)s days off added."
+
+#: kern/einstellungen.py:523
+msgid "Keine neuen Tage – im Zeitraum ist schon alles frei."
+msgstr "No new days – the whole period is already off."
+
+#: kern/einstellungen.py:549
+#, python-format
+msgid "%(n)s freier Tag gelöscht."
+msgid_plural "%(n)s freie Tage gelöscht."
+msgstr[0] "%(n)s day off deleted."
+msgstr[1] "%(n)s days off deleted."
+
+#: kern/einstellungen.py:558 kern/views.py:447 kern/views.py:605
+#: projekte/views.py:145
+msgid "Gespeichert."
+msgstr "Saved."
+
+#: kern/forms.py:14 kern/forms.py:47 kern/forms.py:67 kern/forms.py:100
+#: kern/forms.py:129 kern/models.py:192
+#: templates/kern/einst_benachrichtigungen.html:8
+#: templates/kern/einst_profil.html:30
+msgid "E-Mail"
+msgstr "Email"
+
+#: kern/forms.py:17
+msgid "E-Mail oder Passwort ist falsch."
+msgstr "Email or password is incorrect."
+
+#: kern/forms.py:18
+msgid "Dieses Konto ist deaktiviert."
+msgstr "This account is deactivated."
+
+#: kern/forms.py:35 kern/templatetags/teamplaner.py:44
+#: kern/templatetags/teamplaner.py:126 projekte/forms.py:18
+#: templates/kern/personen.html:9 templates/kern/personen.html:30
+#: templates/kern/personen.html:47 templates/teile/personen_optionen.html:3
+msgid "Platzhalter"
+msgstr "Placeholder"
+
+#: kern/forms.py:42
+msgid "Gewerke / Funktion"
+msgstr "Trades / function"
+
+#: kern/forms.py:48 kern/models.py:27 kern/models.py:80
+#: kern/templatetags/teamplaner.py:128 templates/kern/_bereich_fest.html:1
+#: templates/kern/einst_profil.html:32 templates/kern/personen.html:21
+#: templates/kern/personen.html:42 templates/teile/freigaben.html:9
+msgid "Bereich"
+msgstr "Unit"
+
+#: kern/forms.py:49 kern/forms.py:68 kern/forms.py:101 kern/models.py:193
+#: templates/kern/einst_profil.html:31 templates/kern/personen.html:42
+msgid "Rolle"
+msgstr "Role"
+
+#: kern/forms.py:50 kern/models.py:196 templates/kern/einst_darstellung.html:8
+#: templates/registration/login.html:14
+msgid "Sprache"
+msgstr "Language"
+
+#: kern/forms.py:61 kern/forms.py:80
+msgid "Für diese E-Mail gibt es bereits ein Konto."
+msgstr "An account with this email already exists."
+
+#: kern/forms.py:90
+msgid "Anzeigename (frei)"
+msgstr "Display name (free text)"
+
+#: kern/forms.py:90
+msgid "Notiz (optional)"
+msgstr "Note (optional)"
+
+#: kern/forms.py:92
+msgid "z. B. Aushilfe Montage"
+msgstr "e.g. Assembly temp"
+
+#: kern/forms.py:93
+msgid "z. B. ab November, 2 Tage pro Woche"
+msgstr "e.g. from November, 2 days per week"
+
+#: kern/forms.py:112
+msgid "Code"
+msgstr "Code"
+
+#: kern/forms.py:117 templates/kern/_passwort_dialog.html:6
+msgid "Ihr Passwort"
+msgstr "Your password"
+
+#: kern/forms.py:122
+msgid "Code aus der App"
+msgstr "Code from the app"
+
+#: kern/fotos.py:25
+#, python-format
+msgid "Das Foto ist zu groß (höchstens %(mb)s MB)."
+msgstr "The photo is too large (at most %(mb)s MB)."
+
+#: kern/fotos.py:34 kern/fotos.py:36
+msgid "Die Datei ist kein unterstütztes Bild (JPEG, PNG, WebP, HEIC)."
+msgstr "The file is not a supported image (JPEG, PNG, WebP, HEIC)."
+
+#: kern/fotos.py:45
+msgid "Platzhalter haben kein Foto."
+msgstr "Placeholders have no photo."
+
+#: kern/hilfen.py:92
+msgid "Sitzung abgelaufen – bitte neu anmelden."
+msgstr "Session expired – please sign in again."
+
+#: kern/middleware.py:64
+#, python-format
+msgid "Sie wurden nach %(n)s Minuten ohne Aktivität abgemeldet."
+msgstr "You were signed out after %(n)s minutes without activity."
+
+#: kern/middleware.py:143
+msgid "Bitte melden Sie sich erneut an."
+msgstr "Please sign in again."
+
+#: kern/middleware.py:150
+msgid "Bitte richten Sie zuerst die Zwei-Faktor-Anmeldung ein."
+msgstr "Please set up two-factor authentication first."
+
+#: kern/models.py:39 kern/templatetags/teamplaner.py:128 planung/views.py:37
+#: projekte/models.py:168 templates/projekte/_aufgabe_detail.html:27
+#: templates/projekte/_aufgabe_zeile.html:37
+#: templates/projekte/_detail_feld.html:74 templates/projekte/projekt.html:53
+#: templates/projekte/projekt.html:75 zusammenarbeit/views.py:56
+msgid "Gewerk"
+msgstr "Trade"
+
+#: kern/models.py:78
+msgid "Anzeigename"
+msgstr "Display name"
+
+#: kern/models.py:85 notizen/models.py:54
+msgid "Notiz"
+msgstr "Note"
+
+#: kern/models.py:87
+msgid "Foto"
+msgstr "Photo"
+
+#: kern/models.py:88 projekte/models.py:65
+msgid "archiviert am"
+msgstr "archived on"
+
+#: kern/models.py:98 templates/kern/personen.html:42
+#: templates/kern/protokoll.html:47
+msgid "Person"
+msgstr "Person"
+
+#: kern/models.py:150
+msgid "Admin"
+msgstr "Admin"
+
+#: kern/models.py:151
+msgid "Bereichsleitung"
+msgstr "Unit lead"
+
+#: kern/models.py:152
+msgid "Planer:in"
+msgstr "Planner"
+
+#: kern/models.py:153
+msgid "Mitarbeiter:in"
+msgstr "Staff member"
+
+#: kern/models.py:154
+msgid "Lesend"
+msgstr "Read-only"
+
+#: kern/models.py:195
+msgid "E-Mail-Benachrichtigungen"
+msgstr "Email notifications"
+
+#: kern/models.py:197 templates/kern/einst_darstellung.html:13
+msgid "Feieranimation beim Abhaken"
+msgstr "Celebration when completing a task"
+
+#: kern/models.py:199 templates/kern/einst_darstellung.html:14
+msgid "Unteraufgaben im Gantt aufgeklappt"
+msgstr "Subtasks expanded in the Gantt chart"
+
+#: kern/models.py:201
+msgid "Systemkonto – nicht als Person auswählbar"
+msgstr "System account – not selectable as a person"
+
+#: kern/models.py:217 kern/templatetags/teamplaner.py:126
+#: templates/base.html:61 templates/base.html:90
+msgid "Konto"
+msgstr "Account"
+
+#: kern/models.py:218 templates/kern/personen.html:29
+msgid "Konten"
+msgstr "Accounts"
+
+#: kern/models.py:270
+msgid "Protokolleintrag"
+msgstr "Audit log entry"
+
+#: kern/models.py:271 templates/base.html:87 templates/kern/protokoll.html:3
+msgid "Protokoll"
+msgstr "Audit log"
+
+#: kern/models.py:281 kern/models.py:299 kern/templatetags/teamplaner.py:129
+#: planung/models.py:132 templates/kern/einst_allgemein.html:15
+#: templates/kern/einst_allgemein.html:16
+#: templates/kern/einst_allgemein.html:19
+msgid "Tagesfreigabe"
+msgstr "Daily clearance"
+
+#: kern/models.py:282 templates/kern/einst_allgemein.html:18
+msgid "Name der Tagesfreigabe"
+msgstr "Name of the daily clearance"
+
+#: kern/models.py:283 templates/kern/einst_allgemein.html:8
+msgid "Organisationsname"
+msgstr "Organization name"
+
+#: kern/models.py:284 templates/kern/einst_allgemein.html:12
+msgid "E-Mail-Versand"
+msgstr "Email sending"
+
+#: kern/models.py:287 kern/models.py:288 kern/models.py:291
+msgid "Systemeinstellungen"
+msgstr "System settings"
+
+#: kern/templatetags/teamplaner.py:30
+msgid " · Platzhalter"
+msgstr " · placeholder"
+
+#: kern/templatetags/teamplaner.py:41 projekte/forms.py:107
+#: templates/projekte/_aufgabe_zeile.html:26
+#: templates/projekte/_detail_feld.html:21
+msgid "Nicht zugewiesen"
+msgstr "Unassigned"
+
+#: kern/templatetags/teamplaner.py:46 kern/templatetags/teamplaner.py:134
+#: kern/templatetags/teamplaner.py:135 templates/kern/anhaenge.html:35
+#: templates/kern/personen.html:52 templates/kern/platzhalter_bearbeiten.html:8
+#: templates/projekte/_suchvorschlaege.html:16
+#: templates/projekte/projekt.html:9 templates/projekte/suche.html:32
+#: templates/teile/personen_optionen.html:2
+msgid "archiviert"
+msgstr "archived"
+
+#: kern/templatetags/teamplaner.py:82 kern/templatetags/teamplaner.py:128
+#: projekte/models.py:34 templates/projekte/projekte.html:10
+msgid "Tag"
+msgstr "Day"
+
+#: kern/templatetags/teamplaner.py:82 templates/projekte/_aufgabe_zeile.html:45
+msgid "Tage"
+msgstr "Days"
+
+#: kern/templatetags/teamplaner.py:126 planung/models.py:57
+msgid "Abwesenheit"
+msgstr "Absence"
+
+#: kern/templatetags/teamplaner.py:127 planung/models.py:160
+msgid "Teamplaner-Ansicht"
+msgstr "Team planner view"
+
+#: kern/templatetags/teamplaner.py:128 planung/models.py:79
+msgid "Freier Tag"
+msgstr "Day off"
+
+#: kern/templatetags/teamplaner.py:129 notizen/models.py:32
+#: notizen/models.py:33 templates/notizen/_ordnerliste.html:1
+msgid "Notizordner"
+msgstr "Note folder"
+
+#: kern/templatetags/teamplaner.py:129 planung/models.py:113
+msgid "Freigabestufe"
+msgstr "Clearance level"
+
+#: kern/templatetags/teamplaner.py:130 templates/base.html:63
+#: templates/base.html:86 templates/base.html:91
+#: templates/kern/_einst_nav.html:1
+msgid "Einstellungen"
+msgstr "Settings"
+
+#: kern/templatetags/teamplaner.py:133
+msgid "angelegt"
+msgstr "created"
+
+#: kern/templatetags/teamplaner.py:133
+msgid "geändert"
+msgstr "changed"
+
+#: kern/templatetags/teamplaner.py:133 templates/kern/protokoll.html:37
+msgid "gelöscht"
+msgstr "deleted"
+
+#: kern/templatetags/teamplaner.py:134 templates/kern/person_bearbeiten.html:8
+#: templates/kern/personen.html:52
+msgid "deaktiviert"
+msgstr "deactivated"
+
+#: kern/templatetags/teamplaner.py:134
+msgid "reaktiviert"
+msgstr "reactivated"
+
+#: kern/templatetags/teamplaner.py:135
+msgid "wiederhergestellt"
+msgstr "restored"
+
+#: kern/templatetags/teamplaner.py:136
+msgid "Passwort-Link erzeugt"
+msgstr "password link created"
+
+#: kern/templatetags/teamplaner.py:136
+msgid "Passwort festgelegt"
+msgstr "password set"
+
+#: kern/templatetags/teamplaner.py:137
+msgid "Passwort-Link per E-Mail an die Person geschickt"
+msgstr "Password link sent to the person by email"
+
+#: kern/templatetags/teamplaner.py:138
+msgid "Passwort zurückgesetzt"
+msgstr "Password reset"
+
+#: kern/templatetags/teamplaner.py:139
+msgid "Passwort geändert"
+msgstr "Password changed"
+
+#: kern/templatetags/teamplaner.py:140
+msgid "aus Platzhalter angelegt"
+msgstr "created from placeholder"
+
+#: kern/templatetags/teamplaner.py:141
+msgid "Foto entfernt"
+msgstr "photo removed"
+
+#: kern/templatetags/teamplaner.py:142
+msgid "Zwei-Faktor-Anmeldung eingerichtet"
+msgstr "Two-factor authentication set up"
+
+#: kern/templatetags/teamplaner.py:143
+msgid "Zwei-Faktor-Anmeldung ausgeschaltet"
+msgstr "Two-factor authentication turned off"
+
+#: kern/templatetags/teamplaner.py:144
+msgid "Zwei-Faktor-Anmeldung zurückgesetzt"
+msgstr "Two-factor authentication reset"
+
+#: kern/templatetags/teamplaner.py:145
+msgid "Ersatzcodes erneuert"
+msgstr "Backup codes renewed"
+
+#: kern/templatetags/teamplaner.py:146
+msgid "persönliche Daten nach der Frist entfernt"
+msgstr "personal data removed after the retention period"
+
+#: kern/templatetags/teamplaner.py:147
+msgid "Passwort-Link per E-Mail angefordert"
+msgstr "password link requested by email"
+
+#: kern/templatetags/teamplaner.py:148
+msgid "Projekt hinzugefügt"
+msgstr "project added"
+
+#: kern/templatetags/teamplaner.py:149
+msgid "Projekt entfernt"
+msgstr "project removed"
+
+#: kern/views.py:112
+msgid "Die Zeit für die Eingabe ist abgelaufen. Bitte erneut anmelden."
+msgstr "The time for entering the code has run out. Please sign in again."
+
+#: kern/views.py:126
+#, python-format
+msgid "Sie haben einen Ersatzcode verwendet, noch %(n)s übrig. Neue Codes oder ein neues Telefon richten Sie unter „Mein Konto“ ein."
+msgstr "You used a backup code, %(n)s left. Set up new codes or a new phone under “My account”."
+
+#: kern/views.py:134
+msgid "Zu viele falsche Codes. Bitte erneut anmelden."
+msgstr "Too many wrong codes. Please sign in again."
+
+#: kern/views.py:137
+msgid "Der Code stimmt nicht."
+msgstr "The code is not correct."
+
+#: kern/views.py:157 kern/views.py:196
+msgid "Das Passwort stimmt nicht."
+msgstr "The password is not correct."
+
+#: kern/views.py:159
+msgid "Der Code passt nicht. Bitte den aktuellen Code aus der App eingeben; die Uhrzeit am Telefon muss stimmen."
+msgstr "The code does not match. Please enter the current code from the app; the time on the phone must be correct."
+
+#: kern/views.py:207
+msgid "Die Zwei-Faktor-Anmeldung ist ausgeschaltet."
+msgstr "Two-factor authentication is turned off."
+
+#: kern/views.py:260
+msgid "Passwort gespeichert. Sie können sich jetzt anmelden."
+msgstr "Password saved. You can sign in now."
+
+#: kern/views.py:283
+msgid "Passwort geändert."
+msgstr "Password changed."
+
+#: kern/views.py:351
+#, python-format
+msgid "Konto für %(name)s angelegt."
+msgstr "Account created for %(name)s."
+
+#: kern/views.py:362
+#, python-format
+msgid "Der Link geht zusätzlich per E-Mail an %(email)s."
+msgstr "The link is also being sent by email to %(email)s."
+
+#: kern/views.py:367
+msgid "Feiertage, Status, Systemeinstellungen"
+msgstr "Holidays, statuses, system settings"
+
+#: kern/views.py:368
+msgid "Benutzerkonten anlegen und deaktivieren"
+msgstr "Create and deactivate user accounts"
+
+#: kern/views.py:369
+msgid "Bestehende Konten nur mit niedrigerer Rolle als der eigenen; Admin-Konten über die Kommandozeile"
+msgstr "Existing accounts only with a lower role than your own; admin accounts via the command line"
+
+#: kern/views.py:370
+msgid "Rollen vergeben"
+msgstr "Assign roles"
+
+#: kern/views.py:370
+msgid "Bereichsleitung bis maximal zur eigenen Rolle"
+msgstr "Unit leads up to their own role"
+
+#: kern/views.py:371
+msgid "Projekte anlegen, Tags vergeben, archivieren"
+msgstr "Create projects, assign tags, archive"
+
+#: kern/views.py:372
+msgid "Aufgaben anlegen und bearbeiten"
+msgstr "Create and edit tasks"
+
+#: kern/views.py:372
+msgid "Mitarbeiter:innen: in Projekten, in denen sie Mitglied sind"
+msgstr "Staff: in projects they are a member of"
+
+#: kern/views.py:373
+msgid "Aufgaben abschließen, kommentieren"
+msgstr "Complete tasks, comment"
+
+#: kern/views.py:374
+msgid "Teamplaner-Ansichten anlegen und freigeben"
+msgstr "Create and share team planner views"
+
+#: kern/views.py:375
+msgid "Teamplaner: einteilen, Abwesenheiten"
+msgstr "Team planner: schedule, absences"
+
+#: kern/views.py:375
+msgid "Planer:innen: in Ansichten mit Freigabe „bearbeiten“"
+msgstr "Planners: in views with “edit” access"
+
+#: kern/views.py:376
+msgid "Platzhalter anlegen, bearbeiten, archivieren"
+msgstr "Create, edit, archive placeholders"
+
+#: kern/views.py:377
+msgid "Lesekalender"
+msgstr "Read-only calendar"
+
+#: kern/views.py:377
+msgid "freigegebene Ansichten; die eigene Einteilung immer"
+msgstr "shared views; always their own schedule"
+
+#: kern/views.py:378
+msgid "Änderungsprotokoll einsehen"
+msgstr "View audit log"
+
+#: kern/views.py:379
+msgid "Protokoll: erledigte Aufgaben einsehen"
+msgstr "Log: view completed tasks"
+
+#: kern/views.py:380
+msgid "Tagesfreigabe einrichten"
+msgstr "Set up daily clearance"
+
+#: kern/views.py:381
+msgid "Bestellungen eintragen und ändern"
+msgstr "Enter and change orders"
+
+#: kern/views.py:381
+msgid "Löschen: eigene Zeilen, ab Planer:in alle"
+msgstr "Delete: own rows, all rows from planner upwards"
+
+#: kern/views.py:496
+#, python-format
+msgid "Ein Link zum Zurücksetzen geht per E-Mail an %(email)s."
+msgstr "A reset link is being sent by email to %(email)s."
+
+#: kern/views.py:501
+msgid "Das bisherige Passwort gilt nicht mehr. Bitte den Link an die Person weitergeben."
+msgstr "The previous password is no longer valid. Please pass the link on to the person."
+
+#: kern/views.py:508
+msgid "Sie können Ihr eigenes Konto nicht deaktivieren."
+msgstr "You cannot deactivate your own account."
+
+#: kern/views.py:512
+msgid "Konto deaktiviert. Aufgaben und Einteilungen bleiben erhalten."
+msgstr "Account deactivated. Tasks and assignments are kept."
+
+#: kern/views.py:519
+msgid "Konto reaktiviert."
+msgstr "Account reactivated."
+
+#: kern/views.py:523 kern/views.py:546
+msgid "Foto entfernt."
+msgstr "Photo removed."
+
+#: kern/views.py:530
+msgid "Zwei-Faktor-Anmeldung zurückgesetzt."
+msgstr "Two-factor authentication reset."
+
+#: kern/views.py:531
+msgid "Bei der nächsten Anmeldung wird sie neu eingerichtet."
+msgstr "It will be set up again at the next sign-in."
+
+#: kern/views.py:550
+msgid "Foto gespeichert."
+msgstr "Photo saved."
+
+#: kern/views.py:586
+#, python-format
+msgid "Platzhalter „%(name)s“ angelegt."
+msgstr "Placeholder “%(name)s” created."
+
+#: kern/views.py:618
+#, python-format
+msgid "„%(name)s“ archiviert."
+msgstr "“%(name)s” archived."
+
+#: kern/views.py:621
+#, python-format
+msgid "„%(name)s“ wiederhergestellt."
+msgstr "“%(name)s” restored."
+
+#: kern/views.py:641
+#, python-format
+msgid "„%(name)s“ hat jetzt ein Konto."
+msgstr "“%(name)s” now has an account."
+
+#: kern/views.py:731 projekte/models.py:190
+#: templates/projekte/_suchvorschlaege.html:3
+#: templates/projekte/projekt.html:72 templates/projekte/suche.html:17
+#: templates/projekte/suche.html:18 zusammenarbeit/mail.py:28
+msgid "Aufgaben"
+msgstr "Tasks"
+
+#: kern/views.py:732
+msgid "Notizen in Gruppenordnern"
+msgstr "Notes in group folders"
+
+#: kern/views.py:733 notizen/views.py:52 templates/notizen/notiz.html:5
+#: templates/notizen/uebersicht.html:3 templates/notizen/uebersicht.html:12
+#: templates/notizen/uebersicht.html:14
+msgid "Persönliche Notizen"
+msgstr "Personal notes"
+
+#: notizen/forms.py:30 notizen/models.py:25
+#: templates/notizen/uebersicht.html:25
+msgid "Freigegeben für"
+msgstr "Shared with"
+
+#: notizen/models.py:44 projekte/forms.py:88 projekte/forms.py:100
+#: projekte/models.py:160 templates/notizen/_titel.html:4
+#: templates/notizen/_titel.html:6 templates/projekte/_detail_feld.html:9
+#: zusammenarbeit/views.py:55
+msgid "Titel"
+msgstr "Title"
+
+#: notizen/models.py:45 planung/models.py:90 templates/notizen/notiz.html:17
+#: zusammenarbeit/models.py:20
+msgid "Text"
+msgstr "Text"
+
+#: notizen/models.py:55 templates/base.html:72 templates/notizen/notiz.html:5
+#: templates/notizen/ordner.html:5 templates/notizen/uebersicht.html:7
+msgid "Notizen"
+msgstr "Notes"
+
+#: notizen/models.py:82 zusammenarbeit/models.py:54
+msgid "Dateiname"
+msgstr "File name"
+
+#: notizen/models.py:83 templates/kern/anhaenge.html:30
+#: zusammenarbeit/models.py:55
+msgid "Größe"
+msgstr "Size"
+
+#: notizen/models.py:90 zusammenarbeit/models.py:62
+msgid "Anhang"
+msgstr "Attachment"
+
+#: notizen/models.py:91 templates/kern/anhaenge.html:28
+#: templates/notizen/_anhaenge.html:2 templates/notizen/_anhaenge.html:3
+#: templates/projekte/_aufgabe_detail.html:80 zusammenarbeit/models.py:63
+msgid "Anhänge"
+msgstr "Attachments"
+
+#: notizen/views.py:149 projekte/views.py:426
+msgid "Bitte einen Titel eingeben."
+msgstr "Please enter a title."
+
+#: notizen/views.py:149
+msgid "Höchstens 200 Zeichen."
+msgstr "At most 200 characters."
+
+#: notizen/views.py:189
+#, python-format
+msgid "Notiz „%(titel)s“ gelöscht."
+msgstr "Note “%(titel)s” deleted."
+
+#: notizen/views.py:212
+#, python-format
+msgid "Ordner „%(name)s“ gespeichert."
+msgstr "Folder “%(name)s” saved."
+
+#: notizen/views.py:229
+#, python-format
+msgid "Ordner „%(name)s“ gelöscht."
+msgstr "Folder “%(name)s” deleted."
+
+#: notizen/views.py:249 zusammenarbeit/views.py:206
+#, python-format
+msgid "Die Datei ist zu groß (höchstens %(mb)s MB)."
+msgstr "The file is too large (at most %(mb)s MB)."
+
+#: planung/api.py:29
+#, python-format
+msgid "Ungültiges Datum: %(name)s"
+msgstr "Invalid date: %(name)s"
+
+#: planung/api.py:53
+msgid "Ungültiger Zeitraum."
+msgstr "Invalid period."
+
+#: planung/dienste.py:82
+msgid "Beginn und Ende sind erforderlich."
+msgstr "Start and end are required."
+
+#: planung/dienste.py:86
+msgid "Ein Zeitraum darf höchstens ein Jahr lang sein."
+msgstr "A period may be at most one year long."
+
+#: planung/dienste.py:93
+#, python-format
+msgid "Sie dürfen %(name)s nicht einteilen."
+msgstr "You are not allowed to schedule %(name)s."
+
+#: planung/dienste.py:102
+#, python-format
+msgid "%(name)s ist ein Systemkonto und kann nicht eingeteilt werden."
+msgstr "%(name)s is a system account and cannot be scheduled."
+
+#: planung/dienste.py:110
+#, python-format
+msgid "%(name)s ist archiviert und kann nicht mehr eingeteilt werden."
+msgstr "%(name)s is archived and can no longer be scheduled."
+
+#: planung/dienste.py:123
+#, python-format
+msgid "%(datum)s ist ein freier Tag (%(name)s). Trotzdem einteilen?"
+msgstr "%(datum)s is a day off (%(name)s). Schedule anyway?"
+
+#: planung/dienste.py:133
+msgid "Der Eintrag wurde inzwischen gelöscht."
+msgstr "This entry has been deleted in the meantime."
+
+#: planung/dienste.py:138
+msgid "Der Eintrag wurde inzwischen von jemand anderem geändert. Die Ansicht wurde aktualisiert."
+msgstr "This entry has been changed by someone else in the meantime. The view has been refreshed."
+
+#: planung/dienste.py:249
+msgid "Sie dürfen die Info-Zeile nicht bearbeiten."
+msgstr "You are not allowed to edit the info row."
+
+#: planung/dienste.py:253
+#, python-format
+msgid "Die Info darf höchstens %(n)s Zeichen lang sein."
+msgstr "The info may be at most %(n)s characters long."
+
+#: planung/dienste.py:280
+msgid "Sie dürfen die Tagesfreigabe nicht bearbeiten."
+msgstr "You may not edit the daily clearance."
+
+#: planung/dienste.py:286
+msgid "Unbekannte Freigabestufe."
+msgstr "Unknown clearance level."
+
+#: planung/kalender.py:41
+msgid "Neujahr"
+msgstr "New Year's Day"
+
+#: planung/kalender.py:42
+msgid "Heilige Drei Könige"
+msgstr "Epiphany"
+
+#: planung/kalender.py:43
+msgid "Ostermontag"
+msgstr "Easter Monday"
+
+#: planung/kalender.py:44
+msgid "Staatsfeiertag"
+msgstr "Labour Day"
+
+#: planung/kalender.py:45
+msgid "Christi Himmelfahrt"
+msgstr "Ascension Day"
+
+#: planung/kalender.py:46
+msgid "Pfingstmontag"
+msgstr "Whit Monday"
+
+#: planung/kalender.py:47
+msgid "Fronleichnam"
+msgstr "Corpus Christi"
+
+#: planung/kalender.py:48
+msgid "Mariä Himmelfahrt"
+msgstr "Assumption Day"
+
+#: planung/kalender.py:49
+msgid "Nationalfeiertag"
+msgstr "National Day"
+
+#: planung/kalender.py:50
+msgid "Allerheiligen"
+msgstr "All Saints' Day"
+
+#: planung/kalender.py:51
+msgid "Mariä Empfängnis"
+msgstr "Immaculate Conception"
+
+#: planung/kalender.py:52
+msgid "Christtag"
+msgstr "Christmas Day"
+
+#: planung/kalender.py:53
+msgid "Stefanitag"
+msgstr "St. Stephen's Day"
+
+#: planung/kalender.py:80
+msgid "Wochenende"
+msgstr "Weekend"
+
+#: planung/models.py:31 templates/projekte/_aufgabe_detail.html:128
+msgid "Einteilung"
+msgstr "Assignment"
+
+#: planung/models.py:32
+msgid "Einteilungen"
+msgstr "Assignments"
+
+#: planung/models.py:58
+msgid "Abwesenheiten"
+msgstr "Absences"
+
+#: planung/models.py:74 planung/models.py:89 planung/models.py:123
+msgid "Datum"
+msgstr "Date"
+
+#: planung/models.py:75 templates/kern/einst_kalender.html:12
+#: templates/kern/einst_kalender.html:34
+msgid "Bezeichnung"
+msgstr "Description"
+
+#: planung/models.py:80
+msgid "Freie Tage"
+msgstr "Days off"
+
+#: planung/models.py:98
+msgid "Tagesinfo"
+msgstr "Day info"
+
+#: planung/models.py:99
+msgid "Tagesinfos"
+msgstr "Day info"
+
+#: planung/models.py:124
+msgid "Stufe"
+msgstr "Level"
+
+#: planung/models.py:133
+msgid "Tagesfreigaben"
+msgstr "Daily clearances"
+
+#: planung/models.py:149
+msgid "Einzelne Personen"
+msgstr "Individual people"
+
+#: planung/models.py:161
+msgid "Teamplaner-Ansichten"
+msgstr "Team planner views"
+
+#: planung/models.py:171
+msgid "nur sehen"
+msgstr "view only"
+
+#: planung/models.py:172 templates/teile/freigaben.html:4
+msgid "bearbeiten"
+msgstr "edit"
+
+#: planung/models.py:186 templates/kern/einst_rollen.html:17
+#: templates/kern/einst_rollen.html:26
+msgid "Freigabe"
+msgstr "Access"
+
+#: planung/models.py:187 templates/kern/einst_ansichten.html:17
+#: templates/kern/person_bearbeiten.html:76 templates/teile/freigaben.html:3
+msgid "Freigaben"
+msgstr "Access"
+
+#: planung/raster.py:46
+msgid "Alle Personen"
+msgstr "Everyone"
+
+#: planung/raster.py:56
+msgid "Nur ich"
+msgstr "Only me"
+
+#: planung/views.py:36
+msgid "Zeitraum"
+msgstr "Period"
+
+#: planung/views.py:36
+msgid "1 Woche"
+msgstr "1 week"
+
+#: planung/views.py:36
+msgid "2 Wochen"
+msgstr "2 weeks"
+
+#: planung/views.py:36
+msgid "4 Wochen"
+msgstr "4 weeks"
+
+#: planung/views.py:37 templates/projekte/projekt.html:55
+msgid "Alle Gewerke"
+msgstr "All trades"
+
+#: planung/views.py:38
+msgid "Projekt-Tag"
+msgstr "Project tag"
+
+#: planung/views.py:38 templates/projekte/projekte.html:12
+msgid "Alle Tags"
+msgstr "All tags"
+
+#: planung/views.py:39 templates/base.html:78
+msgid "Alle Projekte"
+msgstr "All projects"
+
+#: planung/views.py:97
+#, python-format
+msgid "Ansicht „%(name)s“ gespeichert."
+msgstr "View “%(name)s” saved."
+
+#: planung/views.py:111
+msgid "Ansicht gelöscht."
+msgstr "View deleted."
+
+#: projekte/forms.py:26 projekte/models.py:35 projekte/models.py:62
+#: templates/projekte/projekte.html:24
+msgid "Tags"
+msgstr "Tags"
+
+#: projekte/forms.py:64 projekte/models.py:60
+#: templates/projekte/projekt.html:17 templates/projekte/projekte.html:24
+msgid "Mitglieder"
+msgstr "Members"
+
+#: projekte/forms.py:69 projekte/models.py:57
+#: templates/projekte/projekt.html:11 templates/projekte/projekte.html:24
+msgid "Projektleitung"
+msgstr "Project lead"
+
+#: projekte/forms.py:69
+msgid "– keine –"
+msgstr "– none –"
+
+#: projekte/forms.py:101 projekte/models.py:171
+#: templates/projekte/_aufgabe_detail.html:72
+#: templates/projekte/_aufgabe_zeile.html:51
+msgid "Fällig am"
+msgstr "Due on"
+
+#: projekte/forms.py:106 projekte/models.py:164
+#: templates/projekte/_aufgabe_detail.html:9
+#: templates/projekte/_aufgabe_detail.html:71
+#: templates/projekte/_aufgabe_zeile.html:25
+#: templates/projekte/_detail_feld.html:20
+#: templates/projekte/meine_aufgaben.html:37 templates/projekte/projekt.html:46
+#: templates/projekte/projekt.html:47 templates/projekte/projekt.html:75
+#: zusammenarbeit/views.py:55
+msgid "Verantwortlich"
+msgstr "Assignee"
+
+#: projekte/models.py:16
+msgid "Bernstein"
+msgstr "Amber"
+
+#: projekte/models.py:17 projekte/models.py:108
+msgid "Blau"
+msgstr "Blue"
+
+#: projekte/models.py:18 projekte/models.py:111
+msgid "Grün"
+msgstr "Green"
+
+#: projekte/models.py:19
+msgid "Violett"
+msgstr "Violet"
+
+#: projekte/models.py:20
+msgid "Rot"
+msgstr "Red"
+
+#: projekte/models.py:21
+msgid "Petrol"
+msgstr "Teal"
+
+#: projekte/models.py:22
+msgid "Oliv"
+msgstr "Olive"
+
+#: projekte/models.py:23 projekte/models.py:107
+msgid "Grau"
+msgstr "Grey"
+
+#: projekte/models.py:52 projekte/models.py:121
+#: templates/kern/_listen_bearbeiten.html:9
+msgid "Farbe"
+msgstr "Colour"
+
+#: projekte/models.py:54 projekte/models.py:161
+#: templates/projekte/_detail_feld.html:84
+#: templates/projekte/_detail_feld.html:87
+msgid "Beschreibung"
+msgstr "Description"
+
+#: projekte/models.py:64
+msgid "Priorität"
+msgstr "Priority"
+
+#: projekte/models.py:67 zusammenarbeit/views.py:56
+msgid "Beginn"
+msgstr "Start"
+
+#: projekte/models.py:68
+msgid "Ende"
+msgstr "End"
+
+#: projekte/models.py:99 projekte/models.py:155
+#: templates/projekte/_aufgabe_detail.html:12
+#: templates/projekte/_detail_feld.html:33 zusammenarbeit/views.py:55
+msgid "Abschnitt"
+msgstr "Section"
+
+#: projekte/models.py:100
+msgid "Abschnitte"
+msgstr "Sections"
+
+#: projekte/models.py:109
+msgid "Gelb"
+msgstr "Yellow"
+
+#: projekte/models.py:110
+msgid "Orange"
+msgstr "Orange"
+
+#: projekte/models.py:119
+msgid "gilt als erledigt"
+msgstr "counts as done"
+
+#: projekte/models.py:158 zusammenarbeit/views.py:58
+msgid "Hauptaufgabe"
+msgstr "Main task"
+
+#: projekte/models.py:170 templates/projekte/_aufgabe_detail.html:18
+#: templates/projekte/_detail_datum.html:5
+msgid "Geplanter Beginn"
+msgstr "Planned start"
+
+#: projekte/models.py:175
+msgid "Geschätzte Personentage"
+msgstr "Estimated person-days"
+
+#: projekte/models.py:189 templates/kern/anhaenge.html:30
+#: templates/kern/protokoll.html:32 templates/projekte/projekt.html:75
+msgid "Aufgabe"
+msgstr "Task"
+
+#: projekte/models.py:236
+msgid "Abhängigkeit"
+msgstr "Dependency"
+
+#: projekte/models.py:237 templates/projekte/_aufgabe_detail.html:34
+msgid "Abhängigkeiten"
+msgstr "Dependencies"
+
+#: projekte/termine.py:134
+msgid "Die Termine lassen sich wegen widersprüchlicher Abhängigkeiten nicht nachziehen."
+msgstr "The dates cannot be adjusted because of contradictory dependencies."
+
+#: projekte/views.py:125
+#, python-format
+msgid "Projekt „%(name)s“ angelegt."
+msgstr "Project “%(name)s” created."
+
+#: projekte/views.py:140
+msgid "Projekt archiviert."
+msgstr "Project archived."
+
+#: projekte/views.py:140
+msgid "Projekt wiederhergestellt."
+msgstr "Project restored."
+
+#: projekte/views.py:335
+msgid "Der Abschnitt enthält noch Aufgaben und kann nicht gelöscht werden."
+msgstr "The section still contains tasks and cannot be deleted."
+
+#: projekte/views.py:428
+msgid "Höchstens 300 Zeichen."
+msgstr "At most 300 characters."
+
+#: projekte/views.py:451
+msgid "Bitte eine Zahl ab 0 eingeben."
+msgstr "Please enter a number of 0 or more."
+
+#: projekte/views.py:456
+msgid "Ungültige Eingabe."
+msgstr "Invalid input."
+
+#: projekte/views.py:460
+msgid "Die Fälligkeit liegt vor dem geplanten Beginn."
+msgstr "The due date is before the planned start."
+
+#: projekte/views.py:461
+msgid "Der geplante Beginn liegt nach der Fälligkeit."
+msgstr "The planned start is after the due date."
+
+#: projekte/views.py:494
+msgid "Inzwischen von jemand anderem geändert – bitte erneut versuchen."
+msgstr "Changed by someone else in the meantime – please try again."
+
+#: projekte/views.py:702
+msgid "Aufgabe gelöscht."
+msgstr "Task deleted."
+
+#: projekte/views.py:726
+#, python-format
+msgid "Unteraufgaben gibt es höchstens %(n)s Ebenen tief."
+msgstr "Subtasks can be nested at most %(n)s levels deep."
+
+#: projekte/views.py:758
+msgid "Überfällig"
+msgstr "Overdue"
+
+#: projekte/views.py:759
+msgid "Diese Woche"
+msgstr "This week"
+
+#: projekte/views.py:760
+msgid "Später"
+msgstr "Later"
+
+#: projekte/views.py:761
+msgid "Ohne Termin"
+msgstr "No due date"
+
+#: templates/base.html:15
+msgid "Zum Inhalt springen"
+msgstr "Skip to content"
+
+#: templates/base.html:17
+msgid "Menü"
+msgstr "Menu"
+
+#: templates/base.html:23 templates/projekte/projekt.html:67
+#: templates/projekte/suche.html:3 templates/projekte/suche.html:7
+msgid "Suche"
+msgstr "Search"
+
+#: templates/base.html:24
+msgid "Aufgaben, Projekte, Kommentare suchen"
+msgstr "Search tasks, projects, comments"
+
+#: templates/base.html:29
+msgid "Vorschläge"
+msgstr "Suggestions"
+
+#: templates/base.html:37
+msgid "Sitzung verlängern"
+msgstr "Extend session"
+
+#: templates/base.html:43 templates/base.html:45 templates/base.html:48
+#: templates/kern/_posteingang_feld.html:2 templates/kern/posteingang.html:3
+#: templates/kern/posteingang.html:6
+msgid "Posteingang"
+msgstr "Inbox"
+
+#: templates/base.html:59
+msgid "Konto-Menü"
+msgstr "Account menu"
+
+#: templates/base.html:64 templates/base.html:92
+#: templates/kern/zwei_faktor_einrichten.html:26
+msgid "Abmelden"
+msgstr "Sign out"
+
+#: templates/base.html:69
+msgid "Hauptnavigation"
+msgstr "Main navigation"
+
+#: templates/base.html:70 templates/projekte/meine_aufgaben.html:3
+#: templates/projekte/meine_aufgaben.html:7
+msgid "Meine Aufgaben"
+msgstr "My tasks"
+
+#: templates/base.html:78
+msgid "Meine Projekte"
+msgstr "My projects"
+
+#: templates/base.html:79 templates/projekte/projekt_formular.html:3
+#: templates/projekte/projekt_formular.html:6
+#: templates/projekte/projekte.html:20
+msgid "Neues Projekt"
+msgstr "New project"
+
+#: templates/base.html:85
+msgid "Verwaltung"
+msgstr "Administration"
+
+#: templates/bestellungen/_liste.html:3
+msgid "Erhalten"
+msgstr "Received"
+
+#: templates/bestellungen/_liste.html:6
+#, python-format
+msgid "Eingetragen von %(name)s am %(datum)s"
+msgstr "Added by %(name)s on %(datum)s"
+
+#: templates/bestellungen/_liste.html:25
+msgid "Zeile löschen?"
+msgstr "Delete row?"
+
+#: templates/bestellungen/_liste.html:25
+#: templates/gantt/ansicht_bearbeiten.html:21
+#: templates/kern/_listen_zeile.html:6 templates/kern/anhaenge.html:38
+#: templates/notizen/_aktionen.html:3
+#: templates/planung/ansicht_bearbeiten.html:30
+#: templates/projekte/_detail_kopf.html:19 templates/projekte/projekt.html:102
+msgid "Löschen"
+msgstr "Delete"
+
+#: templates/bestellungen/_liste.html:29
+msgid "Noch keine Bestellungen."
+msgstr "No orders yet."
+
+#: templates/bestellungen/liste.html:12
+msgid "Eingetragen"
+msgstr "Added by"
+
+#: templates/bestellungen/liste.html:14
+msgid "Neue Zeile"
+msgstr "New row"
+
+#: templates/bestellungen/liste.html:17
+msgid "Neuer Bedarf …"
+msgstr "New requirement …"
+
+#: templates/bestellungen/liste.html:26
+msgid "Zeile hinzufügen"
+msgstr "Add row"
+
+#: templates/gantt/ansicht_bearbeiten.html:3
+#: templates/gantt/ansicht_bearbeiten.html:5
+#: templates/gantt/ansicht_bearbeiten.html:6
+#: templates/kern/einst_ansichten.html:8 templates/kern/einst_ansichten.html:31
+#: templates/planung/ansicht_bearbeiten.html:3
+#: templates/planung/ansicht_bearbeiten.html:5
+#: templates/planung/ansicht_bearbeiten.html:6
+msgid "Neue Ansicht"
+msgstr "New view"
+
+#: templates/gantt/ansicht_bearbeiten.html:5
+#: templates/kern/person_bearbeiten.html:5
+#: templates/kern/person_einladen.html:5
+#: templates/kern/platzhalter_bearbeiten.html:5
+#: templates/kern/platzhalter_neu.html:5
+#: templates/kern/zwei_faktor_einrichten.html:5 templates/notizen/notiz.html:5
+#: templates/notizen/ordner.html:5 templates/planung/ansicht_bearbeiten.html:5
+#: templates/projekte/_detail_pfad.html:1
+#: templates/projekte/projekt_formular.html:5
+msgid "Pfad"
+msgstr "Breadcrumb"
+
+#: templates/gantt/ansicht_bearbeiten.html:10
+#: templates/planung/ansicht_bearbeiten.html:10
+msgid "Inhalt"
+msgstr "Content"
+
+#: templates/gantt/ansicht_bearbeiten.html:21
+#: templates/planung/ansicht_bearbeiten.html:30
+msgid "Ansicht löschen"
+msgstr "Delete view"
+
+#: templates/gantt/ansicht_bearbeiten.html:22
+#: templates/planung/ansicht_bearbeiten.html:31
+#, python-format
+msgid "Ansicht „%(name)s“ löschen?"
+msgstr "Delete view “%(name)s”?"
+
+#: templates/gantt/ansicht_bearbeiten.html:23
+#: templates/planung/ansicht_bearbeiten.html:32
+msgid "Die Freigaben dieser Ansicht entfallen."
+msgstr "The sharing settings of this view will be removed."
+
+#: templates/gantt/gantt.html:6
+msgid "Das Gantt-Diagramm benötigt JavaScript."
+msgstr "The Gantt chart requires JavaScript."
+
+#: templates/kern/_listen.html:10
+#, python-format
+msgid "%(titel)s: hinzufügen"
+msgstr "%(titel)s: add"
+
+#: templates/kern/_listen.html:10 templates/projekte/_aufgabe_detail.html:73
+msgid "Hinzufügen"
+msgstr "Add"
+
+#: templates/kern/_listen_bearbeiten.html:14
+#: templates/kern/_listen_zeile.html:12
+msgid "zählt als erledigt"
+msgstr "counts as done"
+
+#: templates/kern/_listen_bearbeiten.html:17
+#: templates/kern/zwei_faktor_ersatzcodes.html:12
+msgid "Fertig"
+msgstr "Done"
+
+#: templates/kern/_listen_zeile.html:5 templates/kern/_passwort_dialog.html:8
+#: templates/kern/zwei_faktor_einrichten.html:22
+#: templates/notizen/ordner.html:16 templates/projekte/projekt_formular.html:27
+#: templates/registration/anmelden_code.html:12
+#: templates/teile/gefahrenabschnitt.html:10
+#: templates/teile/speicherleiste.html:2
+msgid "Abbrechen"
+msgstr "Cancel"
+
+#: templates/kern/_listen_zeile.html:9 templates/kern/einst_ansichten.html:21
+#, python-format
+msgid "%(name)s verschieben"
+msgstr "Move %(name)s"
+
+#: templates/kern/_listen_zeile.html:11
+#, python-format
+msgid "%(name)s bearbeiten"
+msgstr "Edit %(name)s"
+
+#: templates/kern/_listen_zeile.html:16 templates/kern/einst_kalender.html:40
+#, python-format
+msgid "%(name)s löschen"
+msgstr "Delete %(name)s"
+
+#: templates/kern/_posteingang_feld.html:4 templates/kern/posteingang.html:7
+msgid "Alle als gelesen markieren"
+msgstr "Mark all as read"
+
+#: templates/kern/_posteingang_feld.html:12
+msgid "ungelesen"
+msgstr "unread"
+
+#: templates/kern/_posteingang_feld.html:15 templates/kern/posteingang.html:17
+msgid "Keine Benachrichtigungen."
+msgstr "No notifications."
+
+#: templates/kern/_posteingang_feld.html:18
+msgid "Alle Benachrichtigungen anzeigen"
+msgstr "Show all notifications"
+
+#: templates/kern/_ungelesen.html:1
+#, python-format
+msgid "%(n)s ungelesen"
+msgid_plural "%(n)s ungelesen"
+msgstr[0] "%(n)s unread"
+msgstr[1] "%(n)s unread"
+
+#: templates/kern/anhaenge.html:7
+msgid "Belegt"
+msgstr "Used"
+
+#: templates/kern/anhaenge.html:11
+msgid "Frei"
+msgstr "Free"
+
+#: templates/kern/anhaenge.html:16 templates/projekte/projekt.html:32
+#: templates/projekte/projekt.html:35
+msgid "Filter"
+msgstr "Filter"
+
+#: templates/kern/anhaenge.html:17 templates/projekte/projekt.html:59
+msgid "Sortieren"
+msgstr "Sort"
+
+#: templates/kern/anhaenge.html:19
+msgid "Größte zuerst"
+msgstr "Largest first"
+
+#: templates/kern/anhaenge.html:20
+msgid "Älteste zuerst"
+msgstr "Oldest first"
+
+#: templates/kern/anhaenge.html:21
+msgid "Neueste zuerst"
+msgstr "Newest first"
+
+#: templates/kern/anhaenge.html:24
+msgid "Nur archivierte Projekte"
+msgstr "Archived projects only"
+
+#: templates/kern/anhaenge.html:25 templates/kern/personen.html:38
+#: templates/kern/protokoll.html:11
+msgid "Anzeigen"
+msgstr "Show"
+
+#: templates/kern/anhaenge.html:30 templates/notizen/_anhaenge.html:10
+#: templates/projekte/_aufgabe_detail.html:87
+msgid "Datei"
+msgstr "File"
+
+#: templates/kern/anhaenge.html:30
+msgid "Hochgeladen von"
+msgstr "Uploaded by"
+
+#: templates/kern/anhaenge.html:30
+msgid "Am"
+msgstr "On"
+
+#: templates/kern/anhaenge.html:38
+#, python-format
+msgid "„%(name)s“ endgültig löschen?"
+msgstr "Permanently delete “%(name)s”?"
+
+#: templates/kern/anhaenge.html:41
+msgid "Keine Anhänge."
+msgstr "No attachments."
+
+#: templates/kern/anhaenge.html:46
+msgid "Zurück"
+msgstr "Back"
+
+#: templates/kern/anhaenge.html:47 templates/kern/protokoll.html:62
+#, python-format
+msgid "Seite %(n)s von %(gesamt)s"
+msgstr "Page %(n)s of %(gesamt)s"
+
+#: templates/kern/anhaenge.html:48
+msgid "Weiter"
+msgstr "Next"
+
+#: templates/kern/einst_allgemein.html:13
+msgid "Auf diesem Server ist kein SMTP-Server eingerichtet."
+msgstr "No SMTP server is set up on this server."
+
+#: templates/kern/einst_ansichten.html:11
+msgid "Art der Ansicht"
+msgstr "Type of view"
+
+#: templates/kern/einst_ansichten.html:15
+msgid "Ansichten"
+msgstr "Views"
+
+#: templates/kern/einst_ansichten.html:17
+msgid "Ansicht"
+msgstr "View"
+
+#: templates/kern/einst_ansichten.html:17
+msgid "Enthält"
+msgstr "Contains"
+
+#: templates/kern/einst_ansichten.html:22
+msgid "neue Projekte automatisch"
+msgstr "new projects automatically"
+
+#: templates/kern/einst_ansichten.html:26
+#, python-format
+msgid "%(s)s sehen · %(b)s bearbeiten"
+msgstr "%(s)s view · %(b)s edit"
+
+#: templates/kern/einst_ansichten.html:28 templates/kern/personen.html:56
+#, python-format
+msgid "%(name)s öffnen"
+msgstr "Open %(name)s"
+
+#: templates/kern/einst_ansichten.html:31
+#: templates/kern/person_bearbeiten.html:85
+msgid "Noch keine Ansichten."
+msgstr "No views yet."
+
+#: templates/kern/einst_benachrichtigungen.html:6
+msgid "E-Mail-Versand ist auf diesem Server noch nicht eingerichtet."
+msgstr "Sending e-mail is not set up on this server yet."
+
+#: templates/kern/einst_benachrichtigungen.html:7
+msgid "E-Mail-Versand ist deaktiviert."
+msgstr "Email sending is turned off."
+
+#: templates/kern/einst_benachrichtigungen.html:13
+#, python-format
+msgid "%(titel)s: alle"
+msgstr "%(titel)s: all"
+
+#: templates/kern/einst_kalender.html:7
+msgid "Freie Tage eintragen"
+msgstr "Add days off"
+
+#: templates/kern/einst_kalender.html:10
+msgid "Von"
+msgstr "From"
+
+#: templates/kern/einst_kalender.html:11
+msgid "Bis"
+msgstr "To"
+
+#: templates/kern/einst_kalender.html:12
+msgid "z. B. Betriebsurlaub"
+msgstr "e.g. company holiday"
+
+#: templates/kern/einst_kalender.html:13
+msgid "Eintragen"
+msgstr "Add"
+
+#: templates/kern/einst_kalender.html:20
+#, python-format
+msgid "%(g)s gesetzliche · %(n)s freier Tag"
+msgid_plural "%(g)s gesetzliche · %(n)s freie Tage"
+msgstr[0] "%(g)s public holidays · %(n)s day off"
+msgstr[1] "%(g)s public holidays · %(n)s days off"
+
+#: templates/kern/einst_kalender.html:27
+msgid "automatisch"
+msgstr "automatic"
+
+#: templates/kern/einst_kalender.html:31
+#, python-format
+msgid "%(name)s umbenennen"
+msgstr "Rename %(name)s"
+
+#: templates/kern/einst_kalender.html:35 templates/notizen/ordner.html:15
+#: templates/projekte/projekt_formular.html:26
+#: templates/projekte/projekte.html:36 templates/teile/speicherleiste.html:3
+msgid "Speichern"
+msgstr "Save"
+
+#: templates/kern/einst_kalender.html:38
+#, python-format
+msgid "„%(name)s“ (%(n)s Tag) löschen?"
+msgid_plural "„%(name)s“ (%(n)s Tage) löschen?"
+msgstr[0] "Delete “%(name)s” (%(n)s day)?"
+msgstr[1] "Delete “%(name)s” (%(n)s days)?"
+
+#: templates/kern/einst_kalender.html:44
+msgid "Einzelne Tage"
+msgstr "Individual days"
+
+#: templates/kern/einst_kalender.html:48
+#, python-format
+msgid "Freien Tag %(datum)s entfernen?"
+msgstr "Remove day off %(datum)s?"
+
+#: templates/kern/einst_kalender.html:49
+#, python-format
+msgid "%(datum)s entfernen"
+msgstr "Remove %(datum)s"
+
+#: templates/kern/einst_profil.html:12 templates/kern/einst_profil.html:15
+msgid "Profilbild ändern"
+msgstr "Change profile picture"
+
+#: templates/kern/einst_profil.html:22
+msgid "Foto wählen"
+msgstr "Choose photo"
+
+#: templates/kern/einst_profil.html:24 templates/kern/person_bearbeiten.html:69
+msgid "Entfernen"
+msgstr "Remove"
+
+#: templates/kern/einst_rollen.html:7
+msgid "Rechte je Rolle"
+msgstr "Permissions by role"
+
+#: templates/kern/einst_rollen.html:15 templates/kern/einst_rollen.html:24
+msgid "Ja"
+msgstr "Yes"
+
+#: templates/kern/einst_rollen.html:16 templates/kern/einst_rollen.html:25
+msgid "Eigene"
+msgstr "Own"
+
+#: templates/kern/einst_rollen.html:24
+msgid "uneingeschränkt"
+msgstr "unrestricted"
+
+#: templates/kern/einst_rollen.html:25
+msgid "nur in eigenen Projekten"
+msgstr "only in own projects"
+
+#: templates/kern/einst_rollen.html:26
+msgid "laut Teamplaner-Ansichten"
+msgstr "according to team planner views"
+
+#: templates/kern/einst_rollen.html:27
+msgid "kein Zugriff"
+msgstr "no access"
+
+#: templates/kern/einst_sicherheit.html:7
+msgid "Passwort"
+msgstr "Password"
+
+#: templates/kern/einst_sicherheit.html:16
+msgid "Passwort ändern"
+msgstr "Change password"
+
+#: templates/kern/einst_sicherheit.html:22
+#: templates/kern/person_bearbeiten.html:56
+#: templates/kern/zwei_faktor_einrichten.html:3
+msgid "Zwei-Faktor-Anmeldung"
+msgstr "Two-factor authentication"
+
+#: templates/kern/einst_sicherheit.html:23
+msgid "Eingerichtet"
+msgstr "Set up"
+
+#: templates/kern/einst_sicherheit.html:23
+#: templates/kern/person_bearbeiten.html:64
+msgid "Nicht eingerichtet"
+msgstr "Not set up"
+
+#: templates/kern/einst_sicherheit.html:24
+msgid "Pflicht"
+msgstr "Required"
+
+#: templates/kern/einst_sicherheit.html:28
+#, python-format
+msgid "Seit %(seit)s · %(n)s Ersatzcodes übrig"
+msgstr "Since %(seit)s · %(n)s backup codes left"
+
+#: templates/kern/einst_sicherheit.html:29
+#: templates/kern/zwei_faktor_einrichten.html:6
+msgid "Neues Telefon einrichten"
+msgstr "Set up a new phone"
+
+#: templates/kern/einst_sicherheit.html:30
+msgid "Neue Ersatzcodes"
+msgstr "New backup codes"
+
+#: templates/kern/einst_sicherheit.html:31
+msgid "Ausschalten …"
+msgstr "Turn off …"
+
+#: templates/kern/einst_sicherheit.html:34
+#: templates/kern/zwei_faktor_einrichten.html:23
+msgid "Einrichten"
+msgstr "Set up"
+
+#: templates/kern/einst_sicherheit.html:41
+msgid "Neue Ersatzcodes erzeugen?"
+msgstr "Generate new backup codes?"
+
+#: templates/kern/einst_sicherheit.html:41
+msgid "Die bisherigen Ersatzcodes gelten danach nicht mehr."
+msgstr "Your current backup codes will no longer work."
+
+#: templates/kern/einst_sicherheit.html:41
+msgid "Erzeugen"
+msgstr "Generate"
+
+#: templates/kern/einst_sicherheit.html:44
+msgid "Zwei-Faktor-Anmeldung ausschalten?"
+msgstr "Turn off two-factor sign-in?"
+
+#: templates/kern/einst_sicherheit.html:44
+msgid "Danach genügt wieder das Passwort zur Anmeldung."
+msgstr "After that, your password alone is enough to sign in."
+
+#: templates/kern/einst_sicherheit.html:44
+msgid "Ausschalten"
+msgstr "Turn off"
+
+#: templates/kern/einst_ueber.html:7
+#, python-format
+msgid "Installiert: Teamplaner <span class=\"mono\">%(version)s</span>"
+msgstr "Installed: Teamplaner <span class=\"mono\">%(version)s</span>"
+
+#: templates/kern/einst_ueber.html:7
+msgid "Aus dem Quellcode gestartet (Entwicklungsstand, keine Versionsnummer)."
+msgstr "Started from source code (development state, no version number)."
+
+#: templates/kern/einst_ueber.html:9
+msgid "Suche nach neueren Versionen …"
+msgstr "Checking for newer versions …"
+
+#: templates/kern/einst_ueber.html:13
+msgid "Freie Software unter der GNU AGPL-3.0 oder später, ohne Gewährleistung."
+msgstr "Free software under the GNU AGPL-3.0 or later, without warranty."
+
+#: templates/kern/einst_ueber.html:13
+msgid "Quellcode"
+msgstr "Source code"
+
+#: templates/kern/einst_ueber.html:14
+msgid "Grafiken der Feieranimation: Fluent Emoji von Microsoft (MIT-Lizenz)."
+msgstr "Celebration graphics: Fluent Emoji by Microsoft (MIT license)."
+
+#: templates/kern/person_bearbeiten.html:8 templates/kern/personen.html:50
+msgid "Einladung offen"
+msgstr "Invitation pending"
+
+#: templates/kern/person_bearbeiten.html:9 templates/kern/personen.html:49
+msgid "Systemkonto"
+msgstr "System account"
+
+#: templates/kern/person_bearbeiten.html:14
+msgid "Link zum Festlegen des Passworts"
+msgstr "Link for setting the password"
+
+#: templates/kern/person_bearbeiten.html:15
+#: templates/projekte/_detail_kopf.html:16
+msgid "Link kopieren"
+msgstr "Copy link"
+
+#: templates/kern/person_bearbeiten.html:17
+msgid "QR-Code"
+msgstr "QR code"
+
+#: templates/kern/person_bearbeiten.html:24
+#: templates/kern/person_einladen.html:9
+#: templates/kern/platzhalter_bearbeiten.html:14
+#: templates/kern/platzhalter_neu.html:9
+msgid "Stammdaten"
+msgstr "Details"
+
+#: templates/kern/person_bearbeiten.html:42
+msgid "Anmeldung"
+msgstr "Sign-in"
+
+#: templates/kern/person_bearbeiten.html:43
+#, python-format
+msgid "Persönliche Daten am %(datum)s entfernt (Frist nach der Deaktivierung). Zum Reaktivieren eine neue E-Mail-Adresse eintragen und eine Einladung schicken."
+msgstr "Personal data removed on %(datum)s (retention period after deactivation). To reactivate, enter a new email address and send an invitation."
+
+#: templates/kern/person_bearbeiten.html:46
+msgid "Passwort gesetzt"
+msgstr "Password set"
+
+#: templates/kern/person_bearbeiten.html:46
+msgid "Einladung noch nicht angenommen"
+msgstr "Invitation not accepted yet"
+
+#: templates/kern/person_bearbeiten.html:47
+msgid "Letzte Anmeldung"
+msgstr "Last sign-in"
+
+#: templates/kern/person_bearbeiten.html:50
+msgid "Das bisherige Passwort gilt danach nicht mehr, bis die Person über den Link ein neues festlegt. Fortfahren?"
+msgstr "The previous password will then no longer be valid until the person sets a new one via the link. Continue?"
+
+#: templates/kern/person_bearbeiten.html:51
+msgid "Neuen Einladungslink erzeugen"
+msgstr "Create new invitation link"
+
+#: templates/kern/person_bearbeiten.html:51
+msgid "Link zum Zurücksetzen schicken"
+msgstr "Send reset link"
+
+#: templates/kern/person_bearbeiten.html:51
+msgid "Passwort zurücksetzen und Link erzeugen"
+msgstr "Reset password and create link"
+
+#: templates/kern/person_bearbeiten.html:58
+#, python-format
+msgid "Eingerichtet seit %(seit)s"
+msgstr "Set up since %(seit)s"
+
+#: templates/kern/person_bearbeiten.html:60
+msgid "Zwei-Faktor-Anmeldung zurücksetzen, z. B. weil das Telefon verloren ist? Die Person bekommt eine E-Mail."
+msgstr "Reset two-factor authentication, e.g. because the phone was lost? The person will receive an email."
+
+#: templates/kern/person_bearbeiten.html:60
+msgid "Zwei-Faktor-Anmeldung zurücksetzen, z. B. weil das Telefon verloren ist?"
+msgstr "Reset two-factor authentication, e.g. because the phone was lost?"
+
+#: templates/kern/person_bearbeiten.html:61
+msgid "Zurücksetzen"
+msgstr "Reset"
+
+#: templates/kern/person_bearbeiten.html:68
+msgid "Profilbild"
+msgstr "Profile picture"
+
+#: templates/kern/person_bearbeiten.html:69
+msgid "Profilbild entfernen?"
+msgstr "Remove profile picture?"
+
+#: templates/kern/person_bearbeiten.html:93
+msgid "Konto deaktivieren"
+msgstr "Deactivate account"
+
+#: templates/kern/person_bearbeiten.html:93
+msgid "Deaktivieren"
+msgstr "Deactivate"
+
+#: templates/kern/person_bearbeiten.html:94
+#, python-format
+msgid "Konto von %(name)s deaktivieren?"
+msgstr "Deactivate the account of %(name)s?"
+
+#: templates/kern/person_bearbeiten.html:95
+msgid "Die Person kann sich nicht mehr anmelden; Aufgaben und Einteilungen bleiben erhalten."
+msgstr "The person can no longer sign in; tasks and assignments are kept."
+
+#: templates/kern/person_bearbeiten.html:98
+#: templates/kern/person_bearbeiten.html:99
+msgid "Konto reaktivieren"
+msgstr "Reactivate account"
+
+#: templates/kern/person_bearbeiten.html:100
+msgid "Reaktivieren"
+msgstr "Reactivate"
+
+#: templates/kern/person_einladen.html:3 templates/kern/person_einladen.html:5
+#: templates/kern/person_einladen.html:6 templates/kern/personen.html:10
+msgid "Person einladen"
+msgstr "Invite person"
+
+#: templates/kern/person_einladen.html:21
+msgid "Konto anlegen und Link erzeugen"
+msgstr "Create account and link"
+
+#: templates/kern/personen.html:18 templates/teile/personenauswahl.html:5
+msgid "Personen suchen"
+msgstr "Search people"
+
+#: templates/kern/personen.html:18
+msgid "Name oder E-Mail"
+msgstr "Name or e-mail"
+
+#: templates/kern/personen.html:22 templates/kern/personen.html:28
+#: templates/kern/protokoll.html:20 templates/projekte/projekt.html:43
+msgid "Alle"
+msgstr "All"
+
+#: templates/kern/personen.html:27
+msgid "Art"
+msgstr "Type"
+
+#: templates/kern/personen.html:33
+msgid "Zustand"
+msgstr "State"
+
+#: templates/kern/personen.html:35
+msgid "Aktiv"
+msgstr "Active"
+
+#: templates/kern/personen.html:36
+msgid "Deaktiviert und archiviert"
+msgstr "Deactivated and archived"
+
+#: templates/kern/personen.html:45 templates/kern/platzhalter_bearbeiten.html:7
+msgid "kein Konto"
+msgstr "no account"
+
+#: templates/kern/personen.html:60 templates/teile/freigaben.html:26
+#: templates/teile/personenauswahl.html:11
+msgid "Keine Person gefunden."
+msgstr "No person found."
+
+#: templates/kern/personen.html:61 templates/kern/platzhalter_neu.html:3
+#: templates/kern/platzhalter_neu.html:5 templates/kern/platzhalter_neu.html:6
+msgid "Platzhalter anlegen"
+msgstr "Create placeholder"
+
+#: templates/kern/platzhalter_bearbeiten.html:30
+msgid "In Benutzerkonto umwandeln"
+msgstr "Convert to user account"
+
+#: templates/kern/platzhalter_bearbeiten.html:36
+msgid "Konto anlegen"
+msgstr "Create account"
+
+#: templates/kern/platzhalter_bearbeiten.html:42
+#: templates/kern/platzhalter_bearbeiten.html:44
+#: templates/projekte/projekt_formular.html:30
+msgid "Wiederherstellen"
+msgstr "Restore"
+
+#: templates/kern/platzhalter_bearbeiten.html:43
+msgid "Platzhalter wiederherstellen"
+msgstr "Restore placeholder"
+
+#: templates/kern/platzhalter_bearbeiten.html:47
+msgid "Platzhalter archivieren"
+msgstr "Archive placeholder"
+
+#: templates/kern/platzhalter_bearbeiten.html:47
+msgid "Archivieren"
+msgstr "Archive"
+
+#: templates/kern/platzhalter_bearbeiten.html:48
+#, python-format
+msgid "„%(name)s“ archivieren?"
+msgstr "Archive “%(name)s”?"
+
+#: templates/kern/platzhalter_bearbeiten.html:49
+#, python-format
+msgid "Eingeteilt bis %(datum)s; die Einteilungen bleiben sichtbar."
+msgstr "Scheduled until %(datum)s; the assignments stay visible."
+
+#: templates/kern/platzhalter_neu.html:17
+msgid "Anlegen"
+msgstr "Create"
+
+#: templates/kern/protokoll.html:7
+msgid "Erledigte Aufgaben"
+msgstr "Completed tasks"
+
+#: templates/kern/protokoll.html:7
+msgid "Änderungsprotokoll"
+msgstr "Audit log"
+
+#: templates/kern/protokoll.html:13
+msgid "Alle Änderungen"
+msgstr "All changes"
+
+#: templates/kern/protokoll.html:14
+msgid "Nur erledigte Aufgaben"
+msgstr "Completed tasks only"
+
+#: templates/kern/protokoll.html:18
+msgid "Bereich des Protokolls"
+msgstr "Log category"
+
+#: templates/kern/protokoll.html:25 templates/projekte/projekte.html:17
+msgid "Filtern"
+msgstr "Filter"
+
+#: templates/kern/protokoll.html:32
+msgid "Erledigt am"
+msgstr "Completed on"
+
+#: templates/kern/protokoll.html:32
+msgid "Wer"
+msgstr "Who"
+
+#: templates/kern/protokoll.html:41 templates/kern/protokoll.html:55
+msgid "Keine Einträge."
+msgstr "No entries."
+
+#: templates/kern/protokoll.html:47
+msgid "Zeitpunkt"
+msgstr "Time"
+
+#: templates/kern/protokoll.html:47
+msgid "Änderung"
+msgstr "Change"
+
+#: templates/kern/protokoll.html:61
+msgid "Neuere"
+msgstr "Newer"
+
+#: templates/kern/protokoll.html:63
+msgid "Ältere"
+msgstr "Older"
+
+#: templates/kern/version_hinweis.html:3
+#, python-format
+msgid "Neue Version <span class=\"mono\">%(neu)s</span> verfügbar. Einspielen auf dem Server im Installationsverzeichnis mit <code>./teamplaner update</code> (vorher wird automatisch gesichert)."
+msgstr "New version <span class=\"mono\">%(neu)s</span> available. Install it on the server in the installation directory with <code>./teamplaner update</code> (a backup is made automatically first)."
+
+#: templates/kern/version_hinweis.html:6
+msgid "Das ist die neueste Version."
+msgstr "This is the latest version."
+
+#: templates/kern/version_hinweis.html:8
+msgid "Ob es eine neuere Version gibt, lässt sich gerade nicht prüfen (Internetverbindung oder Zugang zur Paketquelle in der .env)."
+msgstr "Cannot check for a newer version right now (internet connection or package source access in the .env)."
+
+#: templates/kern/zwei_faktor_einrichten.html:6
+msgid "Zwei-Faktor-Anmeldung einrichten"
+msgstr "Set up two-factor authentication"
+
+#: templates/kern/zwei_faktor_einrichten.html:7
+msgid "Für Ihre Rolle ist die Zwei-Faktor-Anmeldung vorgeschrieben. Bitte richten Sie sie jetzt ein – danach geht es normal weiter."
+msgstr "Two-factor authentication is required for your role. Please set it up now – then you can continue as usual."
+
+#: templates/kern/zwei_faktor_einrichten.html:8
+msgid "Nach dem Speichern gilt nur noch das neue Telefon; die bisherigen Ersatzcodes werden ersetzt."
+msgstr "After saving, only the new phone is valid; the previous backup codes are replaced."
+
+#: templates/kern/zwei_faktor_einrichten.html:10
+msgid "1. App installieren"
+msgstr "1. Install an app"
+
+#: templates/kern/zwei_faktor_einrichten.html:11
+msgid "Eine Authenticator-App auf dem Telefon, z. B. Microsoft Authenticator, Google Authenticator, FreeOTP oder die Passwort-App des iPhones."
+msgstr "An authenticator app on your phone, e.g. Microsoft Authenticator, Google Authenticator, FreeOTP or the iPhone Passwords app."
+
+#: templates/kern/zwei_faktor_einrichten.html:12
+msgid "2. QR-Code scannen"
+msgstr "2. Scan the QR code"
+
+#: templates/kern/zwei_faktor_einrichten.html:14
+msgid "Geht der QR-Code nicht, diesen Schlüssel von Hand eingeben:"
+msgstr "If the QR code does not work, enter this key by hand:"
+
+#: templates/kern/zwei_faktor_einrichten.html:18
+msgid "3. Bestätigen"
+msgstr "3. Confirm"
+
+#: templates/kern/zwei_faktor_ersatzcodes.html:3
+#: templates/kern/zwei_faktor_ersatzcodes.html:5
+msgid "Ersatzcodes"
+msgstr "Backup codes"
+
+#: templates/kern/zwei_faktor_ersatzcodes.html:7
+msgid "Diese Codes werden nur jetzt angezeigt. Bitte ausdrucken oder an einem sicheren Ort aufbewahren – nicht auf dem Telefon mit der App."
+msgstr "These codes are shown only now. Please print them or keep them in a safe place – not on the phone with the app."
+
+#: templates/kern/zwei_faktor_ersatzcodes.html:8
+msgid "Mit einem Ersatzcode melden Sie sich an, wenn das Telefon fehlt. Jeder Code gilt einmal."
+msgstr "Use a backup code to sign in when you do not have your phone. Each code works once."
+
+#: templates/kern/zwei_faktor_ersatzcodes.html:11
+msgid "Drucken"
+msgstr "Print"
+
+#: templates/notizen/_aktionen.html:3
+msgid "Notiz endgültig löschen?"
+msgstr "Delete note permanently?"
+
+#: templates/notizen/_anhaenge.html:12
+#: templates/projekte/_aufgabe_detail.html:89
+msgid "Hochladen"
+msgstr "Upload"
+
+#: templates/notizen/_fuss.html:2
+#, python-format
+msgid "Zuletzt geändert am %(datum)s"
+msgstr "Last changed on %(datum)s"
+
+#: templates/notizen/_fuss.html:2 templates/notizen/_titel.html:5
+#: templates/notizen/notiz.html:3 templates/notizen/uebersicht.html:21
+msgid "Neue Notiz"
+msgstr "New note"
+
+#: templates/notizen/_konflikt.html:2
+#, python-format
+msgid "Die Notiz wurde inzwischen von %(name)s geändert. Ihr Text ist nicht gespeichert."
+msgstr "%(name)s has changed the note in the meantime. Your text has not been saved."
+
+#: templates/notizen/_konflikt.html:3 templates/projekte/_detail_feld.html:92
+msgid "Aktuelle Fassung"
+msgstr "Current version"
+
+#: templates/notizen/_konflikt.html:5 templates/projekte/_detail_feld.html:95
+msgid "Meine Fassung speichern"
+msgstr "Save my version"
+
+#: templates/notizen/_konflikt.html:6 templates/projekte/_detail_feld.html:96
+msgid "Aktuelle Fassung übernehmen"
+msgstr "Use the current version"
+
+#: templates/notizen/_ordner_notizen.html:5
+#: templates/notizen/uebersicht.html:37
+msgid "Noch keine Notizen."
+msgstr "No notes yet."
+
+#: templates/notizen/_ordnerliste.html:3
+msgid "Gruppenordner"
+msgstr "Group folders"
+
+#: templates/notizen/_ordnerliste.html:6
+#, python-format
+msgid "Notizen in %(name)s"
+msgstr "Notes in %(name)s"
+
+#: templates/notizen/_ordnerliste.html:20
+msgid "Gruppenordner anlegen"
+msgstr "Create group folder"
+
+#: templates/notizen/notiz.html:23
+msgid "Noch kein Text."
+msgstr "No text yet."
+
+#: templates/notizen/ordner.html:3 templates/notizen/ordner.html:5
+#: templates/notizen/ordner.html:11
+msgid "Neuer Gruppenordner"
+msgstr "New group folder"
+
+#: templates/notizen/ordner.html:11
+msgid "Gruppenordner bearbeiten"
+msgstr "Edit group folder"
+
+#: templates/notizen/ordner.html:20
+msgid "Ordner samt allen Notizen darin endgültig löschen?"
+msgstr "Permanently delete the folder and all notes in it?"
+
+#: templates/notizen/ordner.html:21
+msgid "Ordner löschen"
+msgstr "Delete folder"
+
+#: templates/notizen/uebersicht.html:17
+msgid "Notizen durchsuchen"
+msgstr "Search notes"
+
+#: templates/notizen/uebersicht.html:18
+msgid "Durchsuchen …"
+msgstr "Search …"
+
+#: templates/notizen/uebersicht.html:20
+msgid "Ordner bearbeiten"
+msgstr "Edit folder"
+
+#: templates/notizen/uebersicht.html:32
+#, python-format
+msgid "%(n)s Anhang"
+msgid_plural "%(n)s Anhänge"
+msgstr[0] "%(n)s attachment"
+msgstr[1] "%(n)s attachments"
+
+#: templates/notizen/uebersicht.html:37
+msgid "Keine Notiz gefunden."
+msgstr "No note found."
+
+#: templates/planung/ansicht_bearbeiten.html:16
+msgid "Anzeigefilter"
+msgstr "Display filters"
+
+#: templates/planung/teamplaner.html:7
+msgid "Der Teamplaner benötigt JavaScript."
+msgstr "The team planner requires JavaScript."
+
+#: templates/projekte/_aufgabe_detail.html:21
+#: templates/projekte/_detail_datum.html:5 templates/projekte/projekt.html:75
+#: zusammenarbeit/views.py:56
+msgid "Fällig"
+msgstr "Due"
+
+#: templates/projekte/_aufgabe_detail.html:23
+msgid "Geschätzt"
+msgstr "Estimate"
+
+#: templates/projekte/_aufgabe_detail.html:24
+#, python-format
+msgid "%(n)s Tag eingeteilt"
+msgid_plural "%(n)s Tage eingeteilt"
+msgstr[0] "%(n)s day scheduled"
+msgstr[1] "%(n)s days scheduled"
+
+#: templates/projekte/_aufgabe_detail.html:34
+#: templates/projekte/_aufgabe_detail.html:37
+#: templates/projekte/_aufgabe_detail.html:38
+msgid "Termine überschneiden sich"
+msgstr "Dates overlap"
+
+#: templates/projekte/_aufgabe_detail.html:37
+msgid "Muss vorher fertig sein"
+msgstr "Must be finished first"
+
+#: templates/projekte/_aufgabe_detail.html:38
+msgid "Danach erst möglich"
+msgstr "Can only start afterwards"
+
+#: templates/projekte/_aufgabe_detail.html:40
+msgid "Im Gantt-Diagramm bearbeiten"
+msgstr "Edit in the Gantt chart"
+
+#: templates/projekte/_aufgabe_detail.html:47
+msgid "Unteraufgaben"
+msgstr "Subtasks"
+
+#: templates/projekte/_aufgabe_detail.html:55
+#: templates/projekte/_detail_kopf.html:10
+msgid "Wieder öffnen"
+msgstr "Reopen"
+
+#: templates/projekte/_aufgabe_detail.html:55
+#: templates/projekte/projekt.html:44
+msgid "Erledigt"
+msgstr "Done"
+
+#: templates/projekte/_aufgabe_detail.html:70
+msgid "Neue Unteraufgabe"
+msgstr "New subtask"
+
+#: templates/projekte/_aufgabe_detail.html:96
+#: templates/projekte/_suchvorschlaege.html:21 templates/projekte/suche.html:37
+#: templates/projekte/suche.html:38 zusammenarbeit/models.py:26
+msgid "Kommentare"
+msgstr "Comments"
+
+#: templates/projekte/_aufgabe_detail.html:97
+msgid "Verlauf anzeigen"
+msgstr "Show history"
+
+#: templates/projekte/_aufgabe_detail.html:105
+msgid "Kommentar löschen?"
+msgstr "Delete comment?"
+
+#: templates/projekte/_aufgabe_detail.html:105
+msgid "löschen"
+msgstr "delete"
+
+#: templates/projekte/_aufgabe_detail.html:114
+msgid "Noch keine Kommentare."
+msgstr "No comments yet."
+
+#: templates/projekte/_aufgabe_detail.html:119 zusammenarbeit/models.py:25
+#: zusammenarbeit/models.py:87
+msgid "Kommentar"
+msgstr "Comment"
+
+#: templates/projekte/_aufgabe_detail.html:120
+msgid "Kommentar schreiben, @ für Erwähnung"
+msgstr "Write a comment, @ to mention"
+
+#: templates/projekte/_aufgabe_detail.html:122
+msgid "Kommentieren"
+msgstr "Comment"
+
+#: templates/projekte/_aufgabe_detail.html:129
+#: templates/projekte/_aufgabe_detail.html:131
+msgid "Arbeitstage"
+msgstr "Working days"
+
+#: templates/projekte/_aufgabe_detail.html:133
+msgid "Vorheriger Monat"
+msgstr "Previous month"
+
+#: templates/projekte/_aufgabe_detail.html:135
+msgid "Nächster Monat"
+msgstr "Next month"
+
+#: templates/projekte/_aufgabe_detail.html:139
+msgid "Mo"
+msgstr "Mon"
+
+#: templates/projekte/_aufgabe_detail.html:139
+msgid "Di"
+msgstr "Tue"
+
+#: templates/projekte/_aufgabe_detail.html:139
+msgid "Mi"
+msgstr "Wed"
+
+#: templates/projekte/_aufgabe_detail.html:139
+msgid "Do"
+msgstr "Thu"
+
+#: templates/projekte/_aufgabe_detail.html:139
+msgid "Fr"
+msgstr "Fri"
+
+#: templates/projekte/_aufgabe_detail.html:143
+#: templates/projekte/_aufgabe_detail.html:148
+msgid "Arbeitstag"
+msgstr "Working day"
+
+#: templates/projekte/_aufgabe_detail.html:149
+msgid "Feiertag"
+msgstr "Public holiday"
+
+#: templates/projekte/_aufgabe_detail.html:150
+#: templates/projekte/meine_aufgaben.html:17
+msgid "heute"
+msgstr "today"
+
+#: templates/projekte/_aufgabe_detail.html:152
+msgid "Im Teamplaner einteilen"
+msgstr "Schedule in the team planner"
+
+#: templates/projekte/_aufgabe_zeile.html:11
+msgid "Als offen markieren"
+msgstr "Mark as open"
+
+#: templates/projekte/_aufgabe_zeile.html:11
+#: templates/projekte/_detail_kopf.html:10
+#: templates/projekte/meine_aufgaben.html:47
+msgid "Als erledigt markieren"
+msgstr "Mark as done"
+
+#: templates/projekte/_aufgabe_zeile.html:16
+#: templates/projekte/meine_aufgaben.html:53
+msgid "Unteraufgabe von"
+msgstr "Subtask of"
+
+#: templates/projekte/_aufgabe_zeile.html:18
+msgid "Unteraufgaben ein- oder ausblenden"
+msgstr "Show or hide subtasks"
+
+#: templates/projekte/_aufgabe_zeile.html:18
+#, python-format
+msgid "%(e)s von %(g)s Unteraufgaben erledigt – ein- oder ausblenden"
+msgstr "%(e)s of %(g)s subtasks done – show or hide"
+
+#: templates/projekte/_aufgabe_zeile.html:45
+msgid "Pers."
+msgstr "ppl."
+
+#: templates/projekte/_detail_feld.html:34
+msgid "– ohne Abschnitt –"
+msgstr "– no section –"
+
+#: templates/projekte/_detail_feld.html:65
+msgid "Personentage"
+msgstr "person-days"
+
+#: templates/projekte/_detail_feld.html:67
+#, python-format
+msgid "%(n)s Personentage"
+msgstr "%(n)s person-days"
+
+#: templates/projekte/_detail_feld.html:75
+msgid "– kein Gewerk –"
+msgstr "– no trade –"
+
+#: templates/projekte/_detail_feld.html:93
+#: templates/projekte/_detail_feld.html:102
+msgid "Keine Beschreibung."
+msgstr "No description."
+
+#: templates/projekte/_detail_kopf.html:16
+msgid "Link kopiert"
+msgstr "Link copied"
+
+#: templates/projekte/_detail_kopf.html:18
+msgid "Aufgabe mit allen Einteilungen, Kommentaren und Anhängen löschen?"
+msgstr "Delete task with all assignments, comments and attachments?"
+
+#: templates/projekte/_seitenleiste_inhalt.html:4
+msgid "Vollansicht"
+msgstr "Full view"
+
+#: templates/projekte/_seitenleiste_inhalt.html:5 templates/teile/toasts.html:6
+msgid "Schließen"
+msgstr "Close"
+
+#: templates/projekte/_suchvorschlaege.html:29
+msgid "Keine Treffer."
+msgstr "No results."
+
+#: templates/projekte/_suchvorschlaege.html:30
+#, python-format
+msgid "Alle Treffer für „%(text)s“"
+msgstr "All results for “%(text)s”"
+
+#: templates/projekte/meine_aufgaben.html:12
+#: templates/projekte/meine_aufgaben.html:13 templates/projekte/projekt.html:75
+#: zusammenarbeit/models.py:88
+msgid "Eingeteilt"
+msgstr "Scheduled"
+
+#: templates/projekte/meine_aufgaben.html:13
+msgid "nächste zwei Wochen"
+msgstr "next two weeks"
+
+#: templates/projekte/meine_aufgaben.html:22
+msgid "Abwesend"
+msgstr "Absent"
+
+#: templates/projekte/meine_aufgaben.html:38 templates/projekte/projekt.html:49
+msgid "Mir zugewiesen"
+msgstr "Assigned to me"
+
+#: templates/projekte/meine_aufgaben.html:61
+msgid "Keine offenen Aufgaben – sehr gut."
+msgstr "No open tasks – well done."
+
+#: templates/projekte/meine_aufgaben.html:67
+msgid "Zuletzt erledigt"
+msgstr "Recently completed"
+
+#: templates/projekte/projekt.html:12
+msgid "Tags:"
+msgstr "Tags:"
+
+#: templates/projekte/projekt.html:22
+#: templates/projekte/projekt_formular.html:6
+msgid "Projekt bearbeiten"
+msgstr "Edit project"
+
+#: templates/projekte/projekt.html:37
+msgid "Filter zurücksetzen"
+msgstr "Reset filters"
+
+#: templates/projekte/projekt.html:42
+msgid "Offen"
+msgstr "Open"
+
+#: templates/projekte/projekt.html:48
+msgid "Alle Verantwortlichen"
+msgstr "All assignees"
+
+#: templates/projekte/projekt.html:61
+msgid "Sortieren: Reihenfolge"
+msgstr "Sort: manual order"
+
+#: templates/projekte/projekt.html:62
+msgid "Sortieren: Fällig"
+msgstr "Sort: due date"
+
+#: templates/projekte/projekt.html:63
+msgid "Sortieren: Titel"
+msgstr "Sort: title"
+
+#: templates/projekte/projekt.html:64
+msgid "Sortieren: Status"
+msgstr "Sort: status"
+
+#: templates/projekte/projekt.html:67
+msgid "In Titeln suchen"
+msgstr "Search titles"
+
+#: templates/projekte/projekt.html:68
+msgid "Anwenden"
+msgstr "Apply"
+
+#: templates/projekte/projekt.html:83 templates/projekte/projekt.html:112
+msgid "Neue Aufgabe"
+msgstr "New task"
+
+#: templates/projekte/projekt.html:84 templates/projekte/projekt.html:113
+msgid "Aufgabe hinzufügen"
+msgstr "Add task"
+
+#: templates/projekte/projekt.html:86
+msgid "Noch keine Aufgaben."
+msgstr "No tasks yet."
+
+#: templates/projekte/projekt.html:94
+msgid "Abschnitt verschieben"
+msgstr "Move section"
+
+#: templates/projekte/projekt.html:100
+msgid "Name des Abschnitts"
+msgstr "Section name"
+
+#: templates/projekte/projekt.html:101
+msgid "Umbenennen"
+msgstr "Rename"
+
+#: templates/projekte/projekt.html:125 templates/projekte/projekt.html:126
+msgid "Neuer Abschnitt"
+msgstr "New section"
+
+#: templates/projekte/projekt.html:127
+msgid "Abschnitt hinzufügen"
+msgstr "Add section"
+
+#: templates/projekte/projekt.html:131
+msgid "Aufgabendetail"
+msgstr "Task details"
+
+#: templates/projekte/projekt_formular.html:5 templates/teile/segment.html:1
+#: templates/teile/segment.html:5
+msgid "Bearbeiten"
+msgstr "Edit"
+
+#: templates/projekte/projekt_formular.html:5
+msgid "Neu"
+msgstr "New"
+
+#: templates/projekte/projekt_formular.html:31
+msgid "Projekt archivieren"
+msgstr "Archive project"
+
+#: templates/projekte/projekte.html:7
+msgid "Archivierte Projekte"
+msgstr "Archived projects"
+
+#: templates/projekte/projekte.html:19
+msgid "Aktive Projekte"
+msgstr "Active projects"
+
+#: templates/projekte/projekte.html:19
+msgid "Archiv"
+msgstr "Archive"
+
+#: templates/projekte/projekte.html:24
+msgid "Offene Aufgaben"
+msgstr "Open tasks"
+
+#: templates/projekte/projekte.html:31
+#, python-format
+msgid "Priorität von %(name)s"
+msgstr "Priority of %(name)s"
+
+#: templates/projekte/projekte.html:48
+msgid "Keine Projekte."
+msgstr "No projects."
+
+#: templates/projekte/suche.html:8
+#, python-format
+msgid "%(n)s Treffer für „%(text)s“"
+msgid_plural "%(n)s Treffer für „%(text)s“"
+msgstr[0] "%(n)s result for “%(text)s”"
+msgstr[1] "%(n)s results for “%(text)s”"
+
+#: templates/projekte/suche.html:11
+msgid "Suchbegriff"
+msgstr "Search term"
+
+#: templates/projekte/suche.html:12
+msgid "Aufgaben, Projekte, Kommentare"
+msgstr "Tasks, projects, comments"
+
+#: templates/projekte/suche.html:13
+msgid "Suchen"
+msgstr "Search"
+
+#: templates/projekte/suche.html:26
+msgid "Keine Aufgaben gefunden."
+msgstr "No tasks found."
+
+#: templates/projekte/suche.html:35
+msgid "Keine Projekte gefunden."
+msgstr "No projects found."
+
+#: templates/projekte/suche.html:44
+msgid "Keine Kommentare gefunden."
+msgstr "No comments found."
+
+#: templates/registration/anmelden_code.html:3
+#: templates/registration/anmelden_code.html:10
+#: templates/registration/login.html:3 templates/registration/login.html:5
+#: templates/registration/login.html:12
+msgid "Anmelden"
+msgstr "Sign in"
+
+#: templates/registration/anmelden_code.html:5
+msgid "Code eingeben"
+msgstr "Enter code"
+
+#: templates/registration/anmelden_code.html:6
+msgid "Öffnen Sie Ihre Authenticator-App und geben Sie den sechsstelligen Code für den Teamplaner ein. Ohne Telefon geht auch einer Ihrer Ersatzcodes."
+msgstr "Open your authenticator app and enter the six-digit code for Teamplaner. Without your phone, one of your backup codes also works."
+
+#: templates/registration/gesperrt.html:3
+msgid "Gesperrt"
+msgstr "Locked"
+
+#: templates/registration/gesperrt.html:5
+msgid "Vorübergehend gesperrt"
+msgstr "Temporarily locked"
+
+#: templates/registration/gesperrt.html:6
+msgid "Zu viele fehlgeschlagene Anmeldeversuche. Bitte in einigen Minuten erneut versuchen oder die Administration kontaktieren."
+msgstr "Too many failed sign-in attempts. Please try again in a few minutes or contact the administrators."
+
+#: templates/registration/gesperrt.html:7
+#: templates/registration/passwort_setzen.html:17
+#: templates/registration/passwort_vergessen.html:8
+#: templates/registration/passwort_vergessen.html:17
+msgid "Zur Anmeldung"
+msgstr "Go to sign-in"
+
+#: templates/registration/login.html:19
+msgid "Passwort vergessen?"
+msgstr "Forgot your password?"
+
+#: templates/registration/login.html:20
+msgid "Passwort vergessen? Bitte bei der Bereichsleitung oder Administration einen neuen Link anfordern."
+msgstr "Forgot your password? Please ask your unit lead or the administrators for a new link."
+
+#: templates/registration/passwort_setzen.html:3
+#: templates/registration/passwort_setzen.html:6
+msgid "Passwort festlegen"
+msgstr "Set password"
+
+#: templates/registration/passwort_setzen.html:7
+#, python-format
+msgid "Konto: %(email)s"
+msgstr "Account: %(email)s"
+
+#: templates/registration/passwort_setzen.html:12
+msgid "Passwort speichern"
+msgstr "Save password"
+
+#: templates/registration/passwort_setzen.html:15
+msgid "Link ungültig"
+msgstr "Invalid link"
+
+#: templates/registration/passwort_setzen.html:16
+msgid "Dieser Link ist abgelaufen oder wurde bereits verwendet. Bitte einen neuen Link anfordern."
+msgstr "This link has expired or has already been used. Please request a new link."
+
+#: templates/registration/passwort_vergessen.html:3
+#: templates/registration/passwort_vergessen.html:5
+msgid "Passwort vergessen"
+msgstr "Forgot password"
+
+#: templates/registration/passwort_vergessen.html:7
+msgid "Wenn es zu dieser Adresse ein aktives Konto gibt, ist eine E-Mail mit einem Link zum Festlegen eines neuen Passworts unterwegs."
+msgstr "If there is an active account for this address, an email with a link to set a new password is on its way."
+
+#: templates/registration/passwort_vergessen.html:10
+msgid "Zu viele Anfragen von diesem Anschluss. Bitte in einer Stunde erneut versuchen."
+msgstr "Too many requests from this connection. Please try again in an hour."
+
+#: templates/registration/passwort_vergessen.html:11
+msgid "Geben Sie Ihre E-Mail-Adresse ein. Sie bekommen einen Link, mit dem Sie ein neues Passwort festlegen."
+msgstr "Enter your email address. You will receive a link to set a new password."
+
+#: templates/registration/passwort_vergessen.html:15
+msgid "Link anfordern"
+msgstr "Request link"
+
+#: templates/teile/anhaenge.html:7
+#, python-format
+msgid "%(name)s in neuem Tab öffnen"
+msgstr "Open %(name)s in a new tab"
+
+#: templates/teile/anhaenge.html:19
+msgid "Anhang löschen?"
+msgstr "Delete attachment?"
+
+#: templates/teile/anhaenge.html:19
+msgid "Anhang löschen"
+msgstr "Delete attachment"
+
+#: templates/teile/feld.html:2
+msgid "Pflichtfeld"
+msgstr "required"
+
+#: templates/teile/freigaben.html:4
+msgid "sehen"
+msgstr "view"
+
+#: templates/teile/freigaben.html:8
+msgid "Person suchen"
+msgstr "Search person"
+
+#: templates/teile/freigaben.html:10
+msgid "Alle Bereiche"
+msgstr "All units"
+
+#: templates/teile/freigaben.html:13
+msgid "Nur Freigegebene"
+msgstr "Shared only"
+
+#: templates/teile/freigaben.html:15
+msgid "Alle auf Sehen"
+msgstr "All to view"
+
+#: templates/teile/freigaben.html:16
+msgid "Alle auf —"
+msgstr "All to —"
+
+#: templates/teile/personenauswahl.html:5
+msgid "Personen suchen …"
+msgstr "Search people …"
+
+#: templates/teile/segment.html:3
+msgid "keine Freigabe"
+msgstr "not shared"
+
+#: templates/teile/segment.html:4
+msgid "Sehen"
+msgstr "View"
+
+#: zusammenarbeit/dienste.py:56
+#, python-format
+msgid "%(akteur)s hat Sie für „%(titel)s“ eingeteilt: %(zeitraum)s."
+msgstr "%(akteur)s scheduled you for “%(titel)s”: %(zeitraum)s."
+
+#: zusammenarbeit/dienste.py:57
+#, python-format
+msgid "%(akteur)s hat Ihre Einteilung für „%(titel)s“ geändert: %(zeitraum)s."
+msgstr "%(akteur)s changed your schedule for “%(titel)s”: %(zeitraum)s."
+
+#: zusammenarbeit/dienste.py:58
+#, python-format
+msgid "%(akteur)s hat Ihre Einteilung für „%(titel)s“ (%(zeitraum)s) entfernt."
+msgstr "%(akteur)s removed your schedule for “%(titel)s” (%(zeitraum)s)."
+
+#: zusammenarbeit/dienste.py:65
+#, python-format
+msgid "%(akteur)s hat Ihre Einteilung für „%(titel)s“ an jemand anderen übergeben."
+msgstr "%(akteur)s handed your schedule for “%(titel)s” over to someone else."
+
+#: zusammenarbeit/dienste.py:73
+#, python-format
+msgid "%(akteur)s hat Ihnen „%(titel)s“ zugewiesen."
+msgstr "%(akteur)s assigned “%(titel)s” to you."
+
+#: zusammenarbeit/dienste.py:86
+#, python-format
+msgid "%(akteur)s hat „%(titel)s“ erledigt."
+msgstr "%(akteur)s completed “%(titel)s”."
+
+#: zusammenarbeit/dienste.py:95
+#, python-format
+msgid "%(akteur)s hat „%(titel)s“ geändert (%(felder)s)."
+msgstr "%(akteur)s changed “%(titel)s” (%(felder)s)."
+
+#: zusammenarbeit/dienste.py:101
+#, python-format
+msgid "%(akteur)s hat im Projekt „%(projekt)s“ die Aufgabe „%(titel)s“ angelegt."
+msgstr "%(akteur)s created the task “%(titel)s” in project “%(projekt)s”."
+
+#: zusammenarbeit/dienste.py:115
+#, python-format
+msgid "%(akteur)s hat den Platzhalter %(platzhalter)s bei „%(titel)s“ erwähnt."
+msgstr "%(akteur)s mentioned the placeholder %(platzhalter)s on “%(titel)s”."
+
+#: zusammenarbeit/dienste.py:119
+#, python-format
+msgid "%(akteur)s hat Sie bei „%(titel)s“ erwähnt."
+msgstr "%(akteur)s mentioned you on “%(titel)s”."
+
+#: zusammenarbeit/dienste.py:128
+#, python-format
+msgid "%(akteur)s hat „%(titel)s“ kommentiert."
+msgstr "%(akteur)s commented on “%(titel)s”."
+
+#: zusammenarbeit/mail.py:29
+msgid "Mir wird eine Aufgabe zugewiesen"
+msgstr "A task is assigned to me"
+
+#: zusammenarbeit/mail.py:30
+msgid "Jemand ändert eine Aufgabe, für die ich verantwortlich bin"
+msgstr "Someone changes a task I am responsible for"
+
+#: zusammenarbeit/mail.py:31
+msgid "Eine Aufgabe, die ich verantworte oder angelegt habe, wird erledigt"
+msgstr "A task I am responsible for or created is completed"
+
+#: zusammenarbeit/mail.py:32
+msgid "Neue Aufgabe in einem Projekt, das ich leite"
+msgstr "New task in a project I lead"
+
+#: zusammenarbeit/mail.py:34
+msgid "Kommentare & Erwähnungen"
+msgstr "Comments & mentions"
+
+#: zusammenarbeit/mail.py:35
+msgid "Ich werde in einem Kommentar erwähnt"
+msgstr "I am mentioned in a comment"
+
+#: zusammenarbeit/mail.py:36
+msgid "Ein von mir angelegter Platzhalter wird erwähnt"
+msgstr "A placeholder I created is mentioned"
+
+#: zusammenarbeit/mail.py:37
+msgid "Neuer Kommentar zu einer Aufgabe, für die ich verantwortlich bin"
+msgstr "New comment on a task I am responsible for"
+
+#: zusammenarbeit/mail.py:39
+msgid "Einteilung im Teamplaner"
+msgstr "Team planner schedule"
+
+#: zusammenarbeit/mail.py:40
+msgid "Ich werde eingeteilt"
+msgstr "I am scheduled"
+
+#: zusammenarbeit/mail.py:41
+msgid "Meine Einteilung wird geändert"
+msgstr "My schedule is changed"
+
+#: zusammenarbeit/mail.py:42
+msgid "Meine Einteilung wird entfernt"
+msgstr "My schedule is removed"
+
+#: zusammenarbeit/mail.py:45
+msgid "Der Liefertermin einer Bestellung, die ich bestellt habe, ist überschritten"
+msgstr "The delivery date of an order I placed has passed"
+
+#: zusammenarbeit/mail.py:77
+#, python-format
+msgid "Teamplaner · %(org)s"
+msgstr "Team planner · %(org)s"
+
+#: zusammenarbeit/mail.py:79
+#, python-format
+msgid "E-Mail-Einstellungen ändern: %(link)s"
+msgstr "Change email settings: %(link)s"
+
+#: zusammenarbeit/mail.py:95
+#, python-format
+msgid "Zur Aufgabe: %(link)s"
+msgstr "Open task: %(link)s"
+
+#: zusammenarbeit/mail.py:98
+#, python-format
+msgid "Zur Bestellliste: %(link)s"
+msgstr "Open orders: %(link)s"
+
+#: zusammenarbeit/mail.py:168 zusammenarbeit/mail.py:185
+#: zusammenarbeit/mail.py:217
+#, python-format
+msgid "Guten Tag %(name)s,"
+msgstr "Hello %(name)s,"
+
+#: zusammenarbeit/mail.py:170
+msgid "für Sie wurde ein Konto im Teamplaner angelegt. Bitte legen Sie über diesen Link Ihr Passwort fest:"
+msgstr "an account has been created for you in the team planner. Please set your password using this link:"
+
+#: zusammenarbeit/mail.py:173
+#, python-format
+msgid "Der Link gilt einige Tage und nur einmal. Ihre Anmeldung ist Ihre E-Mail-Adresse: %(email)s"
+msgstr "The link is valid for a few days and only once. You sign in with your email address: %(email)s"
+
+#: zusammenarbeit/mail.py:175 zusammenarbeit/models.py:144
+msgid "Einladung"
+msgstr "Invitation"
+
+#: zusammenarbeit/mail.py:187
+msgid "über diesen Link legen Sie ein neues Passwort fest:"
+msgstr "use this link to set a new password:"
+
+#: zusammenarbeit/mail.py:190
+#, python-format
+msgid "Der Link gilt %(n)s Stunden und nur einmal."
+msgstr "The link is valid for %(n)s hours and only once."
+
+#: zusammenarbeit/mail.py:191
+msgid "Wenn Sie das nicht angefordert haben, können Sie diese E-Mail ignorieren."
+msgstr "If you did not request this, you can ignore this email."
+
+#: zusammenarbeit/mail.py:193 zusammenarbeit/models.py:145
+msgid "Passwort zurücksetzen"
+msgstr "Reset password"
+
+#: zusammenarbeit/mail.py:199
+msgid "das Passwort Ihres Teamplaner-Kontos wurde geändert."
+msgstr "the password of your Teamplaner account has been changed."
+
+#: zusammenarbeit/mail.py:200
+msgid "das Passwort Ihres Teamplaner-Kontos wurde über einen Link neu festgelegt."
+msgstr "the password of your Teamplaner account has been set anew via a link."
+
+#: zusammenarbeit/mail.py:201
+#, python-format
+msgid "die Anmelde-E-Mail Ihres Teamplaner-Kontos wurde auf %(neu)s geändert."
+msgstr "the sign-in email of your Teamplaner account has been changed to %(neu)s."
+
+#: zusammenarbeit/mail.py:202
+msgid "für Ihr Teamplaner-Konto wurde die Zwei-Faktor-Anmeldung eingerichtet (bzw. ein neues Telefon verbunden)."
+msgstr "two-factor authentication has been set up for your Teamplaner account (or a new phone has been connected)."
+
+#: zusammenarbeit/mail.py:204
+msgid "die Zwei-Faktor-Anmeldung Ihres Teamplaner-Kontos wurde ausgeschaltet."
+msgstr "two-factor authentication for your Teamplaner account has been turned off."
+
+#: zusammenarbeit/mail.py:205
+msgid "die Zwei-Faktor-Anmeldung Ihres Teamplaner-Kontos wurde von der Verwaltung zurückgesetzt."
+msgstr "two-factor authentication for your Teamplaner account has been reset by an administrator."
+
+#: zusammenarbeit/mail.py:221
+msgid "Waren Sie das nicht, wenden Sie sich bitte sofort an die Administration."
+msgstr "If this was not you, please contact the administration immediately."
+
+#: zusammenarbeit/mail.py:224
+msgid "Sicherheitshinweis zu Ihrem Konto"
+msgstr "Security notice about your account"
+
+#: zusammenarbeit/models.py:81
+msgid "Zuweisung"
+msgstr "Assignment"
+
+#: zusammenarbeit/models.py:82
+msgid "Aufgabe geändert"
+msgstr "Task changed"
+
+#: zusammenarbeit/models.py:83
+msgid "Aufgabe erledigt"
+msgstr "Task completed"
+
+#: zusammenarbeit/models.py:84
+msgid "Neue Aufgabe im Projekt"
+msgstr "New task in project"
+
+#: zusammenarbeit/models.py:85
+msgid "Erwähnung"
+msgstr "Mention"
+
+#: zusammenarbeit/models.py:86
+msgid "Erwähnung eines Platzhalters"
+msgstr "Placeholder mentioned"
+
+#: zusammenarbeit/models.py:89
+msgid "Einteilung geändert"
+msgstr "Schedule changed"
+
+#: zusammenarbeit/models.py:90
+msgid "Einteilung entfernt"
+msgstr "Schedule removed"
+
+#: zusammenarbeit/models.py:91
+msgid "Liefertermin überschritten"
+msgstr "Delivery date passed"
+
+#: zusammenarbeit/models.py:95
+msgid "keine E-Mail"
+msgstr "no email"
+
+#: zusammenarbeit/models.py:96
+msgid "wird verschickt"
+msgstr "being sent"
+
+#: zusammenarbeit/models.py:97
+msgid "verschickt"
+msgstr "sent"
+
+#: zusammenarbeit/models.py:98
+msgid "Fehler"
+msgstr "Error"
+
+#: zusammenarbeit/models.py:127
+msgid "Benachrichtigung"
+msgstr "Notification"
+
+#: zusammenarbeit/models.py:146
+msgid "Sicherheitshinweis"
+msgstr "Security notice"
+
+#: zusammenarbeit/models.py:159
+msgid "System-Mail"
+msgstr "System email"
+
+#: zusammenarbeit/models.py:160
+msgid "Postausgang"
+msgstr "Outbox"
+
+#: zusammenarbeit/views.py:58
+msgid "Schätzung"
+msgstr "Estimate"
+
+#: zusammenarbeit/views.py:81
+msgid "hat die Aufgabe angelegt."
+msgstr "created the task."
+
+#: zusammenarbeit/views.py:86
+msgid "Beschreibung bearbeitet"
+msgstr "edited the description"
+
+#: zusammenarbeit/views.py:89
+#, python-format
+msgid "hat geändert: %(teile)s"
+msgstr "changed: %(teile)s"
+
+#: zusammenarbeit/views.py:93
+#, python-format
+msgid "hat die Aufgabe auf %(person)s, %(zeitraum)s eingeplant."
+msgstr "scheduled the task for %(person)s, %(zeitraum)s."
+
+#: zusammenarbeit/views.py:95
+#, python-format
+msgid "hat die Einteilung von %(person)s (%(zeitraum)s) entfernt."
+msgstr "removed the assignment of %(person)s (%(zeitraum)s)."
+
+#: zusammenarbeit/views.py:97
+#, python-format
+msgid "hat eine Einteilung geändert: %(teile)s"
+msgstr "changed an assignment: %(teile)s"
+
+#: zusammenarbeit/views.py:99
+#, python-format
+msgid "hat die Unteraufgabe „%(t)s“ angelegt."
+msgstr "created the subtask “%(t)s”."
+
+#: zusammenarbeit/views.py:99
+#, python-format
+msgid "hat „%(t)s“ erledigt."
+msgstr "completed “%(t)s”."
+
+#: zusammenarbeit/views.py:100
+#, python-format
+msgid "hat „%(t)s“ wieder geöffnet."
+msgstr "reopened “%(t)s”."
+
+#: zusammenarbeit/views.py:100
+#, python-format
+msgid "hat die Unteraufgabe „%(t)s“ gelöscht."
+msgstr "deleted the subtask “%(t)s”."
+
+#: zusammenarbeit/views.py:101
+#, python-format
+msgid "hat „%(t)s“ hierher als Unteraufgabe verschoben."
+msgstr "moved “%(t)s” here as a subtask."
+
+#: zusammenarbeit/views.py:102
+#, python-format
+msgid "hat die Unteraufgabe „%(t)s“ woandershin verschoben."
+msgstr "moved the subtask “%(t)s” elsewhere."
+
+#: zusammenarbeit/views.py:107
+#, python-format
+msgid "hat festgelegt: „%(vorher)s“ vor „%(nachher)s“."
+msgstr "set: “%(vorher)s” before “%(nachher)s”."
+
+#: zusammenarbeit/views.py:108
+#, python-format
+msgid "hat die Abhängigkeit „%(vorher)s“ vor „%(nachher)s“ entfernt."
+msgstr "removed the dependency “%(vorher)s” before “%(nachher)s”."
+
+#: zusammenarbeit/views.py:111
+#, python-format
+msgid "hat „%(name)s“ angehängt."
+msgstr "attached “%(name)s”."
+
+#: zusammenarbeit/views.py:112
+#, python-format
+msgid "hat den Anhang „%(name)s“ entfernt."
+msgstr "removed the attachment “%(name)s”."
+
+#: zusammenarbeit/views.py:191
+msgid "Kommentar gelöscht."
+msgstr "Comment deleted."

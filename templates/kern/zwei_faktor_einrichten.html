@@ -1,0 +1,27 @@
+{% extends "kern/einstellungen_basis.html" %}
+{% load i18n %}
+{% block titel %}{% translate "Zwei-Faktor-Anmeldung" %}{% endblock %}
+{% block einstellungen %}
+<nav class="pfad" aria-label="{% translate 'Pfad' %}"><a href="{% url 'einst_sicherheit' %}">{% translate "Anmeldung & Sicherheit" %}</a></nav>
+<h1>{% if eingerichtet %}{% translate "Neues Telefon einrichten" %}{% else %}{% translate "Zwei-Faktor-Anmeldung einrichten" %}{% endif %}</h1>
+{% if pflicht and not eingerichtet %}<div class="meldung meldung--warning">{% translate "Für Ihre Rolle ist die Zwei-Faktor-Anmeldung vorgeschrieben. Bitte richten Sie sie jetzt ein – danach geht es normal weiter." %}</div>{% endif %}
+{% if eingerichtet %}<div class="meldung meldung--info">{% translate "Nach dem Speichern gilt nur noch das neue Telefon; die bisherigen Ersatzcodes werden ersetzt." %}</div>{% endif %}
+<section class="karte karte--innen stapel">
+    <h2>{% translate "1. App installieren" %}</h2>
+    <p class="klein ohne-rand">{% translate "Eine Authenticator-App auf dem Telefon, z. B. Microsoft Authenticator, Google Authenticator, FreeOTP oder die Passwort-App des iPhones." %}</p>
+    <h2>{% translate "2. QR-Code scannen" %}</h2>
+    <div class="zwei-faktor-qr">{{ qr }}</div>
+    <div class="klein">{% translate "Geht der QR-Code nicht, diesen Schlüssel von Hand eingeben:" %}<br><code class="mono umbruch">{{ geheimnis }}</code></div>
+</section>
+<form method="post" class="karte karte--innen formular" novalidate>
+    {% csrf_token %}
+    <h2>{% translate "3. Bestätigen" %}</h2>
+    {% include "teile/feld.html" with feld=form.code %}
+    {% include "teile/feld.html" with feld=form.passwort %}
+    <div class="formular__aktionen formular__aktionen--rechts">
+      {% if not pflicht or eingerichtet %}<a class="knopf" href="{% url 'einst_sicherheit' %}">{% translate "Abbrechen" %}</a>{% endif %}
+      <button type="submit" class="knopf knopf--primaer">{% translate "Einrichten" %}</button>
+    </div>
+</form>
+{% if pflicht and not eingerichtet %}<form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit" class="knopf knopf--text">{% translate "Abmelden" %}</button></form>{% endif %}
+{% endblock %}

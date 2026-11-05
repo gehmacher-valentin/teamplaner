@@ -1,0 +1,16 @@
+{% extends "kern/einstellungen_basis.html" %}
+{% load i18n %}
+{% block titel %}{% translate "Darstellung" %}{% endblock %}
+{% block einstellungen %}
+<h1>{% translate "Darstellung" %}</h1>
+<section class="karte einst-karte" aria-label="{% translate 'Darstellung' %}">
+  <div class="einstellungszeile einstellungszeile--auswahl">
+    <label for="sprache" class="luecke">{% translate "Sprache" %}</label>
+    <select id="sprache" name="wert" hx-post="{% url 'einst_darstellung_speichern' %}" hx-trigger="change" hx-swap="none" hx-vals='{"feld": "sprache"}'>
+      {% for code, name in sprachen %}<option value="{{ code }}"{% if code == user.sprache %} selected{% endif %}>{{ name }}</option>{% endfor %}
+    </select>
+  </div>
+  {% translate "Feieranimation beim Abhaken" as titel %}{% include "kern/_schalter.html" with id="feier" feld="feier_animation" an=user.feier_animation url="einst_darstellung_speichern" %}
+  {% translate "Unteraufgaben im Gantt aufgeklappt" as titel %}{% include "kern/_schalter.html" with id="unteraufgaben" feld="gantt_unteraufgaben_offen" an=user.gantt_unteraufgaben_offen url="einst_darstellung_speichern" %}
+</section>
+{% endblock %}

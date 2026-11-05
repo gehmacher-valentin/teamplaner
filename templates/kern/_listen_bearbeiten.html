@@ -1,0 +1,20 @@
+{% load i18n %}{# Eintrag bearbeiten: jede Änderung speichert sofort; Enter, Esc, ✓ oder Verlassen der Zeile beendet (lib/listeneditor.ts) #}<li id="eintrag-{{ art }}-{{ e.objekt.pk }}" class="einst-zeile einst-zeile--bearbeiten" data-id="{{ e.objekt.pk }}"
+  data-listen-bearbeiten="{% url 'einst_liste_eintrag' art e.objekt.pk %}">
+  <form class="einst-zeile__formular" hx-post="{% url 'einst_liste_eintrag' art e.objekt.pk %}" hx-trigger="change" hx-swap="none" hx-sync="closest li:queue all">
+    {% with feld=form.name %}
+      <input id="{{ feld.auto_id }}" type="text" name="{{ feld.html_name }}" value="{{ feld.value|default:'' }}" maxlength="{{ feld.field.max_length }}" required
+        aria-label="{% translate 'Name' %}" data-inline autofocus>
+    {% endwith %}
+    {% if art == "status" %}
+      <div class="farbpunkte" role="radiogroup" aria-label="{% translate 'Farbe' %}">
+        {% for wert, name in farben %}
+          <label class="farbpunkt-wahl st-{{ wert }}" title="{{ name }}"><input type="radio" id="{{ form.farbe.auto_id }}_{{ wert }}" name="{{ form.farbe.html_name }}" value="{{ wert }}"{% if form.farbe.value == wert %} checked{% endif %}><span class="sr-only">{{ name }}</span></label>
+        {% endfor %}
+      </div>
+      <label class="feld feld--zeile"><input id="{{ form.ist_erledigt.auto_id }}" type="checkbox" name="{{ form.ist_erledigt.html_name }}"{% if form.ist_erledigt.value %} checked{% endif %}>{% translate "zählt als erledigt" %}</label>
+      <span class="badge st-{{ form.farbe.value }} einst-zeile__vorschau" data-vorschau aria-hidden="true">{{ form.name.value }}</span>
+    {% endif %}
+    <button type="button" class="einst-zeile__fertig" aria-label="{% translate 'Fertig' %}" data-listen-fertig><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg></button>
+  </form>
+  {% if form.errors %}<ul class="fehlerliste einst-zeile__fehler" role="alert">{% for feld in form %}{% for f in feld.errors %}<li>{{ f }}</li>{% endfor %}{% endfor %}{% for f in form.non_field_errors %}<li>{{ f }}</li>{% endfor %}</ul>{% endif %}
+</li>

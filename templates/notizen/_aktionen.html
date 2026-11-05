@@ -1,0 +1,5 @@
+{% load i18n %}<div id="notiz-aktionen" class="zeile"{% if oob %} hx-swap-oob="true"{% endif %}>
+  {% if darf_schreiben and notiz.pk %}
+    <form method="post" action="{% url 'notiz_loeschen' notiz.pk %}" data-bestaetigen="{% translate 'Notiz endgültig löschen?' %}">{% csrf_token %}<button type="submit" class="knopf knopf--klein knopf--gefahr">{% translate "Löschen" %}</button></form>
+  {% endif %}
+</div>

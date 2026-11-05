@@ -1,0 +1,8 @@
+{% load i18n %}{# Aufgabendetail in der Seitenleiste der Projektliste; hx-vals: jede Anfrage von hier sagt, welche Aufgabe offen ist #}<div id="seitenleiste-inhalt" data-seitenleiste-aufgabe="{{ aufgabe.pk }}" hx-vals='{"seitenleiste": "{{ aufgabe.pk }}"}'>
+  <div class="seitenleiste__kopf">
+    {% include "projekte/_detail_pfad.html" with seitenleiste=True %}
+    <a class="knopf knopf--klein" href="{% url 'aufgabe' aufgabe.pk %}">{% translate "Vollansicht" %}</a>
+    <button type="button" class="knopf knopf--klein knopf--icon knopf--schmal" data-seitenleiste-schliessen aria-label="{% translate 'Schließen' %}">×</button>
+  </div>
+  {% include "projekte/_aufgabe_detail.html" with seitenleiste=True %}
+</div>

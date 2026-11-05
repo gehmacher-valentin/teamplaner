@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% load static i18n %}
+{% block titel %}{% if planen %}{% translate "Teamplaner" %}{% else %}{% translate "Kalender" %}{% endif %}{% endblock %}
+{% block kopf %}<link rel="stylesheet" href="{% static 'dist/teamplaner.css' %}">{% endblock %}
+{% block inhalt %}
+  <div id="teamplaner" data-planen="{% if planen %}1{% else %}0{% endif %}">
+    <noscript>{% translate "Der Teamplaner benötigt JavaScript." %}</noscript>
+  </div>
+{% endblock %}
+{% block skripte %}<script type="module" src="{% static 'dist/teamplaner.js' %}"></script>{% endblock %}

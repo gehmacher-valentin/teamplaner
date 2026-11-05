@@ -1,0 +1,33 @@
+[Unit]
+Description=Teamplaner – Webanwendung
+Documentation=file:///opt/teamplaner/aktuell/INSTALLATION.md
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=teamplaner
+Group=teamplaner
+EnvironmentFile=/etc/teamplaner/teamplaner.env
+WorkingDirectory=/opt/teamplaner/aktuell
+ExecStart=/opt/teamplaner/aktuell/betrieb/linux/web.sh
+Restart=on-failure
+RestartSec=5
+# Offene Live-Verbindungen (SSE) werden nach 10 s beendet
+TimeoutStopSec=20
+UMask=0027
+# Härtung: Code und System nur lesbar, schreiben nur in /var/lib/teamplaner
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+ReadWritePaths=/var/lib/teamplaner
+
+[Install]
+WantedBy=multi-user.target

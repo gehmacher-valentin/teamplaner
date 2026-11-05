@@ -1,0 +1,155 @@
+{% load i18n teamplaner %}{# Inhalt des Aufgabendetails: eigene Seite (aufgabe.html) und Seitenleiste der Projektliste (seitenleiste=True) #}
+<div class="detail">
+  <article class="karte detail__haupt" id="aufgabe-felder">
+    <input type="hidden" id="aufgabe-version" name="version" value="{{ aufgabe.version }}">
+    {% include "projekte/_detail_kopf.html" %}
+
+    {% include "projekte/_detail_feld.html" with feld="titel" %}
+    <dl class="eigenschaften">
+      <dt>{% translate "Verantwortlich" %}</dt>
+      {% include "projekte/_detail_feld.html" with feld="verantwortlich" %}
+      {% if not aufgabe.eltern_id and abschnitte or aufgabe.abschnitt %}
+        <dt>{% translate "Abschnitt" %}</dt>
+        {% if aufgabe.eltern_id %}<dd>{{ aufgabe.abschnitt }}</dd>{% else %}{% include "projekte/_detail_feld.html" with feld="abschnitt" %}{% endif %}
+      {% endif %}
+      <dt>{% translate "Status" %}</dt>
+      {% include "projekte/_detail_feld.html" with feld="status" %}
+      {% if not sammelaufgabe or aufgabe.beginn_am %}
+        <dt>{% if darf_bearbeiten and not sammelaufgabe %}<label for="eingabe-beginn_am">{% translate "Geplanter Beginn" %}</label>{% else %}{% translate "Geplanter Beginn" %}{% endif %}</dt>
+        {% include "projekte/_detail_feld.html" with feld="beginn_am" %}
+      {% endif %}
+      <dt>{% if darf_bearbeiten and not sammelaufgabe %}<label for="eingabe-faellig_am">{% translate "Fällig" %}</label>{% else %}{% translate "Fällig" %}{% endif %}</dt>
+      {% include "projekte/_detail_feld.html" with feld="faellig_am" %}
+      <dt>{% if darf_bearbeiten %}<label for="eingabe-schaetzung_personentage">{% translate "Geschätzt" %}</label>{% else %}{% translate "Geschätzt" %}{% endif %}</dt>
+      <dd class="zeile zeile--eng">{% include "projekte/_detail_feld.html" with feld="schaetzung_personentage" %}<span class="gedaempft">· {% blocktranslate count n=eingeteilt_pt %}{{ n }} Tag eingeteilt{% plural %}{{ n }} Tage eingeteilt{% endblocktranslate %}</span></dd>
+      <dt>{% translate "Projekt-Tags" %}</dt>
+      <dd class="tags">{% for t in aufgabe.projekt.tags.all %}<span class="tag">{{ t.name }}</span>{% empty %}–{% endfor %}</dd>
+      <dt>{% translate "Gewerk" %}</dt>
+      {% include "projekte/_detail_feld.html" with feld="gewerk" %}
+    </dl>
+    {% include "projekte/_detail_feld.html" with feld="beschreibung" %}
+
+    {% if vorgaenger or nachfolger %}
+    <details class="aufklappbar" id="abhaengigkeiten">
+      <summary><h2>{% translate "Abhängigkeiten" %} <span class="zaehler">{{ abhaengigkeiten_anzahl }}</span></h2>{% if abhaengigkeit_verletzt %}<span class="badge badge--warn">{% translate "Termine überschneiden sich" %}</span>{% endif %}</summary>
+      <div class="stapel">
+        <ul class="unteraufgaben">
+          {% for abh in vorgaenger %}<li><span class="gedaempft klein abhaengigkeit__art">{% translate "Muss vorher fertig sein" %}</span><a href="{% url 'aufgabe' abh.vorher.pk %}"{% if seitenleiste and abh.vorher.projekt_id == aufgabe.projekt_id %} data-aufgabe-link="{{ abh.vorher.pk }}"{% endif %}>{{ abh.vorher.titel }}</a><span class="gedaempft klein">{{ abh.vorher.projekt.name }}</span>{% if abh.verletzt %}<span class="badge badge--warn">{% translate "Termine überschneiden sich" %}</span>{% endif %}</li>{% endfor %}
+          {% for abh in nachfolger %}<li><span class="gedaempft klein abhaengigkeit__art">{% translate "Danach erst möglich" %}</span><a href="{% url 'aufgabe' abh.nachher.pk %}"{% if seitenleiste and abh.nachher.projekt_id == aufgabe.projekt_id %} data-aufgabe-link="{{ abh.nachher.pk }}"{% endif %}>{{ abh.nachher.titel }}</a><span class="gedaempft klein">{{ abh.nachher.projekt.name }}</span>{% if abh.verletzt %}<span class="badge badge--warn">{% translate "Termine überschneiden sich" %}</span>{% endif %}</li>{% endfor %}
+        </ul>
+        {% if nav.gantt %}<a class="klein" href="{% url 'gantt' %}">{% translate "Im Gantt-Diagramm bearbeiten" %}</a>{% endif %}
+      </div>
+    </details>
+    {% endif %}
+
+    {% if unteraufgabe_form or unteraufgaben %}
+    <section class="stapel" id="unteraufgaben">
+      <h2>{% translate "Unteraufgaben" %} {% if unteraufgaben %}<span class="zaehler">{{ unteraufgaben|length }}</span>{% endif %}</h2>
+      {% if unteraufgaben %}
+      <ul class="unteraufgaben">
+        {% for u in unteraufgaben %}
+          <li>
+            {% url 'aufgabe_erledigt' u.pk as ziel %}<form method="post" action="{{ ziel }}" {% include "projekte/_seitenleiste_form.html" %}>{% csrf_token %}
+              <input type="hidden" name="erledigt" value="{% if u.status.ist_erledigt %}0{% else %}1{% endif %}">
+              <input type="hidden" name="weiter" value="{% url 'aufgabe' aufgabe.pk %}#unteraufgaben">
+              <button type="submit" class="haken{% if u.status.ist_erledigt %} haken--erledigt{% endif %}" {% if not darf_abschliessen %}disabled{% endif %} aria-label="{% if u.status.ist_erledigt %}{% translate 'Wieder öffnen' %}{% else %}{% translate 'Erledigt' %}{% endif %}: {{ u.titel }}">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>
+              </button>
+            </form>
+            <a href="{% url 'aufgabe' u.pk %}"{% if seitenleiste %} data-aufgabe-link="{{ u.pk }}"{% endif %} class="unteraufgaben__titel{% if u.status.ist_erledigt %} aufgabe-titel--erledigt{% endif %}">{{ u.titel }}</a>
+            {% if u.faellig_am %}<span class="mono klein{% if u.faellig_am|ueberfaellig and not u.status.ist_erledigt %} faellig--ueberfaellig{% endif %}">{{ u.faellig_am|date:"d.m." }}</span>{% endif %}
+            {% if u.verantwortlich %}<span class="person klein" title="{{ u.verantwortlich.anzeigename }}">{% avatar u.verantwortlich "klein" %}<span class="unteraufgaben__name">{{ u.verantwortlich.anzeigename }}</span></span>{% endif %}
+            <span class="{{ u.status|status_klasse }} unteraufgaben__status">{{ u.status }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+      {% if darf_bearbeiten and unteraufgabe_form %}
+        {% url 'unteraufgabe_anlegen' aufgabe.pk as ziel %}<form method="post" action="{{ ziel }}" class="formular__zeile" {% include "projekte/_seitenleiste_form.html" %}>
+          {% csrf_token %}
+          <label class="feld feld--breit"><span class="sr-only">{% translate "Neue Unteraufgabe" %}</span><input type="text" name="titel" placeholder="{% translate 'Neue Unteraufgabe' %}" maxlength="300" required></label>
+          <label class="feld feld--mittel"><span class="sr-only">{% translate "Verantwortlich" %}</span>{{ unteraufgabe_form.verantwortlich }}</label>
+          <label class="feld feld--datum"><span class="sr-only">{% translate "Fällig am" %}</span>{{ unteraufgabe_form.faellig_am }}</label>
+          <button type="submit" class="knopf">{% translate "Hinzufügen" %}</button>
+        </form>
+      {% endif %}
+    </section>
+    {% endif %}
+
+    <section class="stapel" id="anhaenge">
+      <h2>{% translate "Anhänge" %}</h2>
+      {% if anhaenge %}
+      {% include "teile/anhaenge.html" with url_name="anhang" loeschen_name="anhang_loeschen" alle_loeschbar=darf_bearbeiten %}
+      {% endif %}
+      {% if darf_abschliessen %}
+        {% url 'anhang_hochladen' aufgabe.pk as ziel %}<form method="post" action="{{ ziel }}" enctype="multipart/form-data" class="zeile" {% include "projekte/_seitenleiste_form.html" %}{% if seitenleiste %} hx-encoding="multipart/form-data"{% endif %}>
+          {% csrf_token %}
+          <label class="sr-only" for="datei">{% translate "Datei" %}</label>
+          <input id="datei" type="file" name="datei" required>
+          <button type="submit" class="knopf knopf--klein">{% translate "Hochladen" %}</button>
+        </form>
+      {% endif %}
+    </section>
+
+    <section class="stapel kommentare" id="kommentare">
+      <div class="zeile">
+        <h2 class="luecke">{% translate "Kommentare" %}</h2>
+        {% if verlauf_anzahl %}<button type="button" class="knopf knopf--klein umschalter" aria-pressed="false" data-verlauf-umschalten>{% translate "Verlauf anzeigen" %}</button>{% endif %}
+      </div>
+      {% for e in verlauf %}
+        {% if e.art == "kommentar" %}
+          <div class="kommentar" id="kommentar-{{ e.kommentar.pk }}">
+            {% avatar e.kommentar.autor "klein" %}
+            <div class="kommentar__inhalt">
+              <div><strong>{{ e.kommentar.autor.anzeigename }}</strong> <span class="gedaempft klein">{{ e.zeit|date:"d.m.Y H:i" }}</span>
+                {% if e.darf_loeschen %}{% url 'kommentar_loeschen' e.kommentar.pk as ziel %}<form method="post" action="{{ ziel }}" class="inline" data-bestaetigen="{% translate 'Kommentar löschen?' %}" {% include "projekte/_seitenleiste_form.html" %}>{% csrf_token %}<button type="submit" class="knopf knopf--text klein">{% translate "löschen" %}</button></form>{% endif %}
+              </div>
+              <div class="kommentar__text">{% kommentartext e.kommentar e.personen %}</div>
+            </div>
+          </div>
+        {% else %}
+          <div class="verlauf">{% if e.akteur %}{{ e.akteur }}{% else %}{% translate "System" %}{% endif %} {{ e.text }} <span class="mono">{{ e.zeit|date:"d.m. H:i" }}</span></div>
+        {% endif %}
+      {% endfor %}
+      {% if not kommentare_anzahl %}<div class="gedaempft klein">{% translate "Noch keine Kommentare." %}</div>{% endif %}
+      {% if darf_abschliessen %}
+        {% url 'kommentar_anlegen' aufgabe.pk as ziel %}<form method="post" action="{{ ziel }}" class="formular" {% include "projekte/_seitenleiste_form.html" %}>
+          {% csrf_token %}
+          <input type="hidden" name="erwaehnungen" value="">
+          <label class="feld">{% translate "Kommentar" %}
+            <textarea name="text" rows="3" placeholder="{% translate 'Kommentar schreiben, @ für Erwähnung' %}" data-erwaehnung-url="{% url 'personen_vorschlaege' %}" required></textarea>
+          </label>
+          <div><button type="submit" class="knopf knopf--primaer">{% translate "Kommentieren" %}</button></div>
+        </form>
+      {% endif %}
+    </section>
+  </article>
+
+  <aside class="detail__seite" aria-label="{% translate 'Einteilung' %}">
+    <section id="arbeitstage-widget" class="karte karte--innen stapel pf-{{ widget.farbe }}" aria-label="{% translate 'Arbeitstage' %}">
+      <div class="zeile">
+        <h2 class="luecke">{% translate "Arbeitstage" %}</h2>
+        <div class="zeile zeile--eng">
+          <a class="knopf knopf--klein knopf--icon knopf--schmal" href="{% url 'aufgabe' aufgabe.pk %}?monat={{ widget.vorher }}"{% if seitenleiste %} hx-get="{% url 'aufgabe' aufgabe.pk %}?monat={{ widget.vorher }}" hx-target="#arbeitstage-widget" hx-select="#arbeitstage-widget" hx-swap="outerHTML"{% endif %} aria-label="{% translate 'Vorheriger Monat' %}">‹</a>
+          <span class="klein gedaempft">{{ widget.titel }}</span>
+          <a class="knopf knopf--klein knopf--icon knopf--schmal" href="{% url 'aufgabe' aufgabe.pk %}?monat={{ widget.nachher }}"{% if seitenleiste %} hx-get="{% url 'aufgabe' aufgabe.pk %}?monat={{ widget.nachher }}" hx-target="#arbeitstage-widget" hx-select="#arbeitstage-widget" hx-swap="outerHTML"{% endif %} aria-label="{% translate 'Nächster Monat' %}">›</a>
+        </div>
+      </div>
+      <div class="arbeitstage" role="grid" aria-label="{{ widget.titel }}">
+        <div class="arbeitstage__kopf">{% translate "Mo" %}</div><div class="arbeitstage__kopf">{% translate "Di" %}</div><div class="arbeitstage__kopf">{% translate "Mi" %}</div><div class="arbeitstage__kopf">{% translate "Do" %}</div><div class="arbeitstage__kopf">{% translate "Fr" %}</div>
+        {% for z in widget.zellen %}
+          {% if z %}
+            <div class="arbeitstag{% if z.an %} arbeitstag--an{% endif %}{% if z.frei %} arbeitstag--frei{% endif %}{% if z.heute %} arbeitstag--heute{% endif %}"
+                 title="{{ z.datum|date:'D d.m.Y' }}{% if z.frei %} · {{ z.frei }}{% endif %}{% if z.an %} · {% translate 'Arbeitstag' %}{% endif %}">{{ z.datum|date:"j" }}.</div>
+          {% else %}<div class="arbeitstag arbeitstag--leer"></div>{% endif %}
+        {% endfor %}
+      </div>
+      <div class="legende">
+        <span><i class="legende__arbeitstag"></i>{% translate "Arbeitstag" %}</span>
+        <span><i class="legende__feiertag"></i>{% translate "Feiertag" %}</span>
+        <span><i class="legende__heute"></i>{% translate "heute" %}</span>
+      </div>
+      {% if darf_planen %}<a class="klein" href="{% url 'teamplaner' %}">{% translate "Im Teamplaner einteilen" %}</a>{% endif %}
+    </section>
+  </aside>
+</div>

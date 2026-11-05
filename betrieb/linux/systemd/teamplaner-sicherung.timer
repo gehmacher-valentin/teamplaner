@@ -1,0 +1,13 @@
+[Unit]
+Description=Teamplaner – wöchentliche Sicherung
+Documentation=file:///opt/teamplaner/aktuell/INSTALLATION.md
+
+[Timer]
+# Uhrzeit ändern: sudo systemctl edit teamplaner-sicherung.timer
+# Jeden Sonntag
+OnCalendar=Sun *-*-* 02:30:00
+# Nach einer Abschaltung zur geplanten Zeit beim Hochfahren nachholen
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% load i18n teamplaner %}
+{% comment %}
+Rahmen aller Einstellungs- und Verwaltungsseiten: Unternavigation links (am Handy Reiter
+oben), Inhalt rechts. Formulare höchstens etwa 760 px breit ({% block einst_breit %} für breite Listen).
+{% endcomment %}
+{% block inhalt_klasse %}inhalt--einstellungen{% endblock %}
+{% block inhalt %}
+<div class="einst">
+  {% einstellungen_nav %}
+  <div class="einst__inhalt{% block einst_breit %}{% endblock %}">
+    {% block einstellungen %}{% endblock %}
+  </div>
+</div>
+{% endblock %}

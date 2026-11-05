@@ -1,0 +1,15 @@
+{% extends "kern/einstellungen_basis.html" %}
+{% load i18n %}
+{% block titel %}{% translate "Ersatzcodes" %}{% endblock %}
+{% block einstellungen %}
+<h1>{% translate "Ersatzcodes" %}</h1>
+<section class="karte karte--innen stapel">
+  <div class="meldung meldung--warning">{% translate "Diese Codes werden nur jetzt angezeigt. Bitte ausdrucken oder an einem sicheren Ort aufbewahren – nicht auf dem Telefon mit der App." %}</div>
+  <p class="klein ohne-rand">{% translate "Mit einem Ersatzcode melden Sie sich an, wenn das Telefon fehlt. Jeder Code gilt einmal." %}</p>
+  <ul class="ersatzcodes mono">{% for c in codes %}<li>{{ c }}</li>{% endfor %}</ul>
+  <div class="zeile nicht-drucken">
+    <button type="button" class="knopf" data-drucken>{% translate "Drucken" %}</button>
+    <a class="knopf knopf--primaer" href="{% url 'einst_sicherheit' %}">{% translate "Fertig" %}</a>
+  </div>
+</section>
+{% endblock %}

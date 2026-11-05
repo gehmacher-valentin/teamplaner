@@ -1,0 +1,30 @@
+{% load i18n %}{# Vorschläge unter der Suche der Kopfzeile (projekte.views.suche_vorschlaege, lib/suchvorschlaege.ts) #}
+{% if aufgaben %}<div class="suchvorschlaege__gruppe" role="group" aria-labelledby="suchvorschlaege-aufgaben">
+  <div class="suchvorschlaege__titel" id="suchvorschlaege-aufgaben">{% translate "Aufgaben" %}</div>
+  {% for a in aufgaben %}
+  <a class="suchvorschlag" role="option" aria-selected="false" tabindex="-1" href="{% url 'aufgabe' a.pk %}">
+    <span class="suchvorschlag__text{% if a.status.ist_erledigt %} aufgabe-titel--erledigt{% endif %}">{{ a.titel }}</span>
+    <span class="suchvorschlag__info pf-{{ a.projekt.farbe }}"><span class="farbpunkt"></span><span class="suchvorschlag__ort">{{ a.projekt.name }}{% if a.eltern_id %} › {{ a.eltern.titel }}{% endif %}</span></span>
+  </a>
+  {% endfor %}
+</div>{% endif %}
+{% if projekte %}<div class="suchvorschlaege__gruppe" role="group" aria-labelledby="suchvorschlaege-projekte">
+  <div class="suchvorschlaege__titel" id="suchvorschlaege-projekte">{% translate "Projekte" %}</div>
+  {% for p in projekte %}
+  <a class="suchvorschlag" role="option" aria-selected="false" tabindex="-1" href="{% url 'projekt' p.pk %}">
+    <span class="suchvorschlag__text suchvorschlag__projekt pf-{{ p.farbe }}"><span class="farbpunkt"></span>{{ p.name }}</span>
+    {% if p.archiviert %}<span class="badge">{% translate "archiviert" %}</span>{% endif %}
+  </a>
+  {% endfor %}
+</div>{% endif %}
+{% if kommentare %}<div class="suchvorschlaege__gruppe" role="group" aria-labelledby="suchvorschlaege-kommentare">
+  <div class="suchvorschlaege__titel" id="suchvorschlaege-kommentare">{% translate "Kommentare" %}</div>
+  {% for k in kommentare %}
+  <a class="suchvorschlag" role="option" aria-selected="false" tabindex="-1" href="{% url 'aufgabe' k.aufgabe_id %}#kommentar-{{ k.pk }}">
+    <span class="suchvorschlag__text">{{ k.anzeige_text|truncatechars:90 }}</span>
+    <span class="suchvorschlag__info"><span class="suchvorschlag__ort">{{ k.autor.anzeigename }} · {{ k.aufgabe.titel }}</span></span>
+  </a>
+  {% endfor %}
+</div>{% endif %}
+{% if not aufgaben and not projekte and not kommentare %}<div class="suchvorschlaege__leer">{% translate "Keine Treffer." %}</div>{% endif %}
+<a class="suchvorschlag suchvorschlag--alle" role="option" aria-selected="false" tabindex="-1" href="{% url 'suche' %}?q={{ text|urlencode }}">{% blocktranslate %}Alle Treffer für „{{ text }}“{% endblocktranslate %}</a>

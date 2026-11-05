@@ -1,0 +1,8 @@
+{% extends "registration/einfach.html" %}
+{% load i18n %}
+{% block titel %}{% translate "Gesperrt" %}{% endblock %}
+{% block karte %}
+<h1>{% translate "Vorübergehend gesperrt" %}</h1>
+<p>{% translate "Zu viele fehlgeschlagene Anmeldeversuche. Bitte in einigen Minuten erneut versuchen oder die Administration kontaktieren." %}</p>
+<a class="knopf" href="{% url 'login' %}">{% translate "Zur Anmeldung" %}</a>
+{% endblock %}

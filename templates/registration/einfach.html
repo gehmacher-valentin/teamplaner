@@ -1,0 +1,23 @@
+{% load static i18n %}<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titel %}{% endblock %} – {% translate "Teamplaner" %}</title>
+  <link rel="icon" href="{% static 'favicon.svg' %}" type="image/svg+xml">
+  <link rel="stylesheet" href="{% static 'dist/main.css' %}">
+  <script type="module" src="{% static 'dist/main.js' %}"></script>
+</head>
+<body>
+<main class="anmeldung">
+  <div class="karte anmeldung__karte">
+    <div>
+      <div class="anmeldung__marke">{% translate "Teamplaner" %}</div>
+      {% if organisation %}<div class="gedaempft klein">{{ organisation }}</div>{% endif %}
+    </div>
+    {% if messages %}<div class="meldungen">{% for m in messages %}<div class="meldung meldung--{{ m.tags }}">{{ m }}</div>{% endfor %}</div>{% endif %}
+    {% block karte %}{% endblock %}
+  </div>
+</main>
+</body>
+</html>

@@ -1,0 +1,172 @@
+/* Gantt-Diagramm */
+
+.gt { display: flex; flex-direction: column; gap: 14px; --gt-wochenende: rgba(26, 29, 27, 0.045); --gt-links: 320px; --gt-zeile: 34px; }
+
+.gt-rahmen { overflow: auto; max-height: calc(100vh - 250px); position: relative; }
+.gt-inner { position: relative; user-select: none; -webkit-user-select: none; }
+
+.gt-kopf { display: flex; position: sticky; top: 0; z-index: 6; background: var(--flaeche-2); border-bottom: 1px solid var(--rand); }
+.gt-links {
+  width: var(--gt-links); flex: none; position: sticky; left: 0; z-index: 4; background: var(--flaeche);
+  border-right: 1px solid var(--rand); display: flex; align-items: center; gap: 8px; padding: 0 10px; min-width: 0;
+}
+.gt-links--kopf {
+  background: var(--flaeche-2); font-size: 12px; font-weight: 600; color: var(--text-3); text-transform: uppercase;
+  letter-spacing: 0.06em; z-index: 7; align-items: flex-end; padding-bottom: 8px;
+}
+.gt-links--aufgabe { padding-left: 32px; }
+.gt-links--unter { padding-left: 50px; }
+.gt-links--haupt { padding-left: 10px; }
+.gt-anzahl { flex: none; }
+.gt-links--unter .gt-name::before { content: "↳ "; color: var(--text-3); }
+.gt-achse { position: relative; flex: none; }
+.gt-monate { display: flex; height: 26px; border-bottom: 1px solid var(--linie); }
+.gt-monat {
+  flex: none; font-size: 12px; font-weight: 600; padding: 5px 8px; border-left: 1px solid var(--linie-2);
+  white-space: nowrap; overflow: hidden; color: var(--text-2);
+}
+.gt-ticks { position: relative; height: 22px; }
+.gt-tick {
+  position: absolute; top: 0; height: 22px; font-size: 11px; font-family: var(--mono); color: var(--text-3);
+  border-left: 1px solid var(--linie-2); padding: 3px 3px; white-space: nowrap; overflow: hidden;
+}
+.gt-tick--heute { color: var(--akzent); font-weight: 600; }
+
+.gt-koerper { position: relative; }
+.gt-hintergrund { position: absolute; top: 0; bottom: 0; z-index: 0; pointer-events: none; }
+.gt-frei { position: absolute; top: 0; bottom: 0; background: var(--feiertag); opacity: 0.8; }
+.gt-heute { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--akzent); opacity: 0.6; }
+
+.gt-zeile { display: flex; height: var(--gt-zeile); border-bottom: 1px solid var(--linie); position: relative; }
+.gt-zeile--projekt { background: var(--flaeche-2); }
+.gt-zeile--projekt .gt-links { background: var(--flaeche-2); font-weight: 700; }
+.gt-zeile--gruppe .gt-links { background: var(--grau-bg); font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.04em; }
+.gt-zeile--gruppe { background: var(--grau-bg); }
+.gt-zeile--erledigt .gt-name { color: var(--text-3); text-decoration: line-through; }
+.gt-zeile--erledigt .gt-balken { opacity: 0.45; }
+.gt-zeit { position: relative; flex: 1; z-index: 1; }
+
+.gt-klapp { border: 0; background: none; padding: 2px; cursor: pointer; color: var(--text); display: inline-flex; }
+.gt-name { color: var(--text); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; min-width: 0; }
+.gt-name:hover { text-decoration: underline; color: var(--text); }
+.gt-daten { margin-left: auto; font-size: 11px; color: var(--text-3); font-weight: 400; white-space: nowrap; }
+.gt-entfernen { height: 22px; font-size: 16px; }
+.gt-termine { margin-left: auto; flex: none; width: 24px; height: 22px; padding: 0; opacity: 0; }
+.gt-zeile:hover .gt-termine, .gt-termine:focus-visible { opacity: 1; }
+@media (hover: none) { .gt-termine { opacity: 0.6; } }
+
+/* Balken */
+.gt-balken {
+  position: absolute; top: 7px; height: 16px; border-radius: 4px; background: var(--pf-bg); border: 1px solid var(--pf-bar);
+  box-sizing: border-box; z-index: 2;
+}
+.gt-balken--projekt { top: 9px; height: 12px; background: var(--pf-bar); border-radius: 2px; }
+.gt-balken--projekt::before, .gt-balken--projekt::after {
+  content: ""; position: absolute; bottom: -5px; border: 5px solid transparent; border-top-color: var(--pf-bar);
+}
+.gt-balken--projekt::before { left: -1px; border-left-color: var(--pf-bar); }
+.gt-balken--projekt::after { right: -1px; border-right-color: var(--pf-bar); }
+.gt-balken--offen { border-style: dashed; }
+/* Sammelaufgabe: Termine aus den Unteraufgaben, nur als Ganzes verschiebbar */
+.gt-balken--sammel { top: 10px; height: 10px; background: var(--pf-fg); border-color: var(--pf-fg); border-radius: 2px; }
+.gt-balken--sammel::before, .gt-balken--sammel::after {
+  content: ""; position: absolute; bottom: -5px; border: 4px solid transparent; border-top-color: var(--pf-fg);
+}
+.gt-balken--sammel::before { left: -1px; border-left-color: var(--pf-fg); }
+.gt-balken--sammel::after { right: -1px; border-right-color: var(--pf-fg); }
+/* Projekt ohne eingestellten Zeitraum: Balken aus den Aufgaben; Überzug über Beginn/Ende hinaus */
+.gt-balken--abgeleitet { opacity: 0.5; }
+.gt-ueberzug {
+  position: absolute; top: 9px; height: 12px; border-radius: 2px; z-index: 2; pointer-events: auto;
+  background: repeating-linear-gradient(135deg, #c2410c 0 4px, rgba(194, 65, 12, 0.25) 4px 8px);
+}
+.gt-daten--ueberzug { color: #c2410c; font-weight: 600; }
+.gt-balken--bearbeitbar { cursor: grab; touch-action: none; }
+.gt-balken:focus-visible { outline: 2px solid var(--akzent); outline-offset: 2px; }
+.gt-griff { position: absolute; top: -2px; bottom: -2px; width: 7px; cursor: ew-resize; }
+.gt-griff--links { left: -4px; }
+.gt-griff--rechts { right: -4px; }
+.gt-verbinder {
+  position: absolute; right: -16px; top: 50%; width: 10px; height: 10px; margin-top: -5px; border-radius: 50%;
+  background: var(--flaeche); border: 2px solid var(--akzent); cursor: crosshair; opacity: 0; touch-action: none;
+}
+.gt-balken:hover .gt-verbinder, .gt-verbinder:hover { opacity: 1; }
+.gt-ist { position: absolute; top: 27px; height: 4px; border-radius: 2px; background: var(--pf-fg); opacity: 0.55; z-index: 2; }
+.gt-meilenstein {
+  position: absolute; top: 9px; width: 16px; height: 16px; transform: rotate(45deg) scale(0.8); background: var(--pf-bar);
+  border-radius: 2px; z-index: 2; cursor: pointer;
+}
+.gt-meilenstein--bearbeitbar { cursor: grab; touch-action: none; }
+
+/* Abhängigkeiten */
+.gt-pfeile { position: absolute; top: 0; z-index: 3; overflow: visible; pointer-events: none; }
+.gt-pfeil { pointer-events: stroke; cursor: pointer; }
+.gt-pfeil__treffer { fill: none; stroke: transparent; stroke-width: 10; }
+.gt-pfeil__linie { fill: none; stroke: #7d847f; stroke-width: 1.5; }
+.gt-pfeil--verletzt .gt-pfeil__linie { stroke: #c2410c; stroke-width: 2; stroke-dasharray: 5 3; }
+.gt-pfeil:hover .gt-pfeil__linie { stroke-width: 2.5; }
+.gt-verbinden { stroke: var(--akzent); stroke-width: 2; stroke-dasharray: 4 3; pointer-events: none; }
+
+/* Legende */
+.gt-legende-geplant { background: #dce5f6; border: 1px solid #4f79c9; }
+.gt-legende-ist { background: #1c3766; height: 4px !important; opacity: 0.55; }
+.gt-legende-meilenstein { background: #4f79c9; transform: rotate(45deg) scale(0.75); }
+.gt-legende-sammel { background: #1c3766; height: 6px !important; }
+.gt-legende-ueberzug { background: repeating-linear-gradient(135deg, #c2410c 0 3px, rgba(194, 65, 12, 0.25) 3px 6px); }
+.gt-legende-verletzt { background: repeating-linear-gradient(90deg, #c2410c 0 5px, transparent 5px 8px); height: 2px !important; }
+
+@media (max-width: 760px) {
+  .gt { --gt-links: 180px; }
+  .gt-daten, .gt-ohne-termin { display: none; }
+  .gt-links { padding: 0 6px; gap: 4px; }
+  .gt-links--aufgabe { padding-left: 14px; }
+  .gt-links--unter { padding-left: 24px; }
+  .gt-links--haupt { padding-left: 4px; }
+  .gt-name { font-size: 13px; }
+}
+@media print {
+  .gt-rahmen { max-height: none; overflow: visible; }
+  .gt-links, .gt-kopf { position: static; }
+}
+
+/* ---------- Vorgänger wählen (Termine-Dialog), Karten wie in der Teamplaner-Palette ---------- */
+.gt-vorgaenger h3 { margin: 0; font-size: 15px; }
+.gt-wahl__suche {
+  display: flex; align-items: center; gap: 8px; border: 1px solid var(--rand-stark); border-radius: var(--radius);
+  padding: 0 10px; height: 36px; color: var(--text-3); background: var(--flaeche);
+}
+.gt-wahl__suche:focus-within { outline: 2px solid var(--akzent); }
+.gt-wahl__suche input[type="search"] { border: 0; height: 34px; flex: 1; padding: 0; outline: none; background: transparent; }
+.gt-wahl__liste {
+  display: flex; flex-direction: column; gap: 6px; max-height: min(320px, 40vh); overflow: auto;
+  padding: 8px; border: 1px solid var(--rand); border-radius: var(--radius); background: var(--flaeche-2);
+}
+.gt-wahl__liste--gewaehlt { max-height: none; overflow: visible; padding: 0; border: 0; background: none; }
+.gt-wahl__leer { padding: 6px 4px; }
+.gt-wahl__gruppe { display: flex; flex-direction: column; gap: 6px; }
+.gt-wahl__gruppe + .gt-wahl__gruppe { margin-top: 6px; }
+.gt-wahl__projekt {
+  display: flex; align-items: center; gap: 8px; padding: 2px 4px; font-size: 12px; font-weight: 700;
+  color: var(--text-2); text-transform: uppercase; letter-spacing: 0.04em;
+  position: sticky; top: -8px; background: var(--flaeche-2); z-index: 1;
+}
+.gt-wahl__anzahl { font-weight: 500; color: var(--text-3); }
+.gt-wahl__karte {
+  position: relative; display: flex; flex-direction: column; gap: 2px; width: 100%; text-align: left;
+  padding: 8px 34px 8px 10px; border: 1px solid var(--rand); border-left: 4px solid var(--pf-bar);
+  border-radius: 6px; background: var(--flaeche); font: inherit; color: var(--text); cursor: pointer;
+}
+button.gt-wahl__karte:hover { background: var(--pf-bg); }
+button.gt-wahl__karte:focus-visible { outline: 2px solid var(--akzent); outline-offset: 1px; }
+.gt-wahl__karte--fest { cursor: default; background: var(--pf-bg); }
+.gt-wahl__titel { font-size: 14px; font-weight: 600; }
+.gt-wahl__titel--erledigt { text-decoration: line-through; color: var(--text-3); }
+.gt-wahl__unter { font-size: 12px; color: var(--text-2); }
+.gt-wahl__plus, .gt-wahl__x {
+  position: absolute; top: 50%; right: 8px; transform: translateY(-50%); width: 22px; height: 22px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; font-size: 16px; line-height: 1;
+}
+.gt-wahl__plus { color: var(--text-3); }
+button.gt-wahl__karte:hover .gt-wahl__plus { background: var(--flaeche); color: var(--akzent); }
+.gt-wahl__x { border: 0; background: rgba(255, 255, 255, 0.85); color: var(--text-2); cursor: pointer; padding: 0; }
+.gt-wahl__x:hover { color: var(--fehler, #b42318); }

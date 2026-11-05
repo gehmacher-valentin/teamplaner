@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% load i18n teamplaner %}
+{% block titel %}{% translate "Protokoll" %}{% endblock %}
+{% block inhalt %}
+<div class="seitenkopf">
+  <div class="seitenkopf__titel">
+    <h1>{% if erledigt %}{% translate "Erledigte Aufgaben" %}{% else %}{% translate "Änderungsprotokoll" %}{% endif %}</h1>
+  </div>
+  {% if voll %}
+  <form method="get" class="zeile">
+    <label class="feld">{% translate "Anzeigen" %}
+      <select name="ansicht" data-auto-absenden>
+        <option value="">{% translate "Alle Änderungen" %}</option>
+        <option value="erledigt" {% if erledigt %}selected{% endif %}>{% translate "Nur erledigte Aufgaben" %}</option>
+      </select>
+    </label>
+    {% if not erledigt %}
+    <label class="feld">{% translate "Bereich des Protokolls" %}
+      <select name="typ" data-auto-absenden>
+        <option value="">{% translate "Alle" %}</option>
+        {% for t in typen %}<option value="{{ t }}" {% if t == typ %}selected{% endif %}>{{ t }}</option>{% endfor %}
+      </select>
+    </label>
+    {% endif %}
+    <noscript><button type="submit" class="knopf">{% translate "Filtern" %}</button></noscript>
+  </form>
+  {% endif %}
+</div>
+{% if erledigt %}
+<section class="karte liste liste--mobil" style="--spalten: 140px minmax(0,1fr) minmax(0,2.4fr) minmax(0,1.2fr); --liste-min: 720px">
+  <div class="liste__inner">
+    <div class="liste__kopf"><div>{% translate "Erledigt am" %}</div><div>{% translate "Wer" %}</div><div>{% translate "Aufgabe" %}</div><div>{% translate "Projekt" %}</div></div>
+    {% for e in seite %}
+      <div class="liste__zeile">
+        <div class="mono klein">{{ e.zeitpunkt|date:"d.m.Y H:i" }}</div>
+        <div class="person">{% avatar e.akteur "klein" %}<span class="person__name">{% if e.akteur %}{{ e.akteur }}{% else %}{% translate "System" %}{% endif %}</span></div>
+        <div class="zelle-text">{% if e.aufgabe %}<a href="{{ e.aufgabe.get_absolute_url }}">{{ e.aufgabe.titel }}</a>{% if e.aufgabe.eltern %} <span class="gedaempft klein">· {{ e.aufgabe.eltern.titel }}</span>{% endif %}{% else %}<span class="gedaempft">#{{ e.aufgabe_id }} ({% translate "gelöscht" %})</span>{% endif %}</div>
+        <div class="zelle-text mobil-aus">{% if e.aufgabe %}<span class="pf-{{ e.aufgabe.projekt.farbe }} zeile" style="flex-wrap:nowrap"><span class="farbpunkt"></span><span class="zelle-text">{{ e.aufgabe.projekt.name }}</span></span>{% endif %}</div>
+      </div>
+    {% empty %}
+      <div class="leer">{% translate "Keine Einträge." %}</div>
+    {% endfor %}
+  </div>
+{% else %}
+<section class="karte liste" style="--spalten: 140px minmax(0,1fr) minmax(0,4fr); --liste-min: 720px">
+  <div class="liste__inner">
+    <div class="liste__kopf"><div>{% translate "Zeitpunkt" %}</div><div>{% translate "Person" %}</div><div>{% translate "Änderung" %}</div></div>
+    {% for e in seite %}
+      <div class="liste__zeile">
+        <div class="mono klein">{{ e.zeitpunkt|date:"d.m.Y H:i" }}</div>
+        <div class="zelle-text">{% if e.akteur %}{{ e.akteur }}{% else %}{% translate "System" %}{% endif %}</div>
+        <div style="overflow-wrap:anywhere">{% protokoll_text e %}</div>
+      </div>
+    {% empty %}
+      <div class="leer">{% translate "Keine Einträge." %}</div>
+    {% endfor %}
+  </div>
+{% endif %}
+  {% if seite.has_other_pages %}
+  <div class="karte__fuss zeile">
+    {% if seite.has_previous %}<a class="knopf knopf--klein" href="?{{ parameter }}&seite={{ seite.previous_page_number }}">{% translate "Neuere" %}</a>{% endif %}
+    <span class="gedaempft klein">{% blocktranslate with n=seite.number gesamt=seite.paginator.num_pages %}Seite {{ n }} von {{ gesamt }}{% endblocktranslate %}</span>
+    {% if seite.has_next %}<a class="knopf knopf--klein" href="?{{ parameter }}&seite={{ seite.next_page_number }}">{% translate "Ältere" %}</a>{% endif %}
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

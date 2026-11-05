@@ -1,0 +1,5 @@
+{# Einstellungszeile mit Schalter: Beschriftung links, Schalter rechts, speichert beim Umschalten #}<div class="einstellungszeile">
+  <label for="{{ id }}" class="luecke">{{ titel }}</label>
+  <input id="{{ id }}" type="checkbox" role="switch" class="schalter" name="an" value="1"{% if an %} checked{% endif %}{% if deaktiviert %} disabled{% endif %}
+    hx-post="{% url url %}" hx-trigger="change" hx-swap="none" hx-vals='{"feld": "{{ feld }}"}'>
+</div>

@@ -1,0 +1,26 @@
+{% extends "kern/einstellungen_basis.html" %}
+{% load i18n %}
+{% block titel %}{% if ansicht %}{{ ansicht.name }}{% else %}{% translate "Neue Ansicht" %}{% endif %}{% endblock %}
+{% block einstellungen %}
+<nav class="pfad" aria-label="{% translate 'Pfad' %}"><a href="{% url 'einst_ansichten' %}?art=gantt">{% translate "Ansichten & Freigaben" %}</a><span aria-hidden="true">/</span><span>{% if ansicht %}{{ ansicht.name }}{% else %}{% translate "Neue Ansicht" %}{% endif %}</span></nav>
+<div class="einst-kopf"><h1>{% if ansicht %}{{ ansicht.name }}{% else %}{% translate "Neue Ansicht" %}{% endif %}</h1><span class="badge">{% translate "Gantt-Diagramm" %}</span></div>
+<form method="post" class="stapel" novalidate id="ansicht-formular">
+  {% csrf_token %}
+  <section class="karte" aria-labelledby="inhalt-titel">
+    <div class="karte__kopf"><h2 id="inhalt-titel">{% translate "Inhalt" %}</h2></div>
+    <div class="karte--innen formular">
+      {% include "teile/feld.html" with feld=form.name %}
+      {% include "teile/feld.html" with feld=form.neue_projekte_automatisch zeile=True %}
+      {% include "teile/chips.html" with feld=form.projekte %}
+    </div>
+  </section>
+  {% include "teile/freigaben.html" %}
+  {% url 'einst_ansichten' as liste %}{% include "teile/speicherleiste.html" with abbrechen=liste|add:"?art=gantt" stehend=True %}
+</form>
+{% if ansicht %}
+  {% url 'gantt_ansicht_loeschen' ansicht.pk as aktion %}{% translate "Ansicht löschen" as titel %}{% translate "Löschen" as knopf %}
+  {% blocktranslate asvar frage with name=ansicht.name %}Ansicht „{{ name }}“ löschen?{% endblocktranslate %}
+  {% translate "Die Freigaben dieser Ansicht entfallen." as text %}
+  {% include "teile/gefahrenabschnitt.html" with id="ansicht-loeschen" %}
+{% endif %}
+{% endblock %}

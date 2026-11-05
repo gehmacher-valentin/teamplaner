@@ -1,0 +1,98 @@
+# Produktions- bzw. Testumgebung. Konfiguration in .env (Vorlage: .env.example).
+# Bedienung über ./teamplaner (start, status, update, zurueck … – siehe docs/betrieb.md).
+# Die Anwendung kommt als fertiges Paket aus der Registry (TEAMPLANER_IMAGE:TEAMPLANER_VERSION);
+# aus dem Quellcode bauen: zusätzlich -f compose.build.yaml und --build.
+# Test- und Produktivumgebung: zwei Verzeichnisse mit eigener .env (eigener COMPOSE_PROJECT_NAME).
+name: ${COMPOSE_PROJECT_NAME:-teamplaner}
+
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    environment:
+      TEAMPLANER_DOMAIN: ${TEAMPLANER_DOMAIN}
+      TLS_ART: ${TLS_ART:-auto}
+    volumes:
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      app:
+        condition: service_healthy
+
+  app:
+    image: ${TEAMPLANER_IMAGE:-ghcr.io/gehmacher-valentin/teamplaner-app}:${TEAMPLANER_VERSION:-latest}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_HOST: db
+      TEAMPLANER_MEDIA_ROOT: /app/media
+    volumes:
+      - medien:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/gesund/', timeout=5).status == 200 else 1)"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      # Zeit für Datenbank-Migrationen nach einem Update (auch auf kleinen Rechnern)
+      start_period: 120s
+
+  # Verschickt E-Mail-Benachrichtigungen sofort; ohne EMAIL_HOST wartet er nur
+  mailer:
+    image: ${TEAMPLANER_IMAGE:-ghcr.io/gehmacher-valentin/teamplaner-app}:${TEAMPLANER_VERSION:-latest}
+    restart: unless-stopped
+    entrypoint: ["python", "manage.py", "mails_versenden", "--dauerhaft"]
+    env_file: .env
+    environment:
+      POSTGRES_HOST: db
+    depends_on:
+      app:
+        condition: service_healthy
+
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-teamplaner}
+      POSTGRES_USER: ${POSTGRES_USER:-teamplaner}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Wöchentliches Backup (sonntags) von Datenbank und Anhängen, Aufbewahrung BACKUP_TAGE
+  backup:
+    image: postgres:17
+    restart: unless-stopped
+    entrypoint: ["sh", "/skripte/backup.sh"]
+    environment:
+      PGHOST: db
+      PGDATABASE: ${POSTGRES_DB:-teamplaner}
+      PGUSER: ${POSTGRES_USER:-teamplaner}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      BACKUP_UHRZEIT: ${BACKUP_UHRZEIT:-02:30}
+      BACKUP_TAGE: ${BACKUP_TAGE:-30}
+      TZ: Europe/Vienna
+    volumes:
+      - ./docker/backup.sh:/skripte/backup.sh:ro
+      - ${BACKUP_VERZEICHNIS:-./backups}:/backups
+      - medien:/medien:ro
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  medien:
+  caddy_data:
+  caddy_config:

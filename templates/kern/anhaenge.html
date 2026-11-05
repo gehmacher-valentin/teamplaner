@@ -1,0 +1,52 @@
+{% extends "kern/einstellungen_basis.html" %}
+{% load i18n teamplaner %}
+{% block titel %}{% translate "Speicherplatz" %}{% endblock %}
+{% block einst_breit %} einst__inhalt--breit{% endblock %}
+{% block einstellungen %}
+<h1>{% translate "Speicherplatz" %}</h1>
+<section class="karte" aria-label="{% translate 'Belegt' %}">
+  <dl class="einst-daten">
+    {% for titel, s in summen %}<dt>{{ titel }}</dt><dd>{{ s.groesse|default:0|dateigroesse }} <span class="gedaempft klein">({{ s.anzahl }})</span></dd>{% endfor %}
+    {% if platz %}
+      <dt>{% translate "Frei" %}</dt><dd>{{ platz.free|dateigroesse }} <span class="gedaempft klein">/ {{ platz.total|dateigroesse }}</span></dd>
+    {% endif %}
+  </dl>
+</section>
+
+<form method="get" class="zeile" aria-label="{% translate 'Filter' %}">
+  <label class="feld"><span class="sr-only">{% translate "Sortieren" %}</span>
+    <select name="sort" data-auto-absenden>
+      <option value="groesse" {% if sortierung == "groesse" %}selected{% endif %}>{% translate "Größte zuerst" %}</option>
+      <option value="alt" {% if sortierung == "alt" %}selected{% endif %}>{% translate "Älteste zuerst" %}</option>
+      <option value="neu" {% if sortierung == "neu" %}selected{% endif %}>{% translate "Neueste zuerst" %}</option>
+    </select>
+  </label>
+  <label class="feld feld--zeile"><input type="checkbox" name="archiv" value="1" data-auto-absenden {% if nur_archiv %}checked{% endif %}> {% translate "Nur archivierte Projekte" %}</label>
+  <noscript><button type="submit" class="knopf">{% translate "Anzeigen" %}</button></noscript>
+</form>
+
+<section class="karte liste liste--mobil" aria-label="{% translate 'Anhänge' %}" style="--spalten: minmax(0,2fr) 90px minmax(0,2fr) minmax(0,1fr) 110px 40px; --liste-min: 820px">
+  <div class="liste__inner">
+    <div class="liste__kopf"><div>{% translate "Datei" %}</div><div>{% translate "Größe" %}</div><div>{% translate "Aufgabe" %}</div><div>{% translate "Hochgeladen von" %}</div><div>{% translate "Am" %}</div><div></div></div>
+    {% for a in seite %}
+      <div class="liste__zeile">
+        <div class="zelle-text"><a href="{% url 'anhang' a.pk %}" target="_blank" rel="noopener" title="{{ a.dateiname }}">{{ a.dateiname }}</a></div>
+        <div class="mono klein">{{ a.groesse|dateigroesse }}</div>
+        <div class="zelle-text"><a href="{{ a.aufgabe.get_absolute_url }}">{{ a.aufgabe.titel }}</a> <span class="gedaempft klein">· {{ a.aufgabe.projekt.name }}{% if a.aufgabe.projekt.archiviert_am %} ({% translate "archiviert" %}){% endif %}</span></div>
+        <div class="zelle-text mobil-aus">{{ a.hochgeladen_von }}</div>
+        <div class="mono klein">{{ a.hochgeladen_am|date:"d.m.Y" }}</div>
+        <div><form method="post" action="{% url 'anhang_entfernen' a.pk %}" data-bestaetigen="{% blocktranslate with name=a.dateiname %}„{{ name }}“ endgültig löschen?{% endblocktranslate %}">{% csrf_token %}<input type="hidden" name="weiter" value="{{ request.get_full_path }}"><button type="submit" class="symbolknopf" aria-label="{% translate 'Löschen' %}: {{ a.dateiname }}">{% include "teile/muell.html" %}</button></form></div>
+      </div>
+    {% empty %}
+      <div class="leer">{% translate "Keine Anhänge." %}</div>
+    {% endfor %}
+  </div>
+  {% if seite.has_other_pages %}
+  <div class="karte__fuss zeile">
+    {% if seite.has_previous %}<a class="knopf knopf--klein" href="?{{ parameter }}&seite={{ seite.previous_page_number }}">{% translate "Zurück" %}</a>{% endif %}
+    <span class="gedaempft klein">{% blocktranslate with n=seite.number gesamt=seite.paginator.num_pages %}Seite {{ n }} von {{ gesamt }}{% endblocktranslate %}</span>
+    {% if seite.has_next %}<a class="knopf knopf--klein" href="?{{ parameter }}&seite={{ seite.next_page_number }}">{% translate "Weiter" %}</a>{% endif %}
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

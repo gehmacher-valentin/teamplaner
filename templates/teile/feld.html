@@ -1,0 +1,6 @@
+{% load i18n %}<label class="feld{% if zeile %} feld--zeile{% endif %}"{% if breite %} style="flex-basis: {{ breite }}"{% endif %}>
+  {% if not zeile %}{{ feld.label }}{% if feld.field.required %}<span class="sr-only"> ({% translate "Pflichtfeld" %})</span>{% endif %}{% endif %}
+  {{ feld }}
+  {% if zeile %}{{ feld.label }}{% endif %}
+  {% if feld.errors %}<ul class="fehlerliste">{% for f in feld.errors %}<li>{{ f }}</li>{% endfor %}</ul>{% endif %}
+</label>

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% load i18n teamplaner %}
+{% block titel %}{% translate "Posteingang" %}{% endblock %}
+{% block inhalt %}
+<div class="seitenkopf">
+  <div class="seitenkopf__titel"><h1>{% translate "Posteingang" %}</h1></div>
+  {% if nav.ungelesen %}<form method="post">{% csrf_token %}<button type="submit" class="knopf">{% translate "Alle als gelesen markieren" %}</button></form>{% endif %}
+</div>
+<section class="karte">
+  {% for b in eintraege %}
+    <a href="{% url 'benachrichtigung_oeffnen' b.pk %}" class="liste__zeile" style="--spalten: auto minmax(0,1fr) auto; display:grid; color:inherit; text-decoration:none{% if not b.gelesen_am %}; background: var(--akzent-hell-2); font-weight:600{% endif %}">
+      {% avatar b.ausloeser "klein" %}
+      <span>{{ b.text }}</span>
+      <span class="gedaempft klein mono">{{ b.erstellt_am|date:"d.m. H:i" }}</span>
+    </a>
+  {% empty %}
+    <div class="leer">{% translate "Keine Benachrichtigungen." %}</div>
+  {% endfor %}
+</section>
+{% endblock %}

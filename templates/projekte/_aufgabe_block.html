@@ -1,0 +1,4 @@
+{% load i18n %}<div class="aufgabe-block{% if a.waise %} aufgabe-block--waise{% endif %}" data-id="{{ a.pk }}" data-hoehe="{{ a.hoehe|default:0 }}" id="aufgabe-block-{{ a.pk }}"{% if block_oob %} hx-swap-oob="true"{% endif %}>
+  {% include "projekte/_aufgabe_zeile.html" %}
+  {% if a.tiefe_liste < max_ebenen %}<div class="unter-liste" data-aufgaben-liste data-eltern="{{ a.pk }}" data-tiefe="{{ a.tiefe_liste|add:1 }}">{% for k in a.kinder %}{% include "projekte/_aufgabe_block.html" with a=k block_oob=False %}{% endfor %}</div>{% endif %}
+</div>

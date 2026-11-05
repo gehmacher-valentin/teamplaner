@@ -1,0 +1,643 @@
+#!/usr/bin/env bash
+# Teamplaner auf einem Linux-Server ohne Docker (INSTALLATION.md).
+# Wird bei der Installation nach /usr/local/sbin/teamplaner kopiert; Aufruf mit sudo.
+set -euo pipefail
+# Was dieses Skript anlegt, muss der Dienstbenutzer lesen können, auch wenn root auf gehärteten Servern
+# eine strengere umask hat (CIS: 027 oder 077). Vertrauliches bekommt seine Rechte ausdrücklich.
+umask 0022
+
+HILFE="Aufruf: sudo teamplaner <befehl> [-j|--ja]
+
+  status                      installierte Version, Dienste, Erreichbarkeit, letzte Sicherung
+  pruefen                     Installation und Konfiguration prüfen
+  update ARCHIV               neue Version aus teamplaner-X.Y.Z.tar.gz einspielen: Sicherung, Wechsel,
+                              Datenbank-Migrationen; startet sie nicht, geht es automatisch zurück
+  zurueck                     zurück auf die Version vor dem letzten Update (ohne Datenverlust)
+  neu-aufbauen                Python-Umgebung der installierten und der vorherigen Version mit der
+                              System-Python neu bauen, z. B. nach einem Upgrade der Distribution, das die
+                              Python-Version wechselt (Debian 12 → 13); startet sie nicht, bleibt die
+                              bisherige. Andere Python: sudo TEAMPLANER_PYTHON=python3.12 teamplaner neu-aufbauen
+  start | stop | neustart     Webanwendung und Mailversand starten, anhalten, neu starten
+  logs [web|mailer|sicherung] Protokoll ansehen
+  sichern                     sofort eine Sicherung anlegen
+  wiederherstellen DUMP [ANHAENGE]
+                              Sicherung einspielen (überschreibt die Daten)
+  konto-anlegen OPTIONEN      Konto anlegen, z. B. das erste Admin-Konto (siehe INSTALLATION.md)
+  verwalten BEFEHL …          Django-Verwaltungsbefehl als Dienstbenutzer, z. B. axes_reset_username
+
+  -j, --ja                    Rückfragen bestätigen (außer solchen, bei denen Daten verloren gehen)
+
+Erstinstallation: im entpackten Archiv sudo ./installieren.sh"
+
+BASIS=/opt/teamplaner
+KONFIG=/etc/teamplaner/teamplaner.env
+DATEN=/var/lib/teamplaner
+SICHERUNGEN=/var/backups/teamplaner
+STAND=$DATEN/stand
+BENUTZER=teamplaner
+DIENSTE=(teamplaner-web teamplaner-mailer)
+BEHALTEN=3
+WARTEN="${TEAMPLANER_WARTEN:-300}"
+JA=0
+BEFEHL=""
+NEU_VERSION=""
+
+meldung() { printf '\n==> %s\n' "$*"; }
+fehler() { printf '\nFehler: %s\n' "$*" >&2; exit 1; }
+
+bestaetigen() {
+  [[ $JA == 1 ]] && return 0
+  local antwort=""
+  read -r -p "$1 [j/N] " antwort || true
+  [[ $antwort =~ ^[jJyY] ]]
+}
+
+wurzel() { [[ $(id -u) == 0 ]] || fehler "Bitte mit sudo aufrufen: sudo teamplaner $BEFEHL"; }
+
+# Wert aus der Konfiguration (letzte Zeile gewinnt, umgebende Anführungszeichen entfernt), sonst $2
+konfig_wert() {
+  local wert
+  wert="$(sed -n "s/^$1=//p" "$KONFIG" 2>/dev/null | tail -n 1)"
+  wert="${wert%\"}"
+  wert="${wert#\"}"
+  printf '%s' "${wert:-${2:-}}"
+}
+
+ist_version() { [[ $1 =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; }
+
+hoeher() {  # ist Version $1 neuer als $2?
+  [[ $1 != "$2" && "$(printf '%s\n%s\n' "$1" "$2" | sort -V | tail -n 1)" == "$1" ]]
+}
+
+aktuelle_version() { basename "$(readlink "$BASIS/aktuell")"; }
+
+installiert() { [[ -L $BASIS/aktuell ]] || fehler "Teamplaner ist nicht installiert (Erstinstallation: sudo ./installieren.sh)."; }
+
+# Befehl als Dienstbenutzer, mit derselben Konfiguration und Härtung wie die Dienste.
+#   als_dienst [-d VERZEICHNIS] [-u UMASK] BEFEHL …   (Standardverzeichnis: aktuelle Version)
+als_dienst() {
+  local verz="$BASIS/aktuell" umask=0027
+  while [[ ${1:-} == -d || ${1:-} == -u ]]; do
+    if [[ $1 == -d ]]; then verz=$2; else umask=$2; fi
+    shift 2
+  done
+  systemd-run --quiet --wait --pipe --collect \
+    --uid="$BENUTZER" --gid="$BENUTZER" \
+    -p EnvironmentFile="$KONFIG" -p WorkingDirectory="$verz" -p UMask="$umask" \
+    -p NoNewPrivileges=yes -p PrivateTmp=yes -p ProtectSystem=strict -p ProtectHome=yes \
+    -p ReadWritePaths="$DATEN $SICHERUNGEN" \
+    -- "$@"
+}
+
+verwalten_in() { local verz=$1; shift; als_dienst -d "$verz" "$verz/venv/bin/python" manage.py "$@"; }
+verwalten() { verwalten_in "$BASIS/aktuell" "$@"; }
+
+psql_dienst() {  # psql mit den Zugangsdaten aus der Konfiguration; SQL per -c oder von stdin
+  # shellcheck disable=SC2016  # Variablen gelten erst in der Umgebung des Dienstbenutzers
+  als_dienst sh -c 'PGHOST="$POSTGRES_HOST" PGPORT="${POSTGRES_PORT:-5432}" PGDATABASE="$POSTGRES_DB" \
+    PGUSER="$POSTGRES_USER" PGPASSWORD="$POSTGRES_PASSWORD" exec psql -X -q -At -F " " -v ON_ERROR_STOP=1 "$@"' psql "$@"
+}
+
+migrationen() {  # angewendete Datenbank-Migrationen, je Zeile "app name", sortiert
+  psql_dienst -c "SELECT app, name FROM django_migrations" | LC_ALL=C sort
+}
+
+sicherung_anlegen() {  # [KENNUNG] – Dateien datenbank_<kennung>.dump, anhaenge_<kennung>.tar.gz
+  als_dienst -u 0077 "$BASIS/aktuell/betrieb/linux/sicherung.sh" jetzt "${1:-}"
+}
+
+# Datenbank vollständig durch eine Sicherung ersetzen: erst alle eigenen Objekte entfernen, damit
+# keine Tabellen einer späteren Version übrig bleiben, dann einspielen. Ohne Superuser-Rechte.
+datenbank_zurueckspielen() {
+  psql_dienst <<'SQL'
+DO $$
+DECLARE r record;
+BEGIN
+  FOR r IN SELECT format('%I.%I', schemaname, tablename) AS name FROM pg_tables
+           WHERE schemaname = 'public' AND tableowner = current_user LOOP
+    EXECUTE 'DROP TABLE IF EXISTS ' || r.name || ' CASCADE';
+  END LOOP;
+  FOR r IN SELECT c.oid::regclass AS name FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+           WHERE n.nspname = 'public' AND c.relkind = 'S' AND pg_get_userbyid(c.relowner) = current_user LOOP
+    EXECUTE 'DROP SEQUENCE IF EXISTS ' || r.name || ' CASCADE';
+  END LOOP;
+  FOR r IN SELECT p.oid::regprocedure AS name FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+           WHERE n.nspname = 'public' AND pg_get_userbyid(p.proowner) = current_user LOOP
+    EXECUTE 'DROP FUNCTION IF EXISTS ' || r.name || ' CASCADE';
+  END LOOP;
+END $$;
+SQL
+  # shellcheck disable=SC2016
+  als_dienst sh -c 'PGHOST="$POSTGRES_HOST" PGPORT="${POSTGRES_PORT:-5432}" PGUSER="$POSTGRES_USER" \
+    PGPASSWORD="$POSTGRES_PASSWORD" exec pg_restore --no-owner --exit-on-error --dbname="$POSTGRES_DB"' < "$1"
+}
+
+anhaenge_zurueckspielen() {
+  # shellcheck disable=SC2016
+  als_dienst sh -c 'find "$MEDIEN_VERZEICHNIS" -mindepth 1 -delete && tar -xzf - -C "$MEDIEN_VERZEICHNIS"' < "$1"
+}
+
+gesund() {  # antwortet die Anwendung (und damit die Datenbank)?
+  local host port
+  host="$(konfig_wert TEAMPLANER_HOST 127.0.0.1)"
+  port="$(konfig_wert TEAMPLANER_PORT 8000)"
+  [[ $host != 0.0.0.0 ]] || host=127.0.0.1
+  "$BASIS/aktuell/venv/bin/python" -I -c "import sys, urllib.request
+sys.exit(0 if urllib.request.urlopen('http://$host:$port/gesund/', timeout=5).status == 200 else 1)" >/dev/null 2>&1
+}
+
+neustarts() { systemctl show -p NRestarts --value teamplaner-web 2>/dev/null || echo 0; }
+
+warten_bis_gesund() {
+  local ende=$((SECONDS + WARTEN)) start
+  start="$(neustarts)"
+  while ((SECONDS < ende)); do
+    gesund && return 0
+    # Stürzt die Anwendung beim Start wiederholt ab, nicht bis zum Ende warten
+    (($(neustarts) - start >= 3)) && return 1
+    for dienst in "${DIENSTE[@]}"; do
+      systemctl is-failed --quiet "$dienst" && return 1
+    done
+    sleep 2
+  done
+  return 1
+}
+
+dienste_starten() {
+  systemctl reset-failed "${DIENSTE[@]}" 2>/dev/null || true
+  systemctl start "${DIENSTE[@]}"
+}
+
+dienste_stoppen() { systemctl stop "${DIENSTE[@]}"; }
+
+# Python-Aufrufe als root mit -I: nichts aus dem aktuellen Verzeichnis oder PYTHON*-Variablen laden
+python_finden() {  # Python ab 3.11 mit venv/ensurepip (Debian/Ubuntu: Paket python3-venv)
+  local kandidat pfad
+  for kandidat in "${TEAMPLANER_PYTHON:-}" python3.13 python3.12 python3.11 python3; do
+    [[ -n $kandidat ]] || continue
+    pfad="$(command -v "$kandidat" 2>/dev/null)" || continue
+    if "$pfad" -I -c 'import sys, venv, ensurepip; sys.exit(sys.version_info < (3, 11))' 2>/dev/null; then
+      printf '%s' "$pfad"
+      return 0
+    fi
+  done
+  return 1
+}
+
+# Python-Umgebung in Versionsverzeichnis $1 mit Python $2 aus den mitgelieferten Paketen bauen (kein
+# Internet nötig). Sie muss an ihrem endgültigen Ort entstehen (absolute Pfade in venv/bin).
+umgebung_bauen() {
+  local verz=$1 python=$2
+  echo "Python-Umgebung mit $("$python" --version 2>&1) ($python)"
+  if ! { "$python" -I -m venv "$verz/venv" \
+         && "$verz/venv/bin/pip" install --quiet --disable-pip-version-check --no-index \
+              --find-links "$verz/wheelhaus" -r "$verz/requirements.txt"; }; then
+    return 1
+  fi
+  "$verz/venv/bin/python" -I -m compileall -q -x '/(venv|venv\.alt|wheelhaus)/' "$verz" >/dev/null 2>&1 || true
+  # Gehört root, für den Dienstbenutzer nur lesbar – unabhängig von der umask und den Rechten der Quelle
+  chown -R root:root "$verz"
+  chmod -R u=rwX,go=rX "$verz"
+}
+
+# Umgebung neu bauen; die bisherige bleibt als venv.alt, bis umgebung_behalten oder umgebung_zurueck.
+# Misslingt der Bau, gilt sofort wieder die bisherige.
+umgebung_ersetzen() {
+  rm -rf "$1/venv.alt"
+  [[ ! -e $1/venv ]] || mv "$1/venv" "$1/venv.alt"
+  umgebung_bauen "$1" "$2" && return 0
+  umgebung_zurueck "$1"
+  return 1
+}
+umgebung_zurueck() {
+  [[ -e $1/venv.alt ]] || return 0
+  rm -rf "$1/venv"
+  mv "$1/venv.alt" "$1/venv"
+}
+umgebung_behalten() { rm -rf "$1/venv.alt"; }
+
+# Lauffähig? Nach einem Wechsel der System-Python (Upgrade der Distribution) nicht mehr.
+umgebung_ok() { "$1/venv/bin/python" -I -c 'import django, psycopg, uvicorn' >/dev/null 2>&1; }
+
+umgebung_text() {
+  if umgebung_ok "$1"; then
+    printf '%s (%s)\n' "$("$1/venv/bin/python" -I -c 'import platform; print("Python", platform.python_version())')" \
+      "$(readlink -f "$1/venv/bin/python")"
+  else
+    echo "nicht lauffähig (Python gewechselt?) – sudo teamplaner neu-aufbauen"
+  fi
+}
+
+# Version aus Archiv oder entpacktem Verzeichnis nach $BASIS/versionen/<version> bringen und die
+# Python-Umgebung bauen. Setzt NEU_VERSION.
+version_installieren() {
+  local quelle=$1 tmp v ziel python
+  python="$(python_finden)" || fehler "Python 3.11 oder neuer mit venv fehlt (Debian/Ubuntu: Paket python3-venv)."
+  tmp="$(mktemp -d "$BASIS/versionen/.neu.XXXXXX")"
+  if [[ -d $quelle ]]; then
+    cp -a "$quelle/." "$tmp/"
+  else
+    tar -xzf "$quelle" -C "$tmp" --strip-components=1 --no-same-owner
+  fi
+  v="$(cat "$tmp/VERSION" 2>/dev/null || true)"
+  if ! ist_version "$v"; then
+    rm -rf "$tmp"
+    fehler "Kein Teamplaner-Archiv (VERSION fehlt): $quelle"
+  fi
+  ziel="$BASIS/versionen/$v"
+  rm -rf "$ziel"
+  mv "$tmp" "$ziel"
+  if ! umgebung_bauen "$ziel" "$python"; then
+    rm -rf "$ziel"
+    fehler "Python-Pakete ließen sich nicht installieren (Python-Version passt nicht zum Archiv?)."
+  fi
+  NEU_VERSION=$v
+}
+
+einheiten_installieren() {  # systemd-Dienste und Wartungsseite aus Versionsverzeichnis $1
+  install -m 0644 "$1"/betrieb/linux/systemd/teamplaner-* /etc/systemd/system/
+  systemctl daemon-reload
+  install -d -m 0755 "$BASIS/wartung"
+  install -m 0644 "$1/betrieb/linux/wartung.html" "$BASIS/wartung/wartung.html"
+}
+
+cli_installieren() {  # über eine neue Datei ersetzen: ein laufendes teamplaner liest ungestört weiter
+  install -m 0755 "$1/betrieb/linux/teamplaner" /usr/local/sbin/teamplaner.neu
+  mv -f /usr/local/sbin/teamplaner.neu /usr/local/sbin/teamplaner
+}
+
+alte_versionen_entfernen() {  # die neuesten $BEHALTEN behalten, außerdem aktuelle und vorherige
+  local behalten v
+  behalten=" $(aktuelle_version) $(cat "$STAND/vorherige-version" 2>/dev/null || true) "
+  while read -r v; do
+    [[ -n $v && $behalten != *" $v "* ]] && rm -rf "${BASIS:?}/versionen/$v"
+  done < <(find "$BASIS/versionen" -mindepth 1 -maxdepth 1 -type d ! -name '.*' -printf '%f\n' \
+             | sort -V | head -n "-$BEHALTEN")
+  find "$BASIS/versionen" -mindepth 1 -maxdepth 1 -name '.neu.*' -exec rm -rf {} +
+}
+
+konfig_pruefen() {  # Pflichtwerte gesetzt? Gibt Fehlertexte aus, Rückgabe 1 bei Fehlern
+  local ok=0
+  [[ $(konfig_wert DJANGO_SECRET_KEY) != wird-bei-der-installation-erzeugt && -n $(konfig_wert DJANGO_SECRET_KEY) ]] \
+    || { echo "  DJANGO_SECRET_KEY fehlt"; ok=1; }
+  if [[ $(konfig_wert POSTGRES_PASSWORD) == bitte-eintragen ]]; then
+    echo "  POSTGRES_PASSWORD ist noch nicht eingetragen"
+    ok=1
+  fi
+  [[ -n $(konfig_wert DJANGO_ALLOWED_HOSTS) ]] || { echo "  DJANGO_ALLOWED_HOSTS fehlt"; ok=1; }
+  [[ $(konfig_wert DJANGO_DEBUG 0) == 0 ]] || { echo "  DJANGO_DEBUG muss 0 sein"; ok=1; }
+  return $ok
+}
+
+neue_einstellungen() {  # Schlüssel aus der Vorlage der neuen Version, die in der Konfiguration fehlen
+  local muster='s/^\([A-Z_][A-Z0-9_]*\)=.*/\1/p' fehlend
+  fehlend="$(LC_ALL=C comm -23 <(sed -n "$muster" "$BASIS/aktuell/betrieb/linux/teamplaner.env" | LC_ALL=C sort -u) \
+                               <(sed -n "$muster" "$KONFIG" | LC_ALL=C sort -u) | tr '\n' ' ')"
+  [[ -z ${fehlend// /} ]] \
+    || echo "Neue Einstellungen (Vorlage: $BASIS/aktuell/betrieb/linux/teamplaner.env; bis sie in $KONFIG stehen, gelten Standardwerte): $fehlend"
+}
+
+migrationen_zuruecknehmen() {  # Migrationen seit dem Update mit dem Code der neueren Version ($1) rückwärts
+  local verz=$1 apps app ziel
+  apps="$(LC_ALL=C comm -13 "$STAND/migrationen.txt" <(migrationen) | cut -d' ' -f1 | sort -u)"
+  if [[ -z $apps ]]; then
+    echo "Keine Datenbank-Änderungen zurückzunehmen."
+    return 0
+  fi
+  for app in $apps; do
+    ziel="$(awk -v a="$app" '$1 == a { n = $2 } END { print (n == "" ? "zero" : n) }' "$STAND/migrationen.txt")"
+    echo "  $app → $ziel"
+    verwalten_in "$verz" migrate "$app" "$ziel" --noinput || return 1
+  done
+}
+
+adresse_intern() { echo "$(konfig_wert TEAMPLANER_HOST 127.0.0.1):$(konfig_wert TEAMPLANER_PORT 8000)"; }
+
+# ---------------------------------------------------------------------------------------------
+
+cmd_einrichten() {  # Erstinstallation aus dem entpackten Archiv (installieren.sh)
+  wurzel
+  local quelle=${1:?Quellverzeichnis fehlt} schluessel
+  command -v systemd-run >/dev/null || fehler "systemd wird benötigt."
+  python_finden >/dev/null || fehler "Python 3.11 oder neuer mit venv fehlt (Debian/Ubuntu: Paket python3-venv)."
+  command -v psql >/dev/null && command -v pg_dump >/dev/null && command -v pg_restore >/dev/null \
+    || fehler "PostgreSQL-Clientprogramme fehlen (Debian/Ubuntu: postgresql-client, RHEL: postgresql)."
+  if [[ -L $BASIS/aktuell ]]; then
+    fehler "Teamplaner $(aktuelle_version) ist bereits installiert. Neue Versionen: sudo teamplaner update ARCHIV"
+  fi
+
+  id "$BENUTZER" >/dev/null 2>&1 \
+    || useradd --system --user-group --home-dir "$DATEN" --no-create-home --shell /usr/sbin/nologin \
+         --comment "Teamplaner" "$BENUTZER"
+  install -d -m 0755 "$BASIS" "$BASIS/versionen"
+  install -d -o "$BENUTZER" -g "$BENUTZER" -m 0750 "$DATEN" "$DATEN/medien" "$SICHERUNGEN"
+  install -d -m 0700 "$STAND"
+
+  if [[ ! -f $KONFIG ]]; then
+    install -d -m 0750 -g "$BENUTZER" "$(dirname "$KONFIG")"
+    schluessel="$(head -c 48 /dev/urandom | base64 | tr -d '\n/+=')"
+    sed "s|^DJANGO_SECRET_KEY=.*|DJANGO_SECRET_KEY=$schluessel|" "$quelle/betrieb/linux/teamplaner.env" > "$KONFIG"
+    chown root:"$BENUTZER" "$KONFIG"
+    chmod 0640 "$KONFIG"
+    meldung "Konfiguration angelegt: $KONFIG"
+    echo "Bitte Adresse, Datenbank und E-Mail eintragen, dann noch einmal: sudo ./installieren.sh"
+    return 0
+  fi
+  konfig_pruefen || fehler "Bitte in $KONFIG ergänzen, dann noch einmal: sudo ./installieren.sh"
+
+  meldung "Version installieren"
+  version_installieren "$quelle"
+  ln -sfn "versionen/$NEU_VERSION" "$BASIS/aktuell"
+  einheiten_installieren "$BASIS/aktuell"
+  cli_installieren "$BASIS/aktuell"
+
+  meldung "Datenbank einrichten"
+  if ! verwalten migrate --noinput; then
+    rm -f "$BASIS/aktuell"
+    rm -rf "${BASIS:?}/versionen/$NEU_VERSION"
+    fehler "Datenbank nicht erreichbar oder Einrichtung fehlgeschlagen – POSTGRES_* in $KONFIG prüfen, dann noch einmal: sudo ./installieren.sh"
+  fi
+
+  meldung "Dienste starten"
+  systemctl enable --quiet "${DIENSTE[@]}" teamplaner-sicherung.timer
+  dienste_starten
+  systemctl start teamplaner-sicherung.timer
+  warten_bis_gesund || fehler "Die Anwendung startet nicht. Protokoll: sudo teamplaner logs web"
+
+  meldung "Teamplaner $NEU_VERSION läuft (intern auf $(adresse_intern))."
+  echo "Weiter (INSTALLATION.md):"
+  echo "  1. Webserver einrichten (Vorlagen in $BASIS/aktuell/betrieb/linux/nginx bzw. apache)"
+  echo "  2. Erstes Konto: sudo teamplaner konto-anlegen --email … --name … --bereich Allgemein --rolle admin"
+  echo "  3. Prüfen: sudo teamplaner pruefen"
+}
+
+cmd_update() {
+  wurzel
+  installiert
+  local archiv=${1:-} alt neu kennung dump log
+  [[ -f $archiv ]] || fehler "Archiv nicht gefunden: ${archiv:-(keins angegeben)}. Aufruf: sudo teamplaner update teamplaner-X.Y.Z.tar.gz"
+  if [[ -f $archiv.sha256 ]]; then
+    (cd "$(dirname "$archiv")" && sha256sum --check --quiet "$(basename "$archiv").sha256") \
+      || fehler "Prüfsumme stimmt nicht – Archiv beschädigt oder unvollständig."
+    echo "Prüfsumme in Ordnung."
+  fi
+  neu="$(tar -xzOf "$archiv" --wildcards '*/VERSION' 2>/dev/null | head -n 1)"
+  ist_version "$neu" || fehler "Kein Teamplaner-Archiv: $archiv"
+  alt="$(aktuelle_version)"
+  if [[ $neu == "$alt" ]]; then
+    echo "Version $alt ist bereits installiert."
+    umgebung_ok "$BASIS/aktuell" \
+      || echo "Die Python-Umgebung ist nicht lauffähig (Python gewechselt?). Neu bauen: sudo teamplaner neu-aufbauen"
+    return 0
+  fi
+  hoeher "$neu" "$alt" || fehler "$neu ist älter als die installierte Version $alt. Zurück nach einem Update: sudo teamplaner zurueck"
+
+  meldung "Version $neu vorbereiten (Teamplaner läuft solange weiter)"
+  version_installieren "$archiv"
+  if ! bestaetigen "Update von $alt auf $neu einspielen? Teamplaner ist dabei kurz nicht erreichbar."; then
+    rm -rf "${BASIS:?}/versionen/$neu"
+    fehler "Abgebrochen."
+  fi
+
+  kennung="$(date +%Y-%m-%d_%H%M%S)_vor-update-$neu"
+  dump="$SICHERUNGEN/datenbank_$kennung.dump"
+  log="$STAND/update-$neu-$(date +%Y-%m-%d_%H%M%S).log"
+
+  meldung "Anwendung anhalten (Besucher sehen solange die Wartungsseite)"
+  dienste_stoppen
+  meldung "Sicherung von Datenbank und Anhängen"
+  if ! sicherung_anlegen "$kennung" || [[ ! -f $dump ]] || ! migrationen > "$STAND/migrationen.txt"; then
+    dienste_starten
+    fehler "Sicherung fehlgeschlagen – Update abgebrochen, Version $alt läuft weiter."
+  fi
+  printf '%s\n' "$alt" > "$STAND/vorherige-version"
+  printf '%s\n' "$dump" > "$STAND/sicherung"
+
+  meldung "Auf Version $neu umschalten (Datenbank-Migrationen)"
+  ln -sfn "versionen/$neu" "$BASIS/aktuell"
+  einheiten_installieren "$BASIS/aktuell"
+  if verwalten migrate --noinput 2>&1 | tee "$log" && dienste_starten && warten_bis_gesund; then
+    cli_installieren "$BASIS/aktuell"
+    alte_versionen_entfernen
+    meldung "Update auf $neu abgeschlossen."
+    neue_einstellungen
+    echo "Zurück auf $alt, falls nötig: sudo teamplaner zurueck"
+    return 0
+  fi
+
+  journalctl -u teamplaner-web -u teamplaner-mailer -n 200 --no-pager >> "$log" 2>&1 || true
+  meldung "Version $neu startet nicht – automatischer Rücksprung auf $alt"
+  dienste_stoppen || true
+  ln -sfn "versionen/$alt" "$BASIS/aktuell"
+  einheiten_installieren "$BASIS/aktuell"
+  datenbank_zurueckspielen "$dump"
+  dienste_starten
+  warten_bis_gesund || fehler "Auch Version $alt startet nicht. Protokoll: sudo teamplaner logs web"
+  rm -f "$STAND/vorherige-version"
+  fehler "Update auf $neu fehlgeschlagen. Version $alt läuft wieder, mit dem Datenstand von vor dem Update.
+Protokoll der neuen Version: $log"
+}
+
+cmd_zurueck() {
+  wurzel
+  installiert
+  [[ -f $STAND/vorherige-version ]] || fehler "Kein Update gefunden, von dem es zurückgehen könnte."
+  local alt jetzt dump
+  alt="$(cat "$STAND/vorherige-version")"
+  jetzt="$(aktuelle_version)"
+  dump="$(cat "$STAND/sicherung")"
+  [[ -d $BASIS/versionen/$alt ]] || fehler "Version $alt ist nicht mehr vorhanden."
+  # Die Migrationen nimmt der Code der laufenden Version zurück, danach startet die alte
+  umgebung_ok "$BASIS/versionen/$jetzt" && umgebung_ok "$BASIS/versionen/$alt" \
+    || fehler "Python-Umgebung nicht lauffähig (Python gewechselt?). Zuerst: sudo teamplaner neu-aufbauen"
+  echo "Zurück von Version $jetzt auf $alt. Datenbank-Änderungen der Version $jetzt werden zurückgenommen;"
+  echo "alle Einträge seit dem Update bleiben erhalten, soweit die alte Version sie darstellen kann."
+  bestaetigen "Fortfahren?" || fehler "Abgebrochen."
+
+  meldung "Anwendung anhalten"
+  dienste_stoppen
+  meldung "Datenbank-Migrationen zurücknehmen"
+  if ! migrationen_zuruecknehmen "$BASIS/versionen/$jetzt"; then
+    echo
+    echo "Die Datenbank-Änderungen lassen sich nicht automatisch zurücknehmen."
+    echo "Ausweg: die Sicherung vom Update einspielen ($dump)."
+    echo "ACHTUNG: Alles, was seit dem Update eingetragen wurde, geht dabei verloren."
+    if [[ ! -f $dump ]] || ! JA=0 bestaetigen "Sicherung einspielen?"; then
+      dienste_starten
+      fehler "Abgebrochen – Version $jetzt läuft weiter."
+    fi
+    datenbank_zurueckspielen "$dump"
+  fi
+
+  meldung "Version $alt starten"
+  ln -sfn "versionen/$alt" "$BASIS/aktuell"
+  einheiten_installieren "$BASIS/aktuell"
+  dienste_starten
+  warten_bis_gesund || fehler "Version $alt startet nicht. Protokoll: sudo teamplaner logs web"
+  cli_installieren "$BASIS/aktuell"
+  rm -f "$STAND/vorherige-version"
+  meldung "Version $alt läuft wieder."
+}
+
+# Nach einem Upgrade der Distribution mit neuer Python-Version startet die Umgebung nicht mehr, und
+# update mit derselben Version ändert nichts: Umgebung aus dem vorhandenen Versionsverzeichnis neu bauen.
+cmd_neu_aufbauen() {
+  wurzel
+  installiert
+  local v verz vorher python grund
+  v="$(aktuelle_version)"
+  verz="$BASIS/versionen/$v"
+  python="$(python_finden)" || fehler "Python 3.11 oder neuer mit venv fehlt (Debian/Ubuntu: Paket python3-venv)."
+  echo "Version $v, Python-Umgebung bisher: $(umgebung_text "$verz")"
+  bestaetigen "Neu bauen mit $("$python" --version 2>&1) ($python)? Teamplaner ist dabei kurz nicht erreichbar." \
+    || fehler "Abgebrochen."
+
+  meldung "Anwendung anhalten (Besucher sehen solange die Wartungsseite)"
+  dienste_stoppen
+  meldung "Python-Umgebung von Version $v neu bauen"
+  if ! umgebung_ersetzen "$verz" "$python"; then
+    grund="Python-Pakete ließen sich nicht installieren (Python-Version passt nicht zum Archiv?)."
+  else
+    meldung "Anwendung starten"
+    if dienste_starten && warten_bis_gesund; then
+      umgebung_behalten "$verz"
+      vorher="$(cat "$STAND/vorherige-version" 2>/dev/null || true)"
+      if [[ -n $vorher && $vorher != "$v" && -d $BASIS/versionen/$vorher ]]; then
+        meldung "Python-Umgebung der vorherigen Version $vorher neu bauen (für sudo teamplaner zurueck)"
+        if umgebung_ersetzen "$BASIS/versionen/$vorher" "$python" && umgebung_ok "$BASIS/versionen/$vorher"; then
+          umgebung_behalten "$BASIS/versionen/$vorher"
+        else
+          umgebung_zurueck "$BASIS/versionen/$vorher"
+          echo "Warnung: nicht möglich – zurück auf $vorher geht mit dieser Python-Version nicht."
+        fi
+      fi
+      meldung "Teamplaner $v läuft mit $(umgebung_text "$verz")."
+      return 0
+    fi
+    grund="Version $v startet mit der neuen Python-Umgebung nicht (Protokoll: sudo teamplaner logs web)."
+    dienste_stoppen || true
+    umgebung_zurueck "$verz"
+  fi
+
+  meldung "Zurück zur bisherigen Python-Umgebung"
+  dienste_starten || true
+  warten_bis_gesund || fehler "$grund Mit der bisherigen Umgebung startet Teamplaner auch nicht.
+Python 3.11, 3.12 oder 3.13 mit venv installieren, dann noch einmal: sudo teamplaner neu-aufbauen"
+  fehler "$grund Teamplaner läuft mit der bisherigen Umgebung weiter."
+}
+
+cmd_status() {
+  wurzel
+  installiert
+  local letzte dienst
+  echo "Installierte Version:  $(aktuelle_version) ($BASIS/aktuell)"
+  echo "Python:                $(umgebung_text "$BASIS/aktuell")"
+  for dienst in "${DIENSTE[@]}" teamplaner-sicherung.timer; do
+    printf '%-22s %s\n' "$dienst:" "$(systemctl is-active "$dienst" 2>/dev/null || true)"
+  done
+  if gesund; then echo "Anwendung:             antwortet ($(adresse_intern))"; else echo "Anwendung:             antwortet NICHT ($(adresse_intern))"; fi
+  letzte="$(find "$SICHERUNGEN" -maxdepth 1 -name 'datenbank_*.dump' -printf '%TY-%Tm-%Td %TH:%TM  %p\n' 2>/dev/null | sort | tail -n 1)"
+  echo "Letzte Sicherung:      ${letzte:-keine}"
+  echo "Nächste Sicherung:     $(systemctl show -p NextElapseUSecRealtime --value teamplaner-sicherung.timer 2>/dev/null || echo -)"
+  echo "Vorhandene Versionen:  $(find "$BASIS/versionen" -mindepth 1 -maxdepth 1 -type d ! -name '.*' -printf '%f\n' | sort -V | tr '\n' ' ')"
+  if [[ -f $STAND/vorherige-version ]]; then
+    echo "Rücksprung möglich auf $(cat "$STAND/vorherige-version") (sudo teamplaner zurueck)"
+  fi
+}
+
+cmd_pruefen() {
+  wurzel
+  installiert
+  local fehlerzahl=0 rechte alter
+  ok() { printf '  OK       %s\n' "$*"; }
+  warnung() { printf '  WARNUNG  %s\n' "$*"; }
+  schlecht() { printf '  FEHLER   %s\n' "$*"; fehlerzahl=$((fehlerzahl + 1)); }
+
+  meldung "Konfiguration ($KONFIG)"
+  rechte="$(stat -c '%U:%G %a' "$KONFIG")"
+  if [[ $rechte == "root:$BENUTZER 640" ]]; then ok "Rechte $rechte"; else warnung "Rechte $rechte (empfohlen: root:$BENUTZER 640)"; fi
+  if konfig_pruefen >/dev/null; then ok "Pflichtwerte gesetzt"; else schlecht "Pflichtwerte: $(konfig_pruefen | tr -s ' ' | tr '\n' ';')"; fi
+  if [[ -n $(konfig_wert EMAIL_HOST) ]]; then ok "E-Mail-Versand über $(konfig_wert EMAIL_HOST)"; else warnung "EMAIL_HOST leer – keine E-Mails, Einladungslinks nur zum Kopieren"; fi
+  [[ $(konfig_wert DJANGO_ALLOWED_HOSTS) != *example.org* ]] || warnung "DJANGO_ALLOWED_HOSTS enthält noch die Beispieladresse"
+
+  meldung "Anwendung"
+  if umgebung_ok "$BASIS/aktuell"; then
+    ok "Python-Umgebung: $(umgebung_text "$BASIS/aktuell")"
+    if verwalten check --deploy --fail-level ERROR >/dev/null 2>&1; then ok "Django-Prüfung (check --deploy)"; else schlecht "Django-Prüfung: sudo teamplaner verwalten check --deploy"; fi
+    if verwalten migrate --check >/dev/null 2>&1; then ok "Datenbank erreichbar, alle Migrationen angewendet"; else schlecht "Datenbank nicht erreichbar oder Migrationen offen"; fi
+  else
+    schlecht "Python-Umgebung nicht lauffähig (Python gewechselt?): sudo teamplaner neu-aufbauen"
+  fi
+  for dienst in "${DIENSTE[@]}" teamplaner-sicherung.timer; do
+    if systemctl is-active --quiet "$dienst"; then ok "$dienst läuft"; else schlecht "$dienst läuft nicht"; fi
+    systemctl is-enabled --quiet "$dienst" || warnung "$dienst startet nicht automatisch beim Hochfahren"
+  done
+  if gesund; then ok "Anwendung antwortet auf $(adresse_intern)"; else schlecht "Anwendung antwortet nicht auf $(adresse_intern)"; fi
+
+  meldung "Daten und Sicherung"
+  alter="$(find "$SICHERUNGEN" -maxdepth 1 -name 'datenbank_*.dump' -mtime -8 | head -n 1)"
+  if [[ -n $alter ]]; then ok "Sicherung der letzten acht Tage vorhanden"; else warnung "keine Sicherung der letzten acht Tage (sofort: sudo teamplaner sichern)"; fi
+  if runuser -u "$BENUTZER" -- test -w "$BASIS/aktuell/manage.py"; then schlecht "Dienstbenutzer darf den Code ändern"; else ok "Code für den Dienstbenutzer schreibgeschützt"; fi
+  df -h "$DATEN" "$SICHERUNGEN" | sed 's/^/  /'
+
+  echo
+  if ((fehlerzahl == 0)); then echo "Alles in Ordnung."; else echo "$fehlerzahl Fehler."; return 1; fi
+}
+
+cmd_wiederherstellen() {
+  wurzel
+  installiert
+  local dump=${1:-} anhaenge=${2:-}
+  [[ -f $dump ]] || fehler "Datei nicht gefunden: ${dump:-(keine angegeben)}"
+  [[ -z $anhaenge || -f $anhaenge ]] || fehler "Datei nicht gefunden: $anhaenge"
+  bestaetigen "Achtung: Die Daten werden durch die Sicherung ersetzt. Fortfahren?" || fehler "Abgebrochen."
+  meldung "Anwendung anhalten (Besucher sehen solange die Wartungsseite)"
+  dienste_stoppen
+  meldung "Datenbank einspielen"
+  datenbank_zurueckspielen "$dump"
+  if [[ -n $anhaenge ]]; then
+    meldung "Anhänge einspielen"
+    anhaenge_zurueckspielen "$anhaenge"
+  fi
+  dienste_starten
+  warten_bis_gesund || fehler "Die Anwendung startet nicht. Protokoll: sudo teamplaner logs web"
+  meldung "Wiederherstellung abgeschlossen."
+}
+
+main() {
+  local argumente=() a
+  for a in "$@"; do
+    case "$a" in
+      -j | --ja) JA=1 ;;
+      -h | --hilfe | --help) BEFEHL=hilfe ;;
+      *) argumente+=("$a") ;;
+    esac
+  done
+  set -- "${argumente[@]+"${argumente[@]}"}"
+  BEFEHL="${BEFEHL:-${1:-hilfe}}"
+  [[ $# -eq 0 ]] || shift
+  case "$BEFEHL" in
+    einrichten) cmd_einrichten "$@" ;;
+    status) cmd_status ;;
+    pruefen) cmd_pruefen ;;
+    update) cmd_update "${1:-}" ;;
+    zurueck | zurück) cmd_zurueck ;;
+    neu-aufbauen) cmd_neu_aufbauen ;;
+    start) wurzel && installiert && dienste_starten && warten_bis_gesund && echo "Teamplaner läuft." ;;
+    stop) wurzel && dienste_stoppen ;;
+    neustart) wurzel && installiert && dienste_stoppen && dienste_starten && warten_bis_gesund && echo "Teamplaner läuft." ;;
+    logs)
+      local einheiten=() dienst
+      [[ $# -gt 0 ]] || set -- web mailer
+      for dienst in "$@"; do einheiten+=(-u "teamplaner-$dienst"); done
+      journalctl "${einheiten[@]}" -n 200 -f ;;
+    sichern) wurzel && installiert && sicherung_anlegen ;;
+    wiederherstellen) cmd_wiederherstellen "$@" ;;
+    konto-anlegen) wurzel && installiert && verwalten konto_anlegen "$@" ;;
+    verwalten) wurzel && installiert && verwalten "$@" ;;
+    hilfe) echo "$HILFE" ;;
+    *) echo "$HILFE" >&2; exit 1 ;;
+  esac
+}
+
+main "$@"

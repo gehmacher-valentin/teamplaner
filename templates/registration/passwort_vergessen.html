@@ -1,0 +1,19 @@
+{% extends "registration/einfach.html" %}
+{% load i18n %}
+{% block titel %}{% translate "Passwort vergessen" %}{% endblock %}
+{% block karte %}
+<h1>{% translate "Passwort vergessen" %}</h1>
+{% if gesendet %}
+  <p>{% translate "Wenn es zu dieser Adresse ein aktives Konto gibt, ist eine E-Mail mit einem Link zum Festlegen eines neuen Passworts unterwegs." %}</p>
+  <a class="knopf" href="{% url 'login' %}">{% translate "Zur Anmeldung" %}</a>
+{% else %}
+  {% if zu_viele %}<div class="meldung meldung--error" role="alert">{% translate "Zu viele Anfragen von diesem Anschluss. Bitte in einer Stunde erneut versuchen." %}</div>{% endif %}
+  <p class="gedaempft klein" style="margin:0">{% translate "Geben Sie Ihre E-Mail-Adresse ein. Sie bekommen einen Link, mit dem Sie ein neues Passwort festlegen." %}</p>
+  <form method="post" class="formular" novalidate>
+    {% csrf_token %}
+    {% include "teile/feld.html" with feld=form.email %}
+    <button type="submit" class="knopf knopf--primaer">{% translate "Link anfordern" %}</button>
+  </form>
+  <a class="klein" href="{% url 'login' %}">{% translate "Zur Anmeldung" %}</a>
+{% endif %}
+{% endblock %}

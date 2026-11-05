@@ -1,0 +1,8 @@
+{% load i18n %}{# Gleichzeitig geändert: nichts überschrieben, der eigene Text steht weiter im Editor #}<div class="konflikt" role="alert">
+  <div class="fehlerliste">{% blocktranslate with name=notiz.geaendert_von|default:"–" %}Die Notiz wurde inzwischen von {{ name }} geändert. Ihr Text ist nicht gespeichert.{% endblocktranslate %}</div>
+  <details open class="notiz-aktuell"><summary>{% translate "Aktuelle Fassung" %}</summary><h3>{{ notiz.titel }}</h3><div class="markdown">{{ aktuell_html|safe }}</div></details>
+  <div class="formular__aktionen">
+    <button type="button" class="knopf knopf--klein knopf--primaer" hx-post="{% url 'notiz_speichern' %}" hx-include="#notiz-zustand, #notiz-titel-eingabe, #notiz-text" hx-vals='{"version": "{{ notiz.version }}"}' hx-swap="none">{% translate "Meine Fassung speichern" %}</button>
+    <a class="knopf knopf--klein" href="{% url 'notiz' notiz.pk %}">{% translate "Aktuelle Fassung übernehmen" %}</a>
+  </div>
+</div>

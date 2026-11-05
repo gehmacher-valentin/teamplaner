@@ -1,0 +1,31 @@
+{% extends "kern/einstellungen_basis.html" %}
+{% load i18n %}
+{% block titel %}{% translate "Rollen & Rechte" %}{% endblock %}
+{% block einst_breit %} einst__inhalt--breit{% endblock %}
+{% block einstellungen %}
+<h1>{% translate "Rollen & Rechte" %}</h1>
+<section class="karte liste" aria-label="{% translate 'Rechte je Rolle' %}" style="--spalten: minmax(0,2.4fr) repeat(5, minmax(0,1fr)); --liste-min: 860px">
+  <div class="liste__inner">
+    <div class="liste__kopf"><div>{% translate "Recht" %}</div>{% for r in rollen %}<div class="zentriert">{{ r.label }}</div>{% endfor %}</div>
+    {% for label, werte, hinweis in rechtematrix %}
+      <div class="liste__zeile">
+        <div>{{ label }}{% if hinweis %}<div class="gedaempft klein">{{ hinweis }}</div>{% endif %}</div>
+        {% for w in werte.split %}
+          <div class="zentriert">
+            {% if w == "ja" %}<span class="badge st-gruen">{% translate "Ja" %}</span>
+            {% elif w == "eigene" %}<span class="badge st-gelb">{% translate "Eigene" %}</span>
+            {% elif w == "freigabe" %}<span class="badge st-blau">{% translate "Freigabe" %}</span>
+            {% else %}<span class="badge">—</span>{% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    {% endfor %}
+    <div class="karte__fuss legende">
+      <span><span class="badge st-gruen">{% translate "Ja" %}</span> {% translate "uneingeschränkt" %}</span>
+      <span><span class="badge st-gelb">{% translate "Eigene" %}</span> {% translate "nur in eigenen Projekten" %}</span>
+      <span><span class="badge st-blau">{% translate "Freigabe" %}</span> {% translate "laut Teamplaner-Ansichten" %}</span>
+      <span><span class="badge">—</span> {% translate "kein Zugriff" %}</span>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% load static i18n teamplaner %}
+{% block titel %}{{ aufgabe.titel }}{% endblock %}
+{% block inhalt_klasse %}inhalt--schmal{% endblock %}
+{% block inhalt %}
+{% include "projekte/_detail_pfad.html" %}
+
+{% include "projekte/_aufgabe_detail.html" %}
+{% endblock %}
+{% block skripte %}{% if darf_bearbeiten %}<script type="module" src="{% static 'dist/editor.js' %}"></script>{% endif %}{% endblock %}

@@ -1,0 +1,16 @@
+{% load i18n %}{% if notiz.pk and anhaenge or notiz.pk and darf_schreiben %}
+<section class="karte--innen stapel notiz-anhaenge" id="anhaenge" aria-label="{% translate 'Anhänge' %}"{% if oob %} hx-swap-oob="true"{% endif %}>
+  <h3>{% translate "Anhänge" %}</h3>
+  {% if anhaenge %}
+  {% include "teile/anhaenge.html" with url_name="notiz_anhang" loeschen_name="notiz_anhang_loeschen" alle_loeschbar=darf_schreiben %}
+  {% endif %}
+  {% if darf_schreiben %}
+    <form method="post" action="{% url 'notiz_anhang_hochladen' notiz.pk %}" enctype="multipart/form-data" class="zeile">
+      {% csrf_token %}
+      <label class="sr-only" for="datei">{% translate "Datei" %}</label>
+      <input id="datei" type="file" name="datei" required>
+      <button type="submit" class="knopf knopf--klein">{% translate "Hochladen" %}</button>
+    </form>
+  {% endif %}
+</section>
+{% else %}<div id="anhaenge" hidden></div>{% endif %}

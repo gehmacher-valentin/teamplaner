@@ -1,0 +1,36 @@
+# Lokale Einstellungen und Geheimnisse
+.env
+.env.*
+!.env.example
+
+# Editor / Betriebssystem
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Build-, Laufzeit- und Testartefakte (stack-spezifische Einträge nach Freigabe ergänzen)
+*.log
+/media/
+/backups/
+coverage/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+/staticfiles/
+
+# Frontend
+node_modules/
+/static/dist/
+
+# Versionsdatei entsteht nur beim Paketbau
+/VERSION
+
+# Installationsarchive und Probeläufe (betrieb/linux, pruefung/linux)
+/dist/
+/pruefung/linux/arbeit/

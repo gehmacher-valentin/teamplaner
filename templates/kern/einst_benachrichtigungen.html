@@ -1,0 +1,26 @@
+{% extends "kern/einstellungen_basis.html" %}
+{% load i18n %}
+{% block titel %}{% translate "Benachrichtigungen" %}{% endblock %}
+{% block einstellungen %}
+<h1>{% translate "Benachrichtigungen" %}</h1>
+{% if kein_smtp %}<div class="meldung meldung--warning" role="status">{% translate "E-Mail-Versand ist auf diesem Server noch nicht eingerichtet." %}</div>
+{% elif not mail_aktiv %}<div class="meldung meldung--warning" role="status">{% translate "E-Mail-Versand ist deaktiviert." %}</div>{% endif %}
+<h2 class="einst__untertitel">{% translate "E-Mail" %}</h2>
+{% for k in kategorien %}
+  <section class="karte einst-karte" aria-labelledby="kat-{{ k.schluessel }}">
+    <div class="einstellungszeile einstellungszeile--kopf">
+      <h3 id="kat-{{ k.schluessel }}" class="luecke">{{ k.titel }}</h3>
+      <input type="checkbox" role="switch" class="schalter" aria-label="{% blocktranslate with titel=k.titel %}{{ titel }}: alle{% endblocktranslate %}"
+        name="an" value="1" data-kategorie="{{ k.schluessel }}" {% if k.alle %}checked{% endif %}{% if not mail_aktiv %} disabled{% endif %}
+        hx-post="{% url 'einst_benachrichtigung' %}" hx-trigger="change" hx-swap="none" hx-vals='{"kategorie": "{{ k.schluessel }}"}'>
+    </div>
+    {% for e in k.ereignisse %}
+      <div class="einstellungszeile">
+        <label for="mail-{{ e.art }}" class="luecke">{{ e.beschreibung }}</label>
+        <input id="mail-{{ e.art }}" type="checkbox" role="switch" class="schalter" name="an" value="1" {% if e.an %}checked{% endif %}{% if not mail_aktiv %} disabled{% endif %}
+          hx-post="{% url 'einst_benachrichtigung' %}" hx-trigger="change" hx-swap="none" hx-vals='{"art": "{{ e.art }}"}'>
+      </div>
+    {% endfor %}
+  </section>
+{% endfor %}
+{% endblock %}

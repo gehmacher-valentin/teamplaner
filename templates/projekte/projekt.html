@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% load static i18n teamplaner %}
+{% block titel %}{{ projekt.name }}{% endblock %}
+{% block inhalt %}
+<div class="seitenkopf pf-{{ projekt.farbe }}">
+  <div class="seitenkopf__titel zeile" style="flex-wrap:nowrap; align-items:center; gap:14px">
+    <div style="width:40px; height:40px; border-radius:8px; background: var(--pf-bar); flex:none" aria-hidden="true"></div>
+    <div style="min-width:0">
+      <h1>{{ projekt.name }}{% if projekt.archiviert %} <span class="badge">{% translate "archiviert" %}</span>{% endif %}</h1>
+      <div class="seitenkopf__text" style="margin-top:2px">
+        {% translate "Projektleitung" %} {{ projekt.projektleitung|default:"–" }}
+        {% if projekt.tags.all %} · {% translate "Tags:" %} <span class="tags">{% for t in projekt.tags.all %}<a class="tag" href="{% url 'projekte' %}?tag={{ t.pk }}" style="text-decoration:none">{{ t.name }}</a>{% endfor %}</span>{% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="zeile">
+    <div style="display:flex" aria-label="{% translate 'Mitglieder' %}">
+      {% for m in projekt.mitglieder.all|slice:":5" %}<span style="margin-left:-6px; border:2px solid var(--bg); border-radius:50%; display:inline-flex">{% avatar m "klein" %}</span>{% endfor %}
+      {% if projekt.mitglieder.count > 5 %}<span class="avatar avatar--klein" style="margin-left:-6px">+{{ projekt.mitglieder.count|add:"-5" }}</span>{% endif %}
+    </div>
+    {% if darf_planen %}<a class="knopf" href="{% url 'teamplaner' %}">{% translate "Teamplaner" %}</a>{% endif %}
+    {% if darf_verwalten %}<a class="knopf" href="{% url 'projekt_bearbeiten' projekt.pk %}">{% translate "Projekt bearbeiten" %}</a>{% endif %}
+  </div>
+</div>
+{% if projekt.beschreibung %}<p class="gedaempft" style="margin:0; max-width: 800px">{{ projekt.beschreibung|linebreaksbr }}</p>{% endif %}
+
+{# Liste und Aufgabendetail nebeneinander (lib/seitenleiste.ts); hx-history: Inhalt kommt beim Zurückgehen vom Server #}
+<div class="projekt-raster{% if seitenleiste_html %} projekt-raster--offen{% endif %}">
+<div class="projekt-raster__liste">
+<div id="projekt-liste">
+{# Filter per HTMX: die Liste wird ersetzt, eingestellte Spaltenbreiten bleiben #}
+<form method="get" class="tp-werkzeuge" aria-label="{% translate 'Filter' %}" hx-get="{% url 'projekt' projekt.pk %}" hx-target="#projekt-liste" hx-select="#projekt-liste" hx-swap="outerHTML" hx-push-url="true">
+  <button type="button" class="knopf tp-filter-knopf" data-filter-umschalten aria-controls="projekt-filter" aria-expanded="false">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 5h18l-7 9v5l-4 2v-7z"/></svg>
+    {% translate "Filter" %}{% if anzahl_filter %}<span class="tp-filter-anzahl">{{ anzahl_filter }}</span>{% endif %}
+  </button>
+  {% if anzahl_filter %}<a class="knopf knopf--text klein" href="{% url 'projekt' projekt.pk %}">{% translate "Filter zurücksetzen" %}</a>{% endif %}
+  <div class="tp-filter-optionen" id="projekt-filter">
+  <input type="hidden" id="filter-aufgabe" name="aufgabe" value="{{ aktive_aufgabe|default:'' }}"{% if not aktive_aufgabe %} disabled{% endif %}>
+  <input type="hidden" name="status" value="{{ filter_status }}">
+  <div class="knopfgruppe" role="group" aria-label="{% translate 'Status' %}">
+    <button type="submit" name="status" value="offen" aria-pressed="{% if filter_status == 'offen' %}true{% else %}false{% endif %}">{% translate "Offen" %}</button>
+    <button type="submit" name="status" value="alle" aria-pressed="{% if filter_status == 'alle' %}true{% else %}false{% endif %}">{% translate "Alle" %}</button>
+    <button type="submit" name="status" value="erledigt" aria-pressed="{% if filter_status == 'erledigt' %}true{% else %}false{% endif %}">{% translate "Erledigt" %}</button>
+  </div>
+  <label class="feld"><span class="sr-only">{% translate "Verantwortlich" %}</span>
+    <select name="verantwortlich" data-auto-absenden data-personenwahl aria-label="{% translate 'Verantwortlich' %}">
+      <option value="">{% translate "Alle Verantwortlichen" %}</option>
+      <option value="ich" {% if request.GET.verantwortlich == "ich" %}selected{% endif %}>{% translate "Mir zugewiesen" %}</option>
+      {% for p in personenliste %}<option value="{{ p.pk }}" {% if request.GET.verantwortlich == p.pk|stringformat:"d" %}selected{% endif %}>{{ p.anzeigename }}</option>{% endfor %}
+    </select>
+  </label>
+  <label class="feld"><span class="sr-only">{% translate "Gewerk" %}</span>
+    <select name="gewerk" data-auto-absenden>
+      <option value="">{% translate "Alle Gewerke" %}</option>
+      {% for g in gewerke %}<option value="{{ g.pk }}" {% if request.GET.gewerk == g.pk|stringformat:"d" %}selected{% endif %}>{{ g.name }}</option>{% endfor %}
+    </select>
+  </label>
+  <label class="feld"><span class="sr-only">{% translate "Sortieren" %}</span>
+    <select name="sort" data-auto-absenden>
+      <option value="manuell" {% if sortierung == "manuell" %}selected{% endif %}>{% translate "Sortieren: Reihenfolge" %}</option>
+      <option value="faellig" {% if sortierung == "faellig" %}selected{% endif %}>{% translate "Sortieren: Fällig" %}</option>
+      <option value="titel" {% if sortierung == "titel" %}selected{% endif %}>{% translate "Sortieren: Titel" %}</option>
+      <option value="status" {% if sortierung == "status" %}selected{% endif %}>{% translate "Sortieren: Status" %}</option>
+    </select>
+  </label>
+  <label class="feld"><span class="sr-only">{% translate "Suche" %}</span><input type="search" name="q" value="{{ request.GET.q|default:'' }}" placeholder="{% translate 'In Titeln suchen' %}"></label>
+  <noscript><button type="submit" class="knopf">{% translate "Anwenden" %}</button></noscript>
+  </div>
+</form>
+
+<section class="karte liste liste--mobil" id="aufgaben-baum" aria-label="{% translate 'Aufgaben' %}" style="--spalten: minmax(0,3fr) 170px 140px 150px 130px 130px; --liste-min: 940px"
+  {% if manuell_sortierbar %}data-aufgaben-baum="{% url 'aufgabe_verschieben' projekt.pk %}" data-max-ebenen="{{ max_ebenen }}"{% endif %}>
+  <div class="liste__inner">
+    <div class="liste__kopf"><div>{% translate "Aufgabe" %}</div><div>{% translate "Verantwortlich" %}</div><div>{% translate "Gewerk" %}</div><div>{% translate "Eingeteilt" %}</div><div>{% translate "Fällig" %}</div><div>{% translate "Status" %}</div></div>
+    {% if ohne_abschnitt or not abschnitte %}
+      <div class="abschnitt abschnitt--ohne">
+        <div class="abschnitt-aufgaben" data-aufgaben-liste data-abschnitt="" data-tiefe="0">{% for a in ohne_abschnitt %}{% include "projekte/_aufgabe_block.html" %}{% endfor %}</div>
+        {% if not abschnitte %}
+          {% if darf_bearbeiten %}
+            <form class="liste__zeile neue-aufgabe" hx-post="{% url 'aufgabe_anlegen_ohne_abschnitt' projekt.pk %}"
+                  hx-target="previous .abschnitt-aufgaben" hx-swap="beforeend" data-nach-erfolg-leeren>
+              <label class="sr-only" for="neu-ohne">{% translate "Neue Aufgabe" %}</label>
+              <input id="neu-ohne" type="text" name="titel" placeholder="+ {% translate 'Aufgabe hinzufügen' %}" class="inline-eingabe" style="max-width: 420px; background: transparent" required>
+            </form>
+          {% elif not ohne_abschnitt %}<div class="leer">{% translate "Noch keine Aufgaben." %}</div>{% endif %}
+        {% endif %}
+      </div>
+    {% endif %}
+    <div {% if manuell_sortierbar %}data-sortierbar="{% url 'abschnitte_sortieren' projekt.pk %}" data-griff=".abschnitt-griff" data-element=".abschnitt"{% endif %}>
+      {% for abschnitt in abschnitte %}
+        <div class="abschnitt" data-id="{{ abschnitt.pk }}">
+          <div class="liste__gruppe">
+            {% if manuell_sortierbar %}<span class="ziehgriff abschnitt-griff" title="{% translate 'Abschnitt verschieben' %}" aria-hidden="true">⋮⋮</span>{% endif %}
+            {% if darf_bearbeiten %}
+              <details class="abschnitt-name">
+                <summary style="cursor:pointer; list-style:none">{{ abschnitt.name }}</summary>
+                <form method="post" action="{% url 'abschnitt_bearbeiten' abschnitt.pk %}" class="zeile" style="margin-top:6px; font-weight:400">
+                  {% csrf_token %}
+                  <input type="text" name="name" value="{{ abschnitt.name }}" aria-label="{% translate 'Name des Abschnitts' %}" required>
+                  <button type="submit" class="knopf knopf--klein">{% translate "Umbenennen" %}</button>
+                  <button type="submit" name="loeschen" value="1" class="knopf knopf--klein knopf--gefahr">{% translate "Löschen" %}</button>
+                </form>
+              </details>
+            {% else %}{{ abschnitt.name }}{% endif %}
+            <span class="gedaempft klein" style="font-weight:500">{% blocktranslate count n=abschnitt.liste|length %}{{ n }} Aufgabe{% plural %}{{ n }} Aufgaben{% endblocktranslate %}</span>
+          </div>
+          <div class="abschnitt-aufgaben" data-aufgaben-liste data-abschnitt="{{ abschnitt.pk }}" data-tiefe="0">{% for a in abschnitt.liste %}{% include "projekte/_aufgabe_block.html" %}{% endfor %}</div>
+          {% if darf_bearbeiten %}
+            <form class="liste__zeile neue-aufgabe" hx-post="{% url 'aufgabe_anlegen' projekt.pk abschnitt.pk %}"
+                  hx-target="previous .abschnitt-aufgaben" hx-swap="beforeend" data-nach-erfolg-leeren>
+              <label class="sr-only" for="neu-{{ abschnitt.pk }}">{% translate "Neue Aufgabe" %}</label>
+              <input id="neu-{{ abschnitt.pk }}" type="text" name="titel" placeholder="+ {% translate 'Aufgabe hinzufügen' %}" class="inline-eingabe" style="max-width: 420px; background: transparent" required>
+            </form>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+</div>
+{% if darf_bearbeiten %}
+<form method="post" action="{% url 'abschnitt_anlegen' projekt.pk %}" class="zeile">
+  {% csrf_token %}
+  <label class="sr-only" for="neuer-abschnitt">{% translate "Neuer Abschnitt" %}</label>
+  <input id="neuer-abschnitt" type="text" name="name" placeholder="{% translate 'Neuer Abschnitt' %}" required>
+  <button type="submit" class="knopf">{% translate "Abschnitt hinzufügen" %}</button>
+</form>
+{% endif %}
+</div>
+<aside id="seitenleiste" class="seitenleiste" aria-label="{% translate 'Aufgabendetail' %}" data-url="{% url 'aufgabe' 0 %}" hx-history="false"{% if not seitenleiste_html %} hidden{% endif %}>
+  <div class="seitenleiste__griff" data-seitenleiste-griff aria-hidden="true"></div>
+  <div id="seitenleiste-platz" class="seitenleiste__rollen" tabindex="-1" hx-sync="this:replace">{{ seitenleiste_html }}</div>
+</aside>
+</div>
+{% endblock %}
+{% block skripte %}{% if darf_bearbeiten %}<script type="module" src="{% static 'dist/editor.js' %}"></script>{% endif %}{% endblock %}

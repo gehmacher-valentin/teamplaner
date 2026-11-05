@@ -1,0 +1,3 @@
+{% load i18n %}<div id="notiz-fuss" class="karte__fuss klein gedaempft"{% if oob %} hx-swap-oob="true"{% endif %}>
+  {% if notiz.pk %}{% blocktranslate with datum=notiz.geaendert_am|date:"d.m.Y H:i" %}Zuletzt geändert am {{ datum }}{% endblocktranslate %}{% if notiz.geaendert_von %} · {{ notiz.geaendert_von }}{% endif %}{% else %}{% translate "Neue Notiz" %}{% endif %}
+</div>

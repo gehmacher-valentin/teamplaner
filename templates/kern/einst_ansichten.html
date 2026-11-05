@@ -1,0 +1,36 @@
+{% extends "kern/einstellungen_basis.html" %}
+{% load i18n teamplaner %}
+{% block titel %}{% translate "Ansichten & Freigaben" %}{% endblock %}
+{% block einst_breit %} einst__inhalt--breit{% endblock %}
+{% block einstellungen %}
+<div class="einst-kopf">
+  <h1>{% translate "Ansichten & Freigaben" %}</h1>
+  <a class="knopf knopf--primaer" href="{{ neu_url }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>{% translate "Neue Ansicht" %}</a>
+</div>
+{% if reiter|length > 1 %}
+<nav class="reiter" aria-label="{% translate 'Art der Ansicht' %}">
+  {% for r in reiter %}<a href="?art={{ r.art }}"{% if r.aktiv %} aria-current="page"{% endif %}>{{ r.titel }} <span class="zaehler">{{ r.anzahl }}</span></a>{% endfor %}
+</nav>
+{% endif %}
+<section class="karte liste liste--mobil" aria-label="{% translate 'Ansichten' %}" style="--spalten: 28px minmax(0,1.4fr) minmax(0,2fr) minmax(0,1.4fr) 40px; --liste-min: 760px">
+  <div class="liste__inner">
+    <div class="liste__kopf"><div></div><div>{% translate "Ansicht" %}</div><div>{% translate "Enthält" %}</div><div>{% translate "Freigaben" %}</div><div></div></div>
+    <div class="ansichten-liste" data-reihenfolge="{% url 'einst_ansichten_sortieren' art %}" data-reihenfolge-zeile=".liste__zeile">
+      {% for a in ansichten %}
+        <div class="liste__zeile" data-id="{{ a.pk }}">
+          <button type="button" class="ziehgriff einst-zeile__griff" aria-label="{% blocktranslate with name=a.name %}{{ name }} verschieben{% endblocktranslate %}" data-reihenfolge-griff><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></button>
+          <div class="stapel stapel--eng"><a href="{% url url_name a.pk %}"><strong>{{ a.name }}</strong></a>{% if a.neue_projekte_automatisch %}<span class="badge">{% translate "neue Projekte automatisch" %}</span>{% endif %}</div>
+          <div class="tags mobil-aus">{% for t in a.inhalt %}<span class="tag">{{ t }}</span>{% empty %}<span class="gedaempft">–</span>{% endfor %}</div>
+          <div class="zeile zeile--eng mobil-aus">
+            <span class="koepfe">{% for f in a.freigegeben|slice:":4" %}{% avatar f.konto.person "klein" %}{% endfor %}</span>
+            <span class="klein gedaempft">{% blocktranslate with s=a.zusammenfassung.sehen b=a.zusammenfassung.bearbeiten %}{{ s }} sehen · {{ b }} bearbeiten{% endblocktranslate %}</span>
+          </div>
+          <a class="symbolknopf" href="{% url url_name a.pk %}" aria-label="{% blocktranslate with name=a.name %}{{ name }} öffnen{% endblocktranslate %}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+        </div>
+      {% empty %}
+        <div class="leer stapel"><span>{% translate "Noch keine Ansichten." %}</span><div><a class="knopf knopf--klein" href="{{ neu_url }}">{% translate "Neue Ansicht" %}</a></div></div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "kern/einstellungen_basis.html" %}
+{% load i18n %}
+{% block titel %}{% translate "Allgemein" %}{% endblock %}
+{% block einstellungen %}
+<h1>{% translate "Allgemein" %}</h1>
+<section class="karte einst-karte" aria-label="{% translate 'Allgemein' %}">
+  <div class="einstellungszeile einstellungszeile--auswahl">
+    <label for="organisation" class="luecke">{% translate "Organisationsname" %}</label>
+    <input id="organisation" type="text" name="wert" value="{{ einstellungen.organisation }}" maxlength="100" autocomplete="organization"
+      hx-post="{% url 'einst_allgemein' %}" hx-trigger="change" hx-swap="none" hx-vals='{"feld": "organisation"}'>
+  </div>
+  {% translate "E-Mail-Versand" as titel %}{% include "kern/_schalter.html" with id="mail-versand" feld="mail_versand" an=mail_aktiv deaktiviert=kein_smtp url="einst_allgemein" %}
+  {% if kein_smtp %}<div class="einstellungszeile"><div class="meldung meldung--warning luecke" role="status">{% translate "Auf diesem Server ist kein SMTP-Server eingerichtet." %}</div></div>{% endif %}
+</section>
+<section class="karte einst-karte" aria-label="{% translate 'Tagesfreigabe' %}">
+  {% translate "Tagesfreigabe" as titel %}{% include "kern/_schalter.html" with id="freigabe" feld="freigabe_zeile" an=einstellungen.freigabe_zeile url="einst_allgemein" %}
+  <div class="einstellungszeile einstellungszeile--auswahl">
+    <label for="freigabe-name" class="luecke">{% translate "Name der Tagesfreigabe" %}</label>
+    <input id="freigabe-name" type="text" name="wert" value="{{ einstellungen.freigabe_name }}" maxlength="40" placeholder="{% translate 'Tagesfreigabe' %}"
+      hx-post="{% url 'einst_allgemein' %}" hx-trigger="change" hx-swap="none" hx-vals='{"feld": "freigabe_name"}'>
+  </div>
+</section>
+{% include "kern/_listen.html" with l=freigabestufen %}
+{% endblock %}

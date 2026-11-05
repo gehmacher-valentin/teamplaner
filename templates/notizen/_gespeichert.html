@@ -1,0 +1,5 @@
+{# Antwort auf notiz_speichern: nichts im Editor austauschen, nur Version, Fußzeile, die Notizen des Ordners in der Spalte und – bei einer neuen Notiz – Löschen und Anhänge #}{% include "notizen/_zustand.html" with oob=True %}
+{% include "notizen/_fuss.html" with oob=True %}
+<div id="notiz-konflikt" hx-swap-oob="true"></div>
+{% for e in notizbaum %}{% if e.aktuell %}{% include "notizen/_ordner_notizen.html" with oob=True %}{% endif %}{% endfor %}
+{% if neu %}{% include "notizen/_aktionen.html" with oob=True %}{% include "notizen/_anhaenge.html" with oob=True %}{% endif %}

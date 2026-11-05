@@ -1,0 +1,12 @@
+# Ergänzung zu compose.prod.yaml: Anwendung aus dem Quellcode bauen statt das fertige Paket zu laden
+# (Probeumgebung, Test vor einer Veröffentlichung, Installation ohne Zugang zur Registry).
+#   docker compose -f compose.prod.yaml -f compose.build.yaml --env-file .env up -d --build
+services:
+  app:
+    build:
+      context: .
+      target: prod
+  mailer:
+    build:
+      context: .
+      target: prod

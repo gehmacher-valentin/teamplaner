@@ -1,0 +1,4 @@
+{% load i18n %}{# Optionen einer Personenauswahl: auswählbare Personen, dazu die aktuell gesetzte, falls sie nicht (mehr) auswählbar ist #}<option value="">{{ leer|default:"–" }}</option>
+{% if aktuell and not aktuell.auswaehlbar %}<option value="{{ aktuell.pk }}" selected>{{ aktuell.anzeigename }}{% if aktuell.archiviert %} ({% translate "archiviert" %}){% endif %}</option>{% endif %}
+{% for p in personen %}<option value="{{ p.pk }}"{% if aktuell and p.pk == aktuell.pk %} selected{% endif %}>{{ p.anzeigename }}{% if p.ist_platzhalter %} ({% translate "Platzhalter" %}){% endif %}</option>
+{% endfor %}
