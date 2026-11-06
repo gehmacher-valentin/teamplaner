@@ -130,3 +130,6 @@ PostgreSQL `LISTEN/NOTIFY`. Tests mit pytest und vitest.
 Copyright (C) 2026 Valentin Gehmacher. GNU Affero General Public License, Version 3 oder später
 ([LICENSE](LICENSE)). Enthaltene Fremdwerke: [THIRD-PARTY.md](THIRD-PARTY.md). Sicherheitslücken bitte wie
 in [SECURITY.md](SECURITY.md) beschrieben melden.
+
+Konzept und Entwicklung: Valentin Gehmacher. Programmiert mit KI-Unterstützung (Claude Code von Anthropic).
+Grafiken der Feieranimation: Fluent Emoji von Microsoft (MIT-Lizenz).

@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Teamplaner\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-05 21:28+0100\n"
+"POT-Creation-Date: 2026-11-06 06:25+0100\n"
 "PO-Revision-Date: 2026-10-21 21:10+0200\n"
 "Last-Translator: Teamplaner\n"
 "Language-Team: English\n"
@@ -148,16 +148,23 @@ msgid "Das Ende liegt vor dem Beginn."
 msgstr "The end is before the start."
 
 #: gantt/dienste.py:53
-msgid "Die Aufgabe wurde inzwischen von jemand anderem geändert. Die Ansicht wurde aktualisiert."
-msgstr "The task has been changed by someone else in the meantime. The view has been refreshed."
+msgid ""
+"Die Aufgabe wurde inzwischen von jemand anderem geändert. Die Ansicht wurde "
+"aktualisiert."
+msgstr ""
+"The task has been changed by someone else in the meantime. The view has been "
+"refreshed."
 
 #: gantt/dienste.py:91
 msgid "Eine Aufgabe kann nicht von sich selbst abhängen."
 msgstr "A task cannot depend on itself."
 
 #: gantt/dienste.py:93
-msgid "Eine Hauptaufgabe umfasst ihre Unteraufgaben – zwischen ihnen gibt es keine Abhängigkeit."
-msgstr "A parent task spans its subtasks – there is no dependency between them."
+msgid ""
+"Eine Hauptaufgabe umfasst ihre Unteraufgaben – zwischen ihnen gibt es keine "
+"Abhängigkeit."
+msgstr ""
+"A parent task spans its subtasks – there is no dependency between them."
 
 #: gantt/dienste.py:97
 msgid "Diese Abhängigkeit gibt es bereits."
@@ -813,8 +820,12 @@ msgstr "The time for entering the code has run out. Please sign in again."
 
 #: kern/views.py:126
 #, python-format
-msgid "Sie haben einen Ersatzcode verwendet, noch %(n)s übrig. Neue Codes oder ein neues Telefon richten Sie unter „Mein Konto“ ein."
-msgstr "You used a backup code, %(n)s left. Set up new codes or a new phone under “My account”."
+msgid ""
+"Sie haben einen Ersatzcode verwendet, noch %(n)s übrig. Neue Codes oder ein "
+"neues Telefon richten Sie unter „Mein Konto“ ein."
+msgstr ""
+"You used a backup code, %(n)s left. Set up new codes or a new phone under "
+"“My account”."
 
 #: kern/views.py:134
 msgid "Zu viele falsche Codes. Bitte erneut anmelden."
@@ -829,8 +840,12 @@ msgid "Das Passwort stimmt nicht."
 msgstr "The password is not correct."
 
 #: kern/views.py:159
-msgid "Der Code passt nicht. Bitte den aktuellen Code aus der App eingeben; die Uhrzeit am Telefon muss stimmen."
-msgstr "The code does not match. Please enter the current code from the app; the time on the phone must be correct."
+msgid ""
+"Der Code passt nicht. Bitte den aktuellen Code aus der App eingeben; die "
+"Uhrzeit am Telefon muss stimmen."
+msgstr ""
+"The code does not match. Please enter the current code from the app; the "
+"time on the phone must be correct."
 
 #: kern/views.py:207
 msgid "Die Zwei-Faktor-Anmeldung ist ausgeschaltet."
@@ -863,8 +878,12 @@ msgid "Benutzerkonten anlegen und deaktivieren"
 msgstr "Create and deactivate user accounts"
 
 #: kern/views.py:369
-msgid "Bestehende Konten nur mit niedrigerer Rolle als der eigenen; Admin-Konten über die Kommandozeile"
-msgstr "Existing accounts only with a lower role than your own; admin accounts via the command line"
+msgid ""
+"Bestehende Konten nur mit niedrigerer Rolle als der eigenen; Admin-Konten "
+"über die Kommandozeile"
+msgstr ""
+"Existing accounts only with a lower role than your own; admin accounts via "
+"the command line"
 
 #: kern/views.py:370
 msgid "Rollen vergeben"
@@ -940,8 +959,12 @@ msgid "Ein Link zum Zurücksetzen geht per E-Mail an %(email)s."
 msgstr "A reset link is being sent by email to %(email)s."
 
 #: kern/views.py:501
-msgid "Das bisherige Passwort gilt nicht mehr. Bitte den Link an die Person weitergeben."
-msgstr "The previous password is no longer valid. Please pass the link on to the person."
+msgid ""
+"Das bisherige Passwort gilt nicht mehr. Bitte den Link an die Person "
+"weitergeben."
+msgstr ""
+"The previous password is no longer valid. Please pass the link on to the "
+"person."
 
 #: kern/views.py:508
 msgid "Sie können Ihr eigenes Konto nicht deaktivieren."
@@ -1119,8 +1142,12 @@ msgid "Der Eintrag wurde inzwischen gelöscht."
 msgstr "This entry has been deleted in the meantime."
 
 #: planung/dienste.py:138
-msgid "Der Eintrag wurde inzwischen von jemand anderem geändert. Die Ansicht wurde aktualisiert."
-msgstr "This entry has been changed by someone else in the meantime. The view has been refreshed."
+msgid ""
+"Der Eintrag wurde inzwischen von jemand anderem geändert. Die Ansicht wurde "
+"aktualisiert."
+msgstr ""
+"This entry has been changed by someone else in the meantime. The view has "
+"been refreshed."
 
 #: planung/dienste.py:249
 msgid "Sie dürfen die Info-Zeile nicht bearbeiten."
@@ -1451,7 +1478,9 @@ msgid "Abhängigkeiten"
 msgstr "Dependencies"
 
 #: projekte/termine.py:134
-msgid "Die Termine lassen sich wegen widersprüchlicher Abhängigkeiten nicht nachziehen."
+msgid ""
+"Die Termine lassen sich wegen widersprüchlicher Abhängigkeiten nicht "
+"nachziehen."
 msgstr "The dates cannot be adjusted because of contradictory dependencies."
 
 #: projekte/views.py:125
@@ -2062,6 +2091,14 @@ msgid "Quellcode"
 msgstr "Source code"
 
 #: templates/kern/einst_ueber.html:14
+msgid ""
+"Konzept und Entwicklung: Valentin Gehmacher. Programmiert mit KI-"
+"Unterstützung (Claude Code von Anthropic)."
+msgstr ""
+"Concept and development: Valentin Gehmacher. Programmed with AI assistance "
+"(Claude Code by Anthropic)."
+
+#: templates/kern/einst_ueber.html:15
 msgid "Grafiken der Feieranimation: Fluent Emoji von Microsoft (MIT-Lizenz)."
 msgstr "Celebration graphics: Fluent Emoji by Microsoft (MIT license)."
 
@@ -2099,8 +2136,12 @@ msgstr "Sign-in"
 
 #: templates/kern/person_bearbeiten.html:43
 #, python-format
-msgid "Persönliche Daten am %(datum)s entfernt (Frist nach der Deaktivierung). Zum Reaktivieren eine neue E-Mail-Adresse eintragen und eine Einladung schicken."
-msgstr "Personal data removed on %(datum)s (retention period after deactivation). To reactivate, enter a new email address and send an invitation."
+msgid ""
+"Persönliche Daten am %(datum)s entfernt (Frist nach der Deaktivierung). Zum "
+"Reaktivieren eine neue E-Mail-Adresse eintragen und eine Einladung schicken."
+msgstr ""
+"Personal data removed on %(datum)s (retention period after deactivation). To "
+"reactivate, enter a new email address and send an invitation."
 
 #: templates/kern/person_bearbeiten.html:46
 msgid "Passwort gesetzt"
@@ -2115,8 +2156,12 @@ msgid "Letzte Anmeldung"
 msgstr "Last sign-in"
 
 #: templates/kern/person_bearbeiten.html:50
-msgid "Das bisherige Passwort gilt danach nicht mehr, bis die Person über den Link ein neues festlegt. Fortfahren?"
-msgstr "The previous password will then no longer be valid until the person sets a new one via the link. Continue?"
+msgid ""
+"Das bisherige Passwort gilt danach nicht mehr, bis die Person über den Link "
+"ein neues festlegt. Fortfahren?"
+msgstr ""
+"The previous password will then no longer be valid until the person sets a "
+"new one via the link. Continue?"
 
 #: templates/kern/person_bearbeiten.html:51
 msgid "Neuen Einladungslink erzeugen"
@@ -2136,11 +2181,16 @@ msgid "Eingerichtet seit %(seit)s"
 msgstr "Set up since %(seit)s"
 
 #: templates/kern/person_bearbeiten.html:60
-msgid "Zwei-Faktor-Anmeldung zurücksetzen, z. B. weil das Telefon verloren ist? Die Person bekommt eine E-Mail."
-msgstr "Reset two-factor authentication, e.g. because the phone was lost? The person will receive an email."
+msgid ""
+"Zwei-Faktor-Anmeldung zurücksetzen, z. B. weil das Telefon verloren ist? Die "
+"Person bekommt eine E-Mail."
+msgstr ""
+"Reset two-factor authentication, e.g. because the phone was lost? The person "
+"will receive an email."
 
 #: templates/kern/person_bearbeiten.html:60
-msgid "Zwei-Faktor-Anmeldung zurücksetzen, z. B. weil das Telefon verloren ist?"
+msgid ""
+"Zwei-Faktor-Anmeldung zurücksetzen, z. B. weil das Telefon verloren ist?"
 msgstr "Reset two-factor authentication, e.g. because the phone was lost?"
 
 #: templates/kern/person_bearbeiten.html:61
@@ -2169,7 +2219,9 @@ msgid "Konto von %(name)s deaktivieren?"
 msgstr "Deactivate the account of %(name)s?"
 
 #: templates/kern/person_bearbeiten.html:95
-msgid "Die Person kann sich nicht mehr anmelden; Aufgaben und Einteilungen bleiben erhalten."
+msgid ""
+"Die Person kann sich nicht mehr anmelden; Aufgaben und Einteilungen bleiben "
+"erhalten."
 msgstr "The person can no longer sign in; tasks and assignments are kept."
 
 #: templates/kern/person_bearbeiten.html:98
@@ -2327,36 +2379,58 @@ msgstr "Older"
 
 #: templates/kern/version_hinweis.html:3
 #, python-format
-msgid "Neue Version <span class=\"mono\">%(neu)s</span> verfügbar. Einspielen auf dem Server im Installationsverzeichnis mit <code>./teamplaner update</code> (vorher wird automatisch gesichert)."
-msgstr "New version <span class=\"mono\">%(neu)s</span> available. Install it on the server in the installation directory with <code>./teamplaner update</code> (a backup is made automatically first)."
+msgid ""
+"Neue Version <span class=\"mono\">%(neu)s</span> verfügbar. Einspielen auf "
+"dem Server im Installationsverzeichnis mit <code>./teamplaner update</code> "
+"(vorher wird automatisch gesichert)."
+msgstr ""
+"New version <span class=\"mono\">%(neu)s</span> available. Install it on the "
+"server in the installation directory with <code>./teamplaner update</code> "
+"(a backup is made automatically first)."
 
 #: templates/kern/version_hinweis.html:6
 msgid "Das ist die neueste Version."
 msgstr "This is the latest version."
 
 #: templates/kern/version_hinweis.html:8
-msgid "Ob es eine neuere Version gibt, lässt sich gerade nicht prüfen (Internetverbindung oder Zugang zur Paketquelle in der .env)."
-msgstr "Cannot check for a newer version right now (internet connection or package source access in the .env)."
+msgid ""
+"Ob es eine neuere Version gibt, lässt sich gerade nicht prüfen "
+"(Internetverbindung oder Zugang zur Paketquelle in der .env)."
+msgstr ""
+"Cannot check for a newer version right now (internet connection or package "
+"source access in the .env)."
 
 #: templates/kern/zwei_faktor_einrichten.html:6
 msgid "Zwei-Faktor-Anmeldung einrichten"
 msgstr "Set up two-factor authentication"
 
 #: templates/kern/zwei_faktor_einrichten.html:7
-msgid "Für Ihre Rolle ist die Zwei-Faktor-Anmeldung vorgeschrieben. Bitte richten Sie sie jetzt ein – danach geht es normal weiter."
-msgstr "Two-factor authentication is required for your role. Please set it up now – then you can continue as usual."
+msgid ""
+"Für Ihre Rolle ist die Zwei-Faktor-Anmeldung vorgeschrieben. Bitte richten "
+"Sie sie jetzt ein – danach geht es normal weiter."
+msgstr ""
+"Two-factor authentication is required for your role. Please set it up now – "
+"then you can continue as usual."
 
 #: templates/kern/zwei_faktor_einrichten.html:8
-msgid "Nach dem Speichern gilt nur noch das neue Telefon; die bisherigen Ersatzcodes werden ersetzt."
-msgstr "After saving, only the new phone is valid; the previous backup codes are replaced."
+msgid ""
+"Nach dem Speichern gilt nur noch das neue Telefon; die bisherigen "
+"Ersatzcodes werden ersetzt."
+msgstr ""
+"After saving, only the new phone is valid; the previous backup codes are "
+"replaced."
 
 #: templates/kern/zwei_faktor_einrichten.html:10
 msgid "1. App installieren"
 msgstr "1. Install an app"
 
 #: templates/kern/zwei_faktor_einrichten.html:11
-msgid "Eine Authenticator-App auf dem Telefon, z. B. Microsoft Authenticator, Google Authenticator, FreeOTP oder die Passwort-App des iPhones."
-msgstr "An authenticator app on your phone, e.g. Microsoft Authenticator, Google Authenticator, FreeOTP or the iPhone Passwords app."
+msgid ""
+"Eine Authenticator-App auf dem Telefon, z. B. Microsoft Authenticator, "
+"Google Authenticator, FreeOTP oder die Passwort-App des iPhones."
+msgstr ""
+"An authenticator app on your phone, e.g. Microsoft Authenticator, Google "
+"Authenticator, FreeOTP or the iPhone Passwords app."
 
 #: templates/kern/zwei_faktor_einrichten.html:12
 msgid "2. QR-Code scannen"
@@ -2376,12 +2450,20 @@ msgid "Ersatzcodes"
 msgstr "Backup codes"
 
 #: templates/kern/zwei_faktor_ersatzcodes.html:7
-msgid "Diese Codes werden nur jetzt angezeigt. Bitte ausdrucken oder an einem sicheren Ort aufbewahren – nicht auf dem Telefon mit der App."
-msgstr "These codes are shown only now. Please print them or keep them in a safe place – not on the phone with the app."
+msgid ""
+"Diese Codes werden nur jetzt angezeigt. Bitte ausdrucken oder an einem "
+"sicheren Ort aufbewahren – nicht auf dem Telefon mit der App."
+msgstr ""
+"These codes are shown only now. Please print them or keep them in a safe "
+"place – not on the phone with the app."
 
 #: templates/kern/zwei_faktor_ersatzcodes.html:8
-msgid "Mit einem Ersatzcode melden Sie sich an, wenn das Telefon fehlt. Jeder Code gilt einmal."
-msgstr "Use a backup code to sign in when you do not have your phone. Each code works once."
+msgid ""
+"Mit einem Ersatzcode melden Sie sich an, wenn das Telefon fehlt. Jeder Code "
+"gilt einmal."
+msgstr ""
+"Use a backup code to sign in when you do not have your phone. Each code "
+"works once."
 
 #: templates/kern/zwei_faktor_ersatzcodes.html:11
 msgid "Drucken"
@@ -2408,8 +2490,11 @@ msgstr "New note"
 
 #: templates/notizen/_konflikt.html:2
 #, python-format
-msgid "Die Notiz wurde inzwischen von %(name)s geändert. Ihr Text ist nicht gespeichert."
-msgstr "%(name)s has changed the note in the meantime. Your text has not been saved."
+msgid ""
+"Die Notiz wurde inzwischen von %(name)s geändert. Ihr Text ist nicht "
+"gespeichert."
+msgstr ""
+"%(name)s has changed the note in the meantime. Your text has not been saved."
 
 #: templates/notizen/_konflikt.html:3 templates/projekte/_detail_feld.html:92
 msgid "Aktuelle Fassung"
@@ -2895,8 +2980,12 @@ msgid "Code eingeben"
 msgstr "Enter code"
 
 #: templates/registration/anmelden_code.html:6
-msgid "Öffnen Sie Ihre Authenticator-App und geben Sie den sechsstelligen Code für den Teamplaner ein. Ohne Telefon geht auch einer Ihrer Ersatzcodes."
-msgstr "Open your authenticator app and enter the six-digit code for Teamplaner. Without your phone, one of your backup codes also works."
+msgid ""
+"Öffnen Sie Ihre Authenticator-App und geben Sie den sechsstelligen Code für "
+"den Teamplaner ein. Ohne Telefon geht auch einer Ihrer Ersatzcodes."
+msgstr ""
+"Open your authenticator app and enter the six-digit code for Teamplaner. "
+"Without your phone, one of your backup codes also works."
 
 #: templates/registration/gesperrt.html:3
 msgid "Gesperrt"
@@ -2907,8 +2996,12 @@ msgid "Vorübergehend gesperrt"
 msgstr "Temporarily locked"
 
 #: templates/registration/gesperrt.html:6
-msgid "Zu viele fehlgeschlagene Anmeldeversuche. Bitte in einigen Minuten erneut versuchen oder die Administration kontaktieren."
-msgstr "Too many failed sign-in attempts. Please try again in a few minutes or contact the administrators."
+msgid ""
+"Zu viele fehlgeschlagene Anmeldeversuche. Bitte in einigen Minuten erneut "
+"versuchen oder die Administration kontaktieren."
+msgstr ""
+"Too many failed sign-in attempts. Please try again in a few minutes or "
+"contact the administrators."
 
 #: templates/registration/gesperrt.html:7
 #: templates/registration/passwort_setzen.html:17
@@ -2922,8 +3015,12 @@ msgid "Passwort vergessen?"
 msgstr "Forgot your password?"
 
 #: templates/registration/login.html:20
-msgid "Passwort vergessen? Bitte bei der Bereichsleitung oder Administration einen neuen Link anfordern."
-msgstr "Forgot your password? Please ask your unit lead or the administrators for a new link."
+msgid ""
+"Passwort vergessen? Bitte bei der Bereichsleitung oder Administration einen "
+"neuen Link anfordern."
+msgstr ""
+"Forgot your password? Please ask your unit lead or the administrators for a "
+"new link."
 
 #: templates/registration/passwort_setzen.html:3
 #: templates/registration/passwort_setzen.html:6
@@ -2944,8 +3041,11 @@ msgid "Link ungültig"
 msgstr "Invalid link"
 
 #: templates/registration/passwort_setzen.html:16
-msgid "Dieser Link ist abgelaufen oder wurde bereits verwendet. Bitte einen neuen Link anfordern."
-msgstr "This link has expired or has already been used. Please request a new link."
+msgid ""
+"Dieser Link ist abgelaufen oder wurde bereits verwendet. Bitte einen neuen "
+"Link anfordern."
+msgstr ""
+"This link has expired or has already been used. Please request a new link."
 
 #: templates/registration/passwort_vergessen.html:3
 #: templates/registration/passwort_vergessen.html:5
@@ -2953,16 +3053,25 @@ msgid "Passwort vergessen"
 msgstr "Forgot password"
 
 #: templates/registration/passwort_vergessen.html:7
-msgid "Wenn es zu dieser Adresse ein aktives Konto gibt, ist eine E-Mail mit einem Link zum Festlegen eines neuen Passworts unterwegs."
-msgstr "If there is an active account for this address, an email with a link to set a new password is on its way."
+msgid ""
+"Wenn es zu dieser Adresse ein aktives Konto gibt, ist eine E-Mail mit einem "
+"Link zum Festlegen eines neuen Passworts unterwegs."
+msgstr ""
+"If there is an active account for this address, an email with a link to set "
+"a new password is on its way."
 
 #: templates/registration/passwort_vergessen.html:10
-msgid "Zu viele Anfragen von diesem Anschluss. Bitte in einer Stunde erneut versuchen."
+msgid ""
+"Zu viele Anfragen von diesem Anschluss. Bitte in einer Stunde erneut "
+"versuchen."
 msgstr "Too many requests from this connection. Please try again in an hour."
 
 #: templates/registration/passwort_vergessen.html:11
-msgid "Geben Sie Ihre E-Mail-Adresse ein. Sie bekommen einen Link, mit dem Sie ein neues Passwort festlegen."
-msgstr "Enter your email address. You will receive a link to set a new password."
+msgid ""
+"Geben Sie Ihre E-Mail-Adresse ein. Sie bekommen einen Link, mit dem Sie ein "
+"neues Passwort festlegen."
+msgstr ""
+"Enter your email address. You will receive a link to set a new password."
 
 #: templates/registration/passwort_vergessen.html:15
 msgid "Link anfordern"
@@ -3038,7 +3147,8 @@ msgstr "%(akteur)s removed your schedule for “%(titel)s” (%(zeitraum)s)."
 
 #: zusammenarbeit/dienste.py:65
 #, python-format
-msgid "%(akteur)s hat Ihre Einteilung für „%(titel)s“ an jemand anderen übergeben."
+msgid ""
+"%(akteur)s hat Ihre Einteilung für „%(titel)s“ an jemand anderen übergeben."
 msgstr "%(akteur)s handed your schedule for “%(titel)s” over to someone else."
 
 #: zusammenarbeit/dienste.py:73
@@ -3058,7 +3168,8 @@ msgstr "%(akteur)s changed “%(titel)s” (%(felder)s)."
 
 #: zusammenarbeit/dienste.py:101
 #, python-format
-msgid "%(akteur)s hat im Projekt „%(projekt)s“ die Aufgabe „%(titel)s“ angelegt."
+msgid ""
+"%(akteur)s hat im Projekt „%(projekt)s“ die Aufgabe „%(titel)s“ angelegt."
 msgstr "%(akteur)s created the task “%(titel)s” in project “%(projekt)s”."
 
 #: zusammenarbeit/dienste.py:115
@@ -3125,7 +3236,8 @@ msgid "Meine Einteilung wird entfernt"
 msgstr "My schedule is removed"
 
 #: zusammenarbeit/mail.py:45
-msgid "Der Liefertermin einer Bestellung, die ich bestellt habe, ist überschritten"
+msgid ""
+"Der Liefertermin einer Bestellung, die ich bestellt habe, ist überschritten"
 msgstr "The delivery date of an order I placed has passed"
 
 #: zusammenarbeit/mail.py:77
@@ -3155,13 +3267,21 @@ msgid "Guten Tag %(name)s,"
 msgstr "Hello %(name)s,"
 
 #: zusammenarbeit/mail.py:170
-msgid "für Sie wurde ein Konto im Teamplaner angelegt. Bitte legen Sie über diesen Link Ihr Passwort fest:"
-msgstr "an account has been created for you in the team planner. Please set your password using this link:"
+msgid ""
+"für Sie wurde ein Konto im Teamplaner angelegt. Bitte legen Sie über diesen "
+"Link Ihr Passwort fest:"
+msgstr ""
+"an account has been created for you in the team planner. Please set your "
+"password using this link:"
 
 #: zusammenarbeit/mail.py:173
 #, python-format
-msgid "Der Link gilt einige Tage und nur einmal. Ihre Anmeldung ist Ihre E-Mail-Adresse: %(email)s"
-msgstr "The link is valid for a few days and only once. You sign in with your email address: %(email)s"
+msgid ""
+"Der Link gilt einige Tage und nur einmal. Ihre Anmeldung ist Ihre E-Mail-"
+"Adresse: %(email)s"
+msgstr ""
+"The link is valid for a few days and only once. You sign in with your email "
+"address: %(email)s"
 
 #: zusammenarbeit/mail.py:175 zusammenarbeit/models.py:144
 msgid "Einladung"
@@ -3177,7 +3297,8 @@ msgid "Der Link gilt %(n)s Stunden und nur einmal."
 msgstr "The link is valid for %(n)s hours and only once."
 
 #: zusammenarbeit/mail.py:191
-msgid "Wenn Sie das nicht angefordert haben, können Sie diese E-Mail ignorieren."
+msgid ""
+"Wenn Sie das nicht angefordert haben, können Sie diese E-Mail ignorieren."
 msgstr "If you did not request this, you can ignore this email."
 
 #: zusammenarbeit/mail.py:193 zusammenarbeit/models.py:145
@@ -3189,28 +3310,40 @@ msgid "das Passwort Ihres Teamplaner-Kontos wurde geändert."
 msgstr "the password of your Teamplaner account has been changed."
 
 #: zusammenarbeit/mail.py:200
-msgid "das Passwort Ihres Teamplaner-Kontos wurde über einen Link neu festgelegt."
+msgid ""
+"das Passwort Ihres Teamplaner-Kontos wurde über einen Link neu festgelegt."
 msgstr "the password of your Teamplaner account has been set anew via a link."
 
 #: zusammenarbeit/mail.py:201
 #, python-format
 msgid "die Anmelde-E-Mail Ihres Teamplaner-Kontos wurde auf %(neu)s geändert."
-msgstr "the sign-in email of your Teamplaner account has been changed to %(neu)s."
+msgstr ""
+"the sign-in email of your Teamplaner account has been changed to %(neu)s."
 
 #: zusammenarbeit/mail.py:202
-msgid "für Ihr Teamplaner-Konto wurde die Zwei-Faktor-Anmeldung eingerichtet (bzw. ein neues Telefon verbunden)."
-msgstr "two-factor authentication has been set up for your Teamplaner account (or a new phone has been connected)."
+msgid ""
+"für Ihr Teamplaner-Konto wurde die Zwei-Faktor-Anmeldung eingerichtet (bzw. "
+"ein neues Telefon verbunden)."
+msgstr ""
+"two-factor authentication has been set up for your Teamplaner account (or a "
+"new phone has been connected)."
 
 #: zusammenarbeit/mail.py:204
 msgid "die Zwei-Faktor-Anmeldung Ihres Teamplaner-Kontos wurde ausgeschaltet."
-msgstr "two-factor authentication for your Teamplaner account has been turned off."
+msgstr ""
+"two-factor authentication for your Teamplaner account has been turned off."
 
 #: zusammenarbeit/mail.py:205
-msgid "die Zwei-Faktor-Anmeldung Ihres Teamplaner-Kontos wurde von der Verwaltung zurückgesetzt."
-msgstr "two-factor authentication for your Teamplaner account has been reset by an administrator."
+msgid ""
+"die Zwei-Faktor-Anmeldung Ihres Teamplaner-Kontos wurde von der Verwaltung "
+"zurückgesetzt."
+msgstr ""
+"two-factor authentication for your Teamplaner account has been reset by an "
+"administrator."
 
 #: zusammenarbeit/mail.py:221
-msgid "Waren Sie das nicht, wenden Sie sich bitte sofort an die Administration."
+msgid ""
+"Waren Sie das nicht, wenden Sie sich bitte sofort an die Administration."
 msgstr "If this was not you, please contact the administration immediately."
 
 #: zusammenarbeit/mail.py:224
