@@ -20,7 +20,7 @@ from django.views.decorators.http import require_POST
 
 from gantt import dienste as gantt_dienste
 from kern import rechte
-from kern.hilfen import als_zahl, erfordert
+from kern.hilfen import TEXT_MAX_ZEICHEN, als_zahl, erfordert
 from kern.models import Gewerk, Person
 from kern.protokoll import protokollieren
 from planung import rechte as planungsrechte
@@ -77,7 +77,10 @@ def _kennzahlen_setzen(aufgaben):
 
 @login_required
 def projekte(request):
-    tag_id = request.GET.get("tag")
+    tag_roh = request.GET.get("tag")
+    tag_id = als_zahl(tag_roh) if tag_roh else None
+    if tag_roh and tag_id is None:
+        return HttpResponse(status=400)
     archiv = request.GET.get("archiv") == "1"
     liste = (Projekt.objects.filter(archiviert_am__isnull=not archiv)
              .select_related("projektleitung").prefetch_related("tags")
@@ -87,7 +90,7 @@ def projekte(request):
     if tag_id:
         liste = liste.filter(tags=tag_id)
     return render(request, "projekte/projekte.html", {
-        "projekte": liste, "tags": Tag.objects.all(), "tag_id": int(tag_id) if tag_id else None,
+        "projekte": liste, "tags": Tag.objects.all(), "tag_id": tag_id,
         "archiv": archiv, "aktiv": "projekte", "prioritaeten": PRIORITAETEN,
     })
 
@@ -428,6 +431,8 @@ def _feld_wert(aufgabe, feld, roh):
             raise _Ungueltig(_("Höchstens 300 Zeichen."))
         return roh
     if feld == "beschreibung":
+        if len(roh) > TEXT_MAX_ZEICHEN:
+            raise _Ungueltig(_("Der Text ist zu lang (höchstens %(n)s Zeichen).") % {"n": TEXT_MAX_ZEICHEN})
         return roh
     try:
         if feld == "verantwortlich":
@@ -629,8 +634,11 @@ def arbeitstage_widget(aufgabe, einteilungen, monat_param=None):
     from planung.kalender import arbeitstage
 
     heute = timezone.localdate()
-    if monat_param and re.fullmatch(r"\d{4}-\d{2}", monat_param):
-        erster = date(int(monat_param[:4]), int(monat_param[5:]), 1)
+    # Nur echte Monate und Jahre mit Abstand zu den Grenzen von ``date`` (das Raster rechnet einen
+    # Monat vor und zurück), alles andere fällt auf den Vorgabemonat zurück
+    monat = re.fullmatch(r"(\d{4})-(0[1-9]|1[0-2])", monat_param or "")
+    if monat and 1900 <= int(monat[1]) <= 2200:
+        erster = date(int(monat[1]), int(monat[2]), 1)
     elif einteilungen and not any(e.von <= heute <= e.bis for e in einteilungen) and min(e.von for e in einteilungen) > heute:
         erster = min(e.von for e in einteilungen).replace(day=1)
     else:

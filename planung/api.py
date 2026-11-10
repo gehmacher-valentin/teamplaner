@@ -5,6 +5,7 @@ from datetime import date, timedelta
 from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext as _
 from rest_framework.decorators import api_view
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from kern import rechte as kern_rechte
@@ -61,6 +62,17 @@ def raster_daten(request):
     return Response(daten)
 
 
+def _filter_id(parameter, name):
+    """Optionaler Filter auf eine ID: fehlt er, None; ist er keine ganze Zahl, 400 statt Fehler 500."""
+    roh = parameter.get(name)
+    if not roh:
+        return None
+    zahl = als_zahl(roh)
+    if zahl is None:
+        raise ValidationError({name: _("Ungültige Eingabe.")})
+    return zahl
+
+
 @api_view(["GET"])
 def palette(request):
     if not kern_rechte.darf_planen(request.user):
@@ -69,9 +81,9 @@ def palette(request):
     return Response(raster.palette(
         request.user,
         modus=g.get("modus", "offen"),
-        projekt_id=g.get("projekt") or None,
-        gewerk_id=g.get("gewerk") or None,
-        tag_id=g.get("tag") or None,
+        projekt_id=_filter_id(g, "projekt"),
+        gewerk_id=_filter_id(g, "gewerk"),
+        tag_id=_filter_id(g, "tag"),
         suche=(g.get("q") or "").strip()[:100],
     ))
 

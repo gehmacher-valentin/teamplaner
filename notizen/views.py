@@ -6,7 +6,7 @@ from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.db.models import Count, F, Q
 from django.db.models.functions import Lower
-from django.http import FileResponse, Http404
+from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.translation import gettext as _
@@ -14,7 +14,7 @@ from django.views.decorators.http import require_POST
 
 from kern import rechte as kern_rechte
 from kern.heic import heic_umwandeln
-from kern.hilfen import als_zahl, erfordert
+from kern.hilfen import TEXT_MAX_ZEICHEN, als_zahl, erfordert
 from kern.protokoll import protokollieren
 from zusammenarbeit.views import INLINE_TYPEN, dateityp
 
@@ -152,6 +152,10 @@ def notiz_speichern(request):
         antwort["HX-Retarget"] = "#notiz-titel"
         antwort["HX-Reswap"] = "outerHTML"
         return antwort
+    if len(text) > TEXT_MAX_ZEICHEN:
+        # Der Text bleibt im Editor stehen; die Meldung erscheint als Toast (HtmxMeldungenMiddleware)
+        messages.error(request, _("Der Text ist zu lang (höchstens %(n)s Zeichen).") % {"n": TEXT_MAX_ZEICHEN})
+        return HttpResponse(status=400)
     neu = eintrag.pk is None
     with transaction.atomic():
         if not neu:

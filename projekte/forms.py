@@ -2,6 +2,7 @@ from django import forms
 from django.utils.translation import gettext_lazy as _
 
 from kern.forms import PersonenAuswahl
+from kern.hilfen import TEXT_MAX_ZEICHEN
 from kern.models import Person
 
 from .models import PRIORITAETEN, Abschnitt, Projekt, Tag
@@ -53,6 +54,12 @@ class ProjektForm(forms.ModelForm):
             "ende": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
             "beschreibung": forms.Textarea(attrs={"rows": 3}),
         }
+
+    def clean_beschreibung(self):
+        text = self.cleaned_data["beschreibung"]
+        if len(text) > TEXT_MAX_ZEICHEN:
+            raise forms.ValidationError(_("Der Text ist zu lang (höchstens %(n)s Zeichen).") % {"n": TEXT_MAX_ZEICHEN})
+        return text
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
