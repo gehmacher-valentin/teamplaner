@@ -1504,6 +1504,11 @@ msgstr "The section still contains tasks and cannot be deleted."
 msgid "Höchstens 300 Zeichen."
 msgstr "At most 300 characters."
 
+#: notizen/views.py:154 projekte/forms.py:59 projekte/views.py:436
+#, python-format
+msgid "Der Text ist zu lang (höchstens %(n)s Zeichen)."
+msgstr "The text is too long (at most %(n)s characters)."
+
 #: projekte/views.py:451
 msgid "Bitte eine Zahl ab 0 eingeben."
 msgstr "Please enter a number of 0 or more."

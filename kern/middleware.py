@@ -33,6 +33,34 @@ class KontoSpracheMiddleware:
         return self.get_response(request)
 
 
+class NulZeichenMiddleware:
+    """Anfragen mit NUL-Zeichen (0x00) in Adresse, Parametern, Formularfeldern oder Dateinamen
+    enden mit 400. PostgreSQL nimmt das Zeichen in Texten nicht an, sonst bräche erst das Speichern
+    mit einem Datenbankfehler (500) ab. Dateiinhalte sind nicht betroffen."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if self._hat_nul(request):
+            return HttpResponse(status=400)
+        return self.get_response(request)
+
+    @staticmethod
+    def _hat_nul(request):
+        abfrage = request.META.get("QUERY_STRING", "")
+        if "\x00" in request.path_info or "%00" in abfrage or "\x00" in abfrage:
+            return True
+        if request.method in ("GET", "HEAD", "OPTIONS"):
+            return False
+        if (request.content_type or "").startswith("multipart/"):
+            return (any("\x00" in k or any("\x00" in w for w in werte) for k, werte in request.POST.lists())
+                    or any("\x00" in (d.name or "") for dateien in request.FILES.lists() for d in dateien[1]))
+        # Formular (prozentkodiert) und JSON (als \u0000 maskiert), roh in keinem von beiden erlaubt
+        inhalt = request.body
+        return b"\x00" in inhalt or b"%00" in inhalt or b"\\u0000" in inhalt
+
+
 def ist_hintergrund(request):
     """Abfragen, die ohne Zutun der Person laufen (Glocke, Live-Verbindung, Nachladen nach Live-Ereignis)."""
     return request.headers.get("X-Hintergrund") == "1" or request.path == "/api/planung/stream"

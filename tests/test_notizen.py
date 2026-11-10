@@ -3,7 +3,9 @@
 import pytest
 from django.test import Client
 
+from kern.hilfen import TEXT_MAX_ZEICHEN
 from kern.models import Rolle
+from notizen import markdown
 from notizen.markdown import als_html, als_text
 from notizen.models import Notiz, Ordner
 
@@ -207,3 +209,30 @@ def test_beispiel_notizen(konten, settings):
     call_command("demodaten", "--notizen", verbosity=0)
     assert Notiz.objects.filter(besitzer=konten[P].person).exists()  # Person 05
     assert Ordner.objects.filter(mitglieder=konten[A]).exists()  # Person 90 in der Leitungsrunde
+
+
+def test_zu_langer_text_wird_abgelehnt(konten):
+    c = client_fuer(konten[M])
+    assert speichern(c, titel="Lang", text="a" * (TEXT_MAX_ZEICHEN + 1)).status_code == 400
+    assert not Notiz.objects.exists()
+    assert speichern(c, titel="Lang", text="a" * TEXT_MAX_ZEICHEN).status_code == 200
+
+
+@pytest.mark.parametrize("muster", ["[" * 30000, "`" * 30000, "<a " * 20000, "-\n" * 40000, "a\n: b\n" * 1000])
+def test_aufwendiges_markdown_bricht_nach_frist_ab(muster):
+    """Python-Markdown braucht für solche Texte viele Sekunden bis Minuten; dann erscheint der Text unformatiert."""
+    import time
+
+    beginn = time.monotonic()
+    ausgabe = als_html(muster)
+    assert time.monotonic() - beginn < markdown.FRIST_ANZEIGE + 1.5
+    assert ausgabe.startswith("<p>") and "<a " not in ausgabe
+    beginn = time.monotonic()
+    als_text(muster)  # Vorschau: nur der Anfang, also schnell
+    assert time.monotonic() - beginn < 1
+
+
+def test_frist_stoert_gewoehnliche_notizen_nicht():
+    text = "# Titel\n\nAbsatz mit **fett** und [Link](https://example.org).\n\n- eins\n- zwei\n\n" * 300
+    assert als_html(text).count("<h1>") == 300
+    assert als_text(text).startswith("Titel · Absatz mit fett und Link. · eins · zwei")

@@ -93,6 +93,11 @@ def api_ausnahme(exc, context):
     return exception_handler(exc, context)
 
 
+# Obergrenze für lange Freitexte (Notiz, Beschreibung). Ohne sie deckelt nur
+# DATA_UPLOAD_MAX_MEMORY_SIZE die Größe, und sehr lange Texte machen jede Anzeige teuer.
+TEXT_MAX_ZEICHEN = 100_000
+
+
 def als_zahl(wert):
     """Ganze Zahl aus einer Anfrage (ID, Version) oder None – statt mit Fehler 500 abzubrechen."""
     if isinstance(wert, bool):

@@ -469,6 +469,39 @@ def test_ungueltige_eingaben_ergeben_400_statt_500(konten, projekt, abschnitt, a
     assert antwort.status_code == 404
 
 
+@pytest.mark.parametrize("wert", ["1.5", "abc", "99999999999999999999999"])
+def test_ungueltige_filter_ergeben_keinen_fehler_500(konten, client_fuer, wert):
+    api = client_fuer(konten[BL])
+    for name in ("projekt", "gewerk", "tag"):
+        erwartet = 200 if wert.isdigit() else 400  # zu große Zahl: gültig, findet nur nichts
+        assert api.get(f"/api/planung/palette?{name}={wert}").status_code == erwartet
+    assert angemeldet(konten[BL]).get(f"/projekte/?tag={wert}").status_code == (200 if wert.isdigit() else 400)
+
+
+@pytest.mark.parametrize("monat", ["9999-99", "2026-13", "2026-00", "0000-01", "0001-01", "9999-12", "abc"])
+def test_arbeitstage_widget_ungueltiger_monat(konten, aufgabe, monat):
+    assert angemeldet(konten[BL]).get(f"/aufgaben/{aufgabe.pk}/?monat={monat}").status_code == 200
+
+
+def test_arbeitstage_widget_monat(konten, aufgabe):
+    seite = angemeldet(konten[BL]).get(f"/aufgaben/{aufgabe.pk}/?monat=2031-02").content.decode()
+    assert "monat=2031-01" in seite and "monat=2031-03" in seite
+
+
+def test_nul_zeichen_ergibt_400(konten, aufgabe, client_fuer):
+    c = angemeldet(konten[BL])
+    assert c.post("/notizen/speichern/", {"notiz": "", "ordner": "", "version": "", "titel": "A", "text": "a\x00b"},
+                  HTTP_HX_REQUEST="true").status_code == 400
+    assert c.post(f"/aufgaben/{aufgabe.pk}/kommentare/", "text=a%00b",
+                  content_type="application/x-www-form-urlencoded").status_code == 400
+    assert c.get("/suche/?q=a%00b").status_code == 400
+    api = client_fuer(konten[BL])
+    assert api.put("/api/planung/tagesinfo/2026-10-19", {"text": "a\x00b"}, format="json").status_code == 400
+    # ohne NUL-Zeichen geht dieselbe Anfrage durch
+    assert c.post("/notizen/speichern/", {"notiz": "", "ordner": "", "version": "", "titel": "A", "text": "a b"},
+                  HTTP_HX_REQUEST="true").status_code == 200
+
+
 def test_demodaten_nicht_im_produktivbetrieb(db, settings):
     from django.core.management import CommandError, call_command
 
