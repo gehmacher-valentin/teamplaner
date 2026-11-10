@@ -4,7 +4,7 @@
     python manage.py mails_versenden --dauerhaft  # Dienst: prüft alle paar Sekunden
 
 Als Dienst räumt er außerdem einmal am Tag nach den Lösch- und Aufbewahrungsfristen auf
-(kern.aufraeumen) und warnt bei überschrittenen Lieferterminen (bestellungen.warnungen, einmal je
+(verwaltung.aufraeumen) und warnt bei überschrittenen Lieferterminen (bestellungen.warnungen, einmal je
 Kalendertag) – so braucht es dafür keinen eigenen Zeitplan auf dem Server.
 """
 
@@ -16,7 +16,7 @@ from django.db import close_old_connections
 from django.utils import timezone
 
 from bestellungen.warnungen import liefertermine_pruefen
-from kern.aufraeumen import aufraeumen
+from verwaltung.aufraeumen import aufraeumen
 from zusammenarbeit.mail import mail_aktiv, offene_versenden
 
 log = logging.getLogger(__name__)

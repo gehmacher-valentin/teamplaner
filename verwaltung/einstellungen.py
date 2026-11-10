@@ -5,6 +5,7 @@ in jeder View. Kleine Einstellungen speichern sofort per HTMX, Rückmeldung als 
 """
 
 import json
+from datetime import date
 
 from django.conf import settings
 from django.contrib import messages
@@ -15,15 +16,24 @@ from django.db.models import Count, Max, ProtectedError
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.utils import translation
+from django.utils import timezone, translation
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy, ngettext
 from django.views.decorators.http import require_POST
 
-from . import rechte, zwei_faktor
-from .hilfen import erfordert
-from .models import Systemeinstellungen
-from .protokoll import aenderungen, protokollieren
+from gantt import rechte as gantt_rechte
+from kern import rechte, zwei_faktor
+from kern.freigaben import BEARBEITEN, SEHEN, zusammenfassung
+from kern.hilfen import einstellungsseite, erfordert
+from kern.models import Bereich, Gewerk, Rolle, Systemeinstellungen
+from kern.protokoll import aenderungen, protokollieren
+from planung.kalender import gesetzliche_feiertage, neue_freie_tage, zeitraeume
+from planung.models import FreierTag, FreigabeStufe
+from projekte.models import Aufgabe, Status, Statusfarbe, Tag
+from zusammenarbeit.mail import KATEGORIEN, mail_aktiv, mail_eingerichtet, wartende_verwerfen
+
+from . import freigaben
+from .forms import BereichForm, FreigabeStufeForm, GewerkForm, StatusForm, TagForm
 
 
 def _darf_personen(konto):
@@ -31,8 +41,6 @@ def _darf_personen(konto):
 
 
 def _darf_ansichten(konto):
-    from gantt import rechte as gantt_rechte
-
     return rechte.darf_ansichten_verwalten(konto) or gantt_rechte.darf_verwalten(konto)
 
 
@@ -83,9 +91,7 @@ def verwaltungsseite(konto):
 def seite(request, vorlage, aktiv, **kontext):
     """Seite im Einstellungsrahmen; Team- und System-Seiten markieren „Einstellungen“ unter „Verwaltung“."""
     gruppe = next(g for g, k, *_rest in SEITEN if k == aktiv)
-    return render(request, vorlage, {
-        "einst_aktiv": aktiv, "aktiv": "einstellungen" if gruppe in {"team", "system"} else "konto", **kontext,
-    })
+    return einstellungsseite(request, vorlage, aktiv, verwaltung=gruppe in {"team", "system"}, **kontext)
 
 
 def gespeichert(request, antwort=None):
@@ -113,8 +119,6 @@ def zwei_faktor_kontext(konto):
 
 @login_required
 def benachrichtigungen(request):
-    from zusammenarbeit.mail import KATEGORIEN, mail_aktiv, mail_eingerichtet
-
     werte = request.user.mail_einstellungen or {}
     kategorien = [
         {"schluessel": schluessel, "titel": titel,
@@ -134,8 +138,6 @@ def benachrichtigungen(request):
 def benachrichtigung_speichern(request):
     """Ein Ereignis oder eine ganze Kategorie an/aus – immer nur für das eigene Konto.
     Ohne Mailversand gibt es nichts einzustellen; gespeicherte Werte bleiben für später erhalten."""
-    from zusammenarbeit.mail import KATEGORIEN, mail_aktiv
-
     if not mail_aktiv():
         return HttpResponse(status=400)
     konto = request.user
@@ -196,8 +198,6 @@ def darstellung_speichern(request):
 @erfordert(rechte.darf_systemeinstellungen)
 def allgemein(request):
     """Globale Einstellungen, alle speichern sofort: Organisationsname, Tagesfreigabe, E-Mail-Versand."""
-    from zusammenarbeit.mail import mail_aktiv, mail_eingerichtet, wartende_verwerfen
-
     objekt = Systemeinstellungen.laden()
     if request.method == "POST":
         feld = request.POST.get("feld")
@@ -230,23 +230,34 @@ def ueber(request):
                  quellcode=settings.TEAMPLANER_QUELLCODE)
 
 
+# Anzeige der Rechtematrix (gleich wie tests/test_rechte.py)
+RECHTEMATRIX = [
+    (gettext_lazy("Feiertage, Status, Systemeinstellungen"), "ja nein nein nein nein", ""),
+    (gettext_lazy("Benutzerkonten anlegen und deaktivieren"), "ja ja nein nein nein",
+     gettext_lazy("Bestehende Konten nur mit niedrigerer Rolle als der eigenen; Admin-Konten über die Kommandozeile")),
+    (gettext_lazy("Rollen vergeben"), "ja ja nein nein nein", gettext_lazy("Bereichsleitung bis maximal zur eigenen Rolle")),
+    (gettext_lazy("Projekte anlegen, Tags vergeben, archivieren"), "ja ja ja nein nein", ""),
+    (gettext_lazy("Aufgaben anlegen und bearbeiten"), "ja ja ja eigene nein", gettext_lazy("Mitarbeiter:innen: in Projekten, in denen sie Mitglied sind")),
+    (gettext_lazy("Aufgaben abschließen, kommentieren"), "ja ja ja ja nein", ""),
+    (gettext_lazy("Teamplaner-Ansichten anlegen und freigeben"), "ja ja nein nein nein", ""),
+    (gettext_lazy("Teamplaner: einteilen, Abwesenheiten"), "ja ja freigabe nein nein", gettext_lazy("Planer:innen: in Ansichten mit Freigabe „bearbeiten“")),
+    (gettext_lazy("Platzhalter anlegen, bearbeiten, archivieren"), "ja ja ja nein nein", ""),
+    (gettext_lazy("Lesekalender"), "ja ja freigabe freigabe freigabe", gettext_lazy("freigegebene Ansichten; die eigene Einteilung immer")),
+    (gettext_lazy("Änderungsprotokoll einsehen"), "ja ja nein nein nein", ""),
+    (gettext_lazy("Protokoll: erledigte Aufgaben einsehen"), "ja ja ja nein nein", ""),
+    (gettext_lazy("Tagesfreigabe einrichten"), "ja nein nein nein nein", ""),
+    (gettext_lazy("Bestellungen eintragen und ändern"), "ja ja ja ja nein", gettext_lazy("Löschen: eigene Zeilen, ab Planer:in alle")),
+]
+
+
 @erfordert(rechte.darf_konten_verwalten)
 def rollen(request):
-    from .models import Rolle
-    from .views import RECHTEMATRIX
-
     return seite(request, "kern/einst_rollen.html", "rollen", rechtematrix=RECHTEMATRIX, rollen=list(Rolle))
 
 
 # ---------- Listen: Status, Gewerke, Projekt-Tags, Bereiche, Freigabestufen ----------
 
 def _listen():
-    from planung.models import FreigabeStufe
-    from projekte.models import Aufgabe, Status, Tag
-
-    from .forms import BereichForm, FreigabeStufeForm, GewerkForm, StatusForm, TagForm
-    from .models import Bereich, Gewerk
-
     def status_verwendung():
         anzahl = dict(Aufgabe.objects.values_list("status").annotate(n=Count("id")).values_list("status", "n"))
         return lambda obj: anzahl.get(obj.pk, 0)
@@ -296,8 +307,6 @@ def _liste_kontext(art, neu_form=None, fokus=False):
 
 
 def _farben(art):
-    from projekte.models import Statusfarbe
-
     return list(Statusfarbe.choices) if art == "status" else []
 
 
@@ -410,8 +419,6 @@ def liste_sortieren(request, art):
 @login_required
 def ansichten(request):
     """Teamplaner- und Gantt-Ansichten auf einer Seite mit Reitern, je nur mit dem passenden Recht."""
-    from . import freigaben
-
     erlaubt = {art: werte for art, werte in freigaben.arten().items() if werte[3](request.user)}
     if not erlaubt:
         raise PermissionDenied
@@ -420,8 +427,8 @@ def ansichten(request):
     vorrang = {"teamplaner": ("bereiche", "personen"), "gantt": ("projekte",)}[art]
     liste = list(ansicht_modell.objects.prefetch_related(*vorrang, "freigaben__konto__person"))
     for a in liste:
-        a.freigegeben = [f for f in a.freigaben.all() if f.recht in (freigaben.SEHEN, freigaben.BEARBEITEN)]
-        a.zusammenfassung = freigaben.zusammenfassung(f.recht for f in a.freigegeben)
+        a.freigegeben = [f for f in a.freigaben.all() if f.recht in (SEHEN, BEARBEITEN)]
+        a.zusammenfassung = zusammenfassung(f.recht for f in a.freigegeben)
         a.inhalt = ([b.name for b in a.bereiche.all()] + [p.anzeigename for p in a.personen.all()]
                     if art == "teamplaner" else [p.name for p in a.projekte.all()])
     reiter = [{"art": k, "titel": _("Teamplaner") if k == "teamplaner" else _("Gantt-Diagramm"),
@@ -435,8 +442,6 @@ def ansichten(request):
 @login_required
 def ansichten_sortieren(request, art):
     """Reihenfolge der Ansichten per Ziehen statt über eine Zahl."""
-    from . import freigaben
-
     if art not in freigaben.arten():
         raise Http404
     ansicht_modell, _f, typ, recht, _u = freigaben.arten()[art]
@@ -461,9 +466,6 @@ HOECHSTENS_TAGE = 366
 
 
 def _jahresliste(heute):
-    from planung.kalender import gesetzliche_feiertage, zeitraeume
-    from planung.models import FreierTag
-
     freie = list(FreierTag.objects.all())
     alle = {heute.year, heute.year + 1} | {t.datum.year for t in freie}
     # Laufendes und nächstes Jahr zuerst, dann spätere, dann vergangene (neueste zuerst)
@@ -485,13 +487,6 @@ def _jahresliste(heute):
 @erfordert(rechte.darf_systemeinstellungen)
 def kalender(request):
     """Freie Tage eintragen: von, bis (leer = ein Tag), Bezeichnung."""
-    from datetime import date
-
-    from django.utils import timezone
-
-    from planung.kalender import neue_freie_tage
-    from planung.models import FreierTag
-
     eingabe = {"von": "", "bis": "", "bezeichnung": ""}
     fehler = None
     if request.method == "POST":
@@ -529,10 +524,6 @@ def kalender(request):
 @erfordert(rechte.darf_systemeinstellungen)
 def kalender_zeitraum(request):
     """Einen Zeitraum als Ganzes umbenennen oder löschen."""
-    from datetime import date
-
-    from planung.models import FreierTag
-
     try:
         von, bis = date.fromisoformat(request.POST.get("von", "")), date.fromisoformat(request.POST.get("bis", ""))
     except ValueError:
@@ -562,8 +553,6 @@ def kalender_zeitraum(request):
 @erfordert(rechte.darf_systemeinstellungen)
 def kalender_tag(request, pk):
     """Einen einzelnen freien Tag aus einem Zeitraum entfernen."""
-    from planung.models import FreierTag
-
     tag = get_object_or_404(FreierTag, pk=pk)
     tag.delete()
     protokollieren(request.user, "freiertag", pk, "geloescht", {"name": str(tag)})

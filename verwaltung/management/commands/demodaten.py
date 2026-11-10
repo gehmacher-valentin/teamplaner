@@ -18,6 +18,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from bestellungen.models import Bestellung
+from gantt.models import GanttAnsicht, GanttFreigabe
 from kern.models import Bereich, Gewerk, Konto, Person, Rolle, Systemeinstellungen
 from notizen.models import Notiz, Ordner
 from planung.kalender import montag
@@ -31,7 +32,7 @@ from planung.models import (
     TeamplanerAnsicht,
 )
 from projekte import termine
-from projekte.models import Abschnitt, Aufgabe, Projekt, Status, Tag
+from projekte.models import Abhaengigkeit, Abschnitt, Aufgabe, Projekt, Status, Tag
 from zusammenarbeit.models import Kommentar
 
 DEMO_PASSWORT = os.environ.get("DEMO_PASSWORT", "Teamplaner-Demo-2026")
@@ -322,9 +323,6 @@ class Command(BaseCommand):
         ansicht("Alle Bereiche", 40, [W, F, L], [(p[21], Recht.SEHEN)])
 
         # --- Gantt: Zeiträume, geplante Beginne, Abhängigkeiten, Ansichten ---
-        from gantt.models import GanttAnsicht, GanttFreigabe
-        from projekte.models import Abhaengigkeit
-
         # Projektzeiträume über rund zwei bis drei Monate (Werktag-Spalten ab Montag dieser Woche)
         for pr, (von, bis) in {A: (-10, 40), B: (-15, 45), C: (0, 34), D: (-5, 30)}.items():
             pr.beginn, pr.ende = tag(von), tag(bis)

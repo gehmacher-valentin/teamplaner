@@ -8,6 +8,7 @@ from django.utils import translation
 from django.utils.formats import date_format
 from django.utils.translation import gettext_lazy as _
 
+from .mail import mail_aktiv, mail_erwuenscht
 from .models import Benachrichtigung, Benachrichtigungsart, MailStatus
 from .verlauf import FELDNAMEN
 
@@ -35,8 +36,6 @@ def benachrichtigen(empfaenger, art, vorlage, werte=None, *, aufgabe=None, auslo
     with translation.override(konto.sprache):
         aufgeloest = {k: (v() if callable(v) else v) for k, v in (werte or {}).items()}
         text = str(vorlage) % aufgeloest
-    from .mail import mail_aktiv, mail_erwuenscht
-
     status = MailStatus.OFFEN if mail_erwuenscht(konto, art) and mail_aktiv() else MailStatus.KEINE
     return Benachrichtigung.objects.create(
         empfaenger=empfaenger, art=art, text=text[:500], aufgabe=aufgabe, ausloeser=ausloeser,

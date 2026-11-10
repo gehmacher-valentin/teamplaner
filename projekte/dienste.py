@@ -7,6 +7,7 @@ from django.utils import timezone
 
 from kern.hilfen import als_zahl
 from kern.protokoll import aenderungen, protokollieren
+from planung.dienste import einteilungen_entfernt_melden
 from zusammenarbeit.dienste import (
     aufgabe_geaendert_benachrichtigen,
     projekt_aufgabe_benachrichtigen,
@@ -241,8 +242,6 @@ def offene_unteraufgaben(aufgabe):
 
 
 def aufgabe_loeschen(konto, aufgabe, _nachziehen=True):
-    from planung.dienste import einteilungen_entfernt_melden
-
     with transaction.atomic():
         einteilungen = list(aufgabe.einteilungen.select_related("person"))
         einteilungen_entfernt_melden(konto, einteilungen)

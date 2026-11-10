@@ -371,8 +371,8 @@ def test_protokolle_und_benachrichtigungen_nach_einem_jahr_geloescht(konten, auf
     from axes.models import AccessLog
     from django.db import DatabaseError, transaction
 
-    from kern.aufraeumen import aufraeumen
     from kern.models import Protokolleintrag
+    from verwaltung.aufraeumen import aufraeumen
     from zusammenarbeit.models import Benachrichtigung
 
     alt = timezone.now() - timedelta(days=400)
@@ -394,8 +394,8 @@ def test_protokolle_und_benachrichtigungen_nach_einem_jahr_geloescht(konten, auf
 def test_deaktivierte_konten_nach_drei_monaten_bereinigt_name_und_kommentare_bleiben(konten, aufgabe):
     from django.core.files.uploadedfile import SimpleUploadedFile
 
-    from kern.aufraeumen import aufraeumen
     from notizen.models import Notiz
+    from verwaltung.aufraeumen import aufraeumen
     from zusammenarbeit.models import Anhang, Kommentar
 
     konto = konten[M]

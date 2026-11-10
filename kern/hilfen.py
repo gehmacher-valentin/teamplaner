@@ -1,16 +1,25 @@
 """Hilfen für Views: Rechteprüfung als Decorator, Links für Einladung/Reset."""
 
 from functools import wraps
+from urllib.parse import urlencode
 
 import segno
 from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.core.exceptions import PermissionDenied
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.encoding import force_bytes
 from django.utils.http import base36_to_int, urlsafe_base64_encode
 from django.utils.safestring import mark_safe
+from django.utils.translation import gettext as _
+from rest_framework.exceptions import NotAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import exception_handler
 
 
 def erfordert(pruefung):
@@ -59,13 +68,6 @@ def passwort_link(konto):
 
 def abmelden_und_weiter(request, nachricht):
     """Sitzung beenden und passend antworten: HTMX lädt die Anmeldeseite, die API meldet 401."""
-    from urllib.parse import urlencode
-
-    from django.contrib import messages
-    from django.contrib.auth import logout
-    from django.http import HttpResponse, JsonResponse
-    from django.shortcuts import redirect
-
     logout(request)
     if request.path.startswith("/api/"):
         return JsonResponse({"code": "abgemeldet", "nachricht": str(nachricht)}, status=401)
@@ -83,11 +85,6 @@ def abmelden_und_weiter(request, nachricht):
 def api_ausnahme(exc, context):
     """Fehlerantworten der JSON-API: abgelaufene Sitzung als 401 mit ``code`` „abgemeldet“ (statt
     Djangos 403 ohne Code), damit Teamplaner und Gantt-Diagramm zur Anmeldung wechseln können."""
-    from django.utils.translation import gettext as _
-    from rest_framework.exceptions import NotAuthenticated
-    from rest_framework.response import Response
-    from rest_framework.views import exception_handler
-
     if isinstance(exc, NotAuthenticated):
         return Response({"code": "abgemeldet", "nachricht": _("Sitzung abgelaufen – bitte neu anmelden.")}, status=401)
     return exception_handler(exc, context)
@@ -106,6 +103,15 @@ def als_zahl(wert):
         return int(wert)
     except (TypeError, ValueError):
         return None
+
+
+def einstellungsseite(request, vorlage, aktiv, verwaltung=True, **kontext):
+    """Seite im Einstellungsrahmen (templates/kern/einstellungen_basis.html). ``aktiv`` ist die Kennung
+    in der Unternavigation; Team- und System-Seiten (``verwaltung``) markieren im Hauptmenü
+    „Einstellungen“ unter „Verwaltung“, persönliche Seiten das Konto."""
+    return render(request, vorlage, {
+        "einst_aktiv": aktiv, "aktiv": "einstellungen" if verwaltung else "konto", **kontext,
+    })
 
 
 def link_qr_svg(link):

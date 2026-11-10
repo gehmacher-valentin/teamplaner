@@ -6,8 +6,9 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.http import FileResponse, Http404
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.formats import date_format
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
@@ -21,7 +22,7 @@ from projekte.seitenleiste import offene_seitenleiste, seitenleiste_antwort
 
 from .anhaenge import INLINE_TYPEN, dateityp
 from .dienste import erwaehnung_benachrichtigen, kommentar_benachrichtigen
-from .models import Anhang, Erwaehnung, Kommentar
+from .models import Anhang, Benachrichtigung, Benachrichtigungsart, Erwaehnung, Kommentar
 from .verlauf import ERWAEHNUNG
 
 
@@ -127,3 +128,44 @@ def anhang_loeschen(request, pk):
 
 def zeitpunkt(wert):
     return date_format(wert, "d.m.Y H:i")
+
+
+# ---------- Posteingang ----------
+
+@login_required
+def posteingang(request):
+    eintraege = Benachrichtigung.objects.filter(empfaenger=request.user.person).select_related("aufgabe", "ausloeser")
+    if request.method == "POST":
+        eintraege.filter(gelesen_am__isnull=True).update(gelesen_am=timezone.now())
+        return redirect("posteingang")
+    return render(request, "kern/posteingang.html", {"eintraege": eintraege[:200], "aktiv": "posteingang"})
+
+
+@login_required
+def posteingang_feld(request):
+    """Mitteilungszentrale im Kopf (HTMX): die letzten Benachrichtigungen; POST markiert alle als gelesen."""
+    eintraege = Benachrichtigung.objects.filter(empfaenger=request.user.person).select_related("aufgabe", "ausloeser")
+    if request.method == "POST":
+        eintraege.filter(gelesen_am__isnull=True).update(gelesen_am=timezone.now())
+    ungelesen = eintraege.filter(gelesen_am__isnull=True).count()
+    return render(request, "kern/_posteingang_feld.html", {"eintraege": eintraege[:15], "ungelesen": ungelesen})
+
+
+@login_required
+def posteingang_zahl(request):
+    """Zahl der ungelesenen Benachrichtigungen am Glockensymbol (wird minütlich nachgeladen)."""
+    ungelesen = Benachrichtigung.objects.filter(empfaenger=request.user.person, gelesen_am__isnull=True).count()
+    return render(request, "kern/_ungelesen.html", {"ungelesen": ungelesen})
+
+
+@login_required
+def benachrichtigung_oeffnen(request, pk):
+    eintrag = get_object_or_404(Benachrichtigung, pk=pk, empfaenger=request.user.person)
+    if eintrag.gelesen_am is None:
+        eintrag.gelesen_am = timezone.now()
+        eintrag.save(update_fields=["gelesen_am"])
+    if eintrag.aufgabe_id:
+        return redirect(eintrag.aufgabe.get_absolute_url())
+    if eintrag.art == Benachrichtigungsart.LIEFERTERMIN:
+        return redirect("bestellungen")
+    return redirect("posteingang")
