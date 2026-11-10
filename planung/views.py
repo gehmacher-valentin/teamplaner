@@ -9,8 +9,9 @@ from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
 from django.views.decorators.http import require_POST
 
+from kern import freigaben
 from kern import rechte as kern_rechte
-from kern.hilfen import erfordert
+from kern.hilfen import einstellungsseite, erfordert
 from kern.models import Bereich, Gewerk, Person
 from kern.protokoll import protokollieren
 from projekte.models import Projekt, Tag
@@ -73,9 +74,6 @@ def _zur_liste(art):
 @erfordert(kern_rechte.darf_ansichten_verwalten)
 def ansicht_bearbeiten(request, pk=None):
     """Teamplaner-Ansicht mit Freigaben; Freigaben-Logik gemeinsam mit Gantt (kern.freigaben)."""
-    from kern import freigaben
-    from kern.einstellungen import seite
-
     ansicht = get_object_or_404(TeamplanerAnsicht, pk=pk) if pk else None
     form = AnsichtForm(request.POST or None, instance=ansicht)
     konten = freigaben.konten()
@@ -98,8 +96,8 @@ def ansicht_bearbeiten(request, pk=None):
         return _zur_liste("teamplaner")
 
     zeilen = freigaben.zeilen(konten, bisher, request.POST if request.method == "POST" else None)
-    return seite(request, "planung/ansicht_bearbeiten.html", "ansichten", ansicht=ansicht, form=form, zeilen=zeilen,
-                 bereiche=Bereich.objects.all(), zusammenfassung=freigaben.zusammenfassung(z["recht"] for z in zeilen))
+    return einstellungsseite(request, "planung/ansicht_bearbeiten.html", "ansichten", ansicht=ansicht, form=form, zeilen=zeilen,
+                             bereiche=Bereich.objects.all(), zusammenfassung=freigaben.zusammenfassung(z["recht"] for z in zeilen))
 
 
 @require_POST

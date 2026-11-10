@@ -11,23 +11,22 @@
 
 from datetime import timedelta
 
+from axes.models import AccessAttempt, AccessFailureLog, AccessLog
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
-from . import fotos, zwei_faktor
-from .models import Konto, Person, Protokolleintrag, Resetanfrage
-from .protokoll import protokollieren
+from kern import fotos, zwei_faktor
+from kern.models import Konto, Person, Protokolleintrag, Resetanfrage
+from kern.protokoll import protokollieren
+from notizen.models import Notiz, NotizAnhang
+from zusammenarbeit.models import Benachrichtigung, Postausgang
 
 PROTOKOLL_MINDESTENS_TAGE = 365  # wie im Trigger kern_protokoll_nur_einfuegen
 
 
 def aufraeumen(jetzt=None):
     """Gibt {Bereich: Anzahl gelöschter bzw. bereinigter Einträge} zurück."""
-    from axes.models import AccessAttempt, AccessFailureLog, AccessLog
-
-    from zusammenarbeit.models import Benachrichtigung, Postausgang
-
     jetzt = jetzt or timezone.now()
     grenze = jetzt - timedelta(days=settings.TEAMPLANER_AUFBEWAHRUNG_TAGE)
     protokoll_grenze = min(grenze, jetzt - timedelta(days=PROTOKOLL_MINDESTENS_TAGE))
@@ -47,8 +46,6 @@ def aufraeumen(jetzt=None):
 
 
 def deaktivierte_bereinigen(jetzt):
-    from notizen.models import Notiz, NotizAnhang
-
     grenze = jetzt - timedelta(days=settings.TEAMPLANER_DEAKTIVIERT_TAGE)
     konten = Konto.objects.select_related("person").filter(person__archiviert_am__lt=grenze,
                                                           daten_entfernt_am__isnull=True)

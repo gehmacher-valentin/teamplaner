@@ -55,7 +55,8 @@ shellcheck --severity=warning werkzeuge/*.sh betrieb/linux/teamplaner betrieb/li
 cd frontend && npm test && npm run typecheck   # Frontend
 ```
 
-GitHub Actions führt alles bei jedem Push aus (`.github/workflows/tests.yml`), und zwar wie auf dem
+GitHub Actions führt alles bei jedem Pull Request und jedem Push auf `main` aus
+(`.github/workflows/tests.yml`), und zwar wie auf dem
 Zielserver: Ubuntu 24.04 LTS mit Python 3.12 und PostgreSQL 16.
 
 Für Rechteprüfung und Einteilungslogik sind automatische Tests Pflicht.
@@ -77,6 +78,7 @@ Für Rechteprüfung und Einteilungslogik sind automatische Tests Pflicht.
 | `tests/test_heic.py` | HEIC-Fotos werden zu JPEG (Anhänge, Notiz-Anhänge, Profilfoto), Testbild in `tests/daten/` |
 | `tests/test_projektliste.py` | Projektpriorität, Navigation, Mitgliederauswahl, Protokoll „erledigt“, Posteingang im Kopf, Gesamtansicht |
 | `tests/test_version.py` | Versionsanzeige auf der Seite „Über“ |
+| `tests/test_schichten.py` | Abhängigkeitsrichtung der Apps, keine Importe aus fremden `views.py` |
 | `tests/test_direkt_bearbeiten.py` | Aufgabendetail direkt bearbeiten, Konflikte, Toasts, Gantt-Einstellung am Konto |
 | `tests/test_sicherheit.py` | Zwei-Faktor-Anmeldung, Sitzungen, Konten übernehmen, Passwort-Links und Postausgang, Live-Verbindung, ungültige Eingaben (400 statt 500, NUL-Zeichen) |
 | `tests/test_mail_versand.py`, `tests/test_organisation.py` | E-Mail-Versand global abschaltbar, Passwort-Link als QR-Code, Organisationsname |
@@ -93,19 +95,29 @@ Dazu prüft `shellcheck` die Betriebs- und Bauskripte.
 
 | Ordner | Inhalt |
 | --- | --- |
-| `kern/` | Person, Konto, Rolle, Bereich, Gewerk, Protokoll; `rechte.py` = zentrale Rechteprüfung, `middleware.py` (Sitzung, Zwei-Faktor, CSP, Abweisen von NUL-Zeichen), `hilfen.py` (`als_zahl`, `TEXT_MAX_ZEICHEN`) |
+| `kern/` | Basis für alle anderen Apps: Person, Konto, Rolle, Bereich, Gewerk, Protokoll; `rechte.py` = zentrale Rechteprüfung, `middleware.py` (Sitzung, Zwei-Faktor, CSP, Abweisen von NUL-Zeichen), `hilfen.py` (`als_zahl`, `TEXT_MAX_ZEICHEN`, `einstellungsseite`), `freigaben.py` (Freigaben je Ansicht), `zwei_faktor.py`, Profilfotos |
 | `projekte/` | Projekte, Tags, Abschnitte, Status, Aufgaben (Unteraufgaben = Aufgaben mit `eltern`); `dienste.py` (Schreiben mit Verlauf), `ansicht.py` (Aufgaben für Liste und Detail laden und aufbereiten), `seitenleiste.py` (Aufgabendetail neben der Liste) |
 | `planung/` | Einteilung, Abwesenheit, freie Tage, Ansichten; `kalender.py` (Feiertage, Regeln), `dienste.py` (Schreiben mit Prüfungen), `api.py`, `live.py` (SSE) |
-| `zusammenarbeit/` | Kommentare, Erwähnungen, Anhänge, Benachrichtigungen; `mail.py` (E-Mail-Kategorien und Versand), `verlauf.py` (Kommentare und Änderungen als lesbare Einträge), `anhaenge.py` (Inhaltstyp, Anzeige im Browser) |
+| `zusammenarbeit/` | Kommentare, Erwähnungen, Anhänge, Benachrichtigungen mit Posteingang; `mail.py` (E-Mail-Kategorien und Versand), `verlauf.py` (Kommentare und Änderungen als lesbare Einträge), `anhaenge.py` (Inhaltstyp, Anzeige im Browser) |
 | `gantt/` | Gantt-Ansichten mit Freigaben; `daten.py` (Abgleich, Verletzungen), `dienste.py` (Termine, Abhängigkeiten, neue Projekte in Gesamtansichten) |
 | `notizen/` | Persönliche Notizen und freigegebene Gruppenordner; `rechte.py`, `markdown.py` (Markdown → bereinigtes HTML, mit Frist gegen aufwendige Eingaben) |
 | `bestellungen/` | Bestellungsverfolgung (eine Liste für alle); `warnungen.py` (überschrittene Liefertermine) |
-| `templates/` | Django-Templates (HTMX) |
+| `verwaltung/` | Oberste Schicht ohne eigene Modelle: Anmeldung, Passwort und Zwei-Faktor-Oberfläche, Personenverwaltung, Einstellungsseiten (`einstellungen.py`), Protokollseite, Speicherplatz, Navigation (`context_processors.py`), Aufräumen nach Fristen (`aufraeumen.py`); Befehle `mails_versenden`, `aufraeumen`, `demodaten`, `lasttest` |
+| `templates/` | Django-Templates (HTMX); die Seiten von `verwaltung` liegen unter `templates/kern/` |
 | `frontend/` | Vite-Projekt: `src/main.ts` (alle Seiten), `src/teamplaner/` und `src/gantt/` (React), `src/editor/` (Tiptap) |
 | `locale/en/` | englische Übersetzung |
 | `betrieb/linux/` | Linux-Server: Verwaltungsbefehl `teamplaner`, `installieren.sh`, Sicherung, systemd-Dienste, nginx-/Apache-Vorlagen, Konfigurationsvorlage |
 | `pruefung/linux/` | Probeserver (Ubuntu 24.04) und Ablauf für die lokale Prüfung der Linux-Installation |
 | `werkzeuge/` | Entwicklung: Installationsarchiv bauen (`paket-bauen.sh`), Abhängigkeiten sperren, Übersetzungswerkzeug, Entwicklungseinstellungen |
+
+Abhängigkeitsrichtung (geprüft von `tests/test_schichten.py`):
+
+```
+verwaltung  ->  projekte, planung, gantt, notizen, bestellungen, zusammenarbeit  ->  kern
+```
+
+`kern` importiert aus keiner anderen App, und keine Fach-App importiert aus `verwaltung`. Braucht eine
+Fach-App etwas aus der Verwaltung (z. B. den Einstellungsrahmen), gehört ein neutraler Helfer nach `kern`.
 
 Grundregeln:
 

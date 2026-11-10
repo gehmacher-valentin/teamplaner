@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "axes",
     "django_htmx",
     "kern",
+    "verwaltung",
     "projekte",
     "planung",
     "zusammenarbeit",
@@ -83,7 +84,7 @@ TEMPLATES = [
                 "django.template.context_processors.i18n",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-                "kern.context_processors.navigation",
+                "verwaltung.context_processors.navigation",
             ],
         },
     },
@@ -142,7 +143,7 @@ AXES_LOCKOUT_PARAMETERS = ["username"]
 AXES_USERNAME_FORM_FIELD = "username"
 # Gezählt wird je E-Mail ohne Groß-/Kleinschreibung, wie bei der Anmeldung (sonst umgehbar)
 AXES_USERNAME_CALLABLE = "kern.auth.axes_benutzername"
-# Lösch- und Aufbewahrungsfristen (kern.aufraeumen, täglich im Dienst mails_versenden):
+# Lösch- und Aufbewahrungsfristen (verwaltung.aufraeumen, täglich im Dienst mails_versenden):
 # Protokolle und Benachrichtigungen (Protokoll mindestens 365 Tage), deaktivierte Konten
 TEAMPLANER_AUFBEWAHRUNG_TAGE = int(env("TEAMPLANER_AUFBEWAHRUNG_TAGE", "365"))
 TEAMPLANER_DEAKTIVIERT_TAGE = int(env("TEAMPLANER_DEAKTIVIERT_TAGE", "90"))

@@ -17,6 +17,8 @@ from functools import lru_cache
 
 from django.utils.translation import gettext_lazy as _
 
+from .models import FreierTag
+
 
 def ostersonntag(jahr):
     """Gregorianischer Ostersonntag (anonymer gregorianischer Algorithmus)."""
@@ -65,8 +67,6 @@ def feiertage_im_zeitraum(von, bis):
 
 def freie_tage(von, bis):
     """Gesetzliche Feiertage plus manuell ergänzte freie Tage im Zeitraum (inklusive)."""
-    from .models import FreierTag
-
     ergebnis = feiertage_im_zeitraum(von, bis)
     for datum, bezeichnung in FreierTag.objects.filter(
         datum__gte=von, datum__lte=bis

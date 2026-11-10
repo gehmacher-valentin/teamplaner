@@ -1,6 +1,7 @@
 import json
 import re
 from datetime import date, timedelta
+from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -24,6 +25,7 @@ from kern.models import Gewerk, Person
 from kern.protokoll import protokollieren
 from planung import rechte as planungsrechte
 from planung.kalender import freie_tage, montag, werktage, zaehlende_tage
+from planung.models import Abwesenheit, Einteilung
 from zusammenarbeit.models import Kommentar
 
 from . import dienste, termine
@@ -334,8 +336,6 @@ class _Ungueltig(Exception):
 
 def _feld_wert(aufgabe, feld, roh):
     """Prüft einen einzelnen Feldwert der Detailseite: Pflicht, Länge, Zahl ab 0, Fälligkeit nicht vor dem Beginn."""
-    from decimal import Decimal, InvalidOperation
-
     roh = roh.strip() if feld != "beschreibung" else roh
     if feld == "titel":
         if not roh:
@@ -545,8 +545,6 @@ def unteraufgabe_anlegen(request, pk):
 
 @login_required
 def meine_aufgaben(request):
-    from planung.models import Abwesenheit, Einteilung
-
     person = request.user.person
     heute = timezone.localdate()
     beginn = heute if heute.weekday() < 5 else montag(heute) + timedelta(days=7)

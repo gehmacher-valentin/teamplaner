@@ -13,6 +13,7 @@ from django.utils.translation import gettext as _
 
 from kern.hilfen import als_zahl
 from kern.protokoll import aenderungen, protokollieren
+from zusammenarbeit.dienste import einteilung_benachrichtigen
 
 from . import rechte
 from .kalender import freie_tage_mit_wochenende
@@ -313,6 +314,4 @@ def tagesfreigabe_setzen(konto, datum, stufe_id, client_id=None):
 
 def _benachrichtigen(konto, einteilung, aktion, alt_person=None):
     """Benachrichtigung „Einteilung geändert“ an die betroffene(n) Person(en)."""
-    from zusammenarbeit.dienste import einteilung_benachrichtigen
-
     einteilung_benachrichtigen(konto, einteilung, aktion, alt_person=alt_person)

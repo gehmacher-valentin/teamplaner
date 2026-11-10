@@ -74,7 +74,7 @@ function init(wurzel: ParentNode) {
 }
 
 // Kategorie-Schalter schaltet alle Ereignisse darin (E-Mail-Benachrichtigungen); gespeichert wird
-// die ganze Kategorie in einer Anfrage (kern.einstellungen.benachrichtigung_speichern)
+// die ganze Kategorie in einer Anfrage (verwaltung.einstellungen.benachrichtigung_speichern)
 function initKategorien(wurzel: ParentNode) {
   wurzel.querySelectorAll<HTMLInputElement>("input[data-kategorie]").forEach((alle) => {
     const kinder = Array.from(

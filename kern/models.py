@@ -12,6 +12,7 @@ from django.conf import settings
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.db import models
 from django.db.models.functions import Lower
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
@@ -128,8 +129,6 @@ class Person(models.Model):
         """Adresse des Fotos (nur für Angemeldete) mit Version gegen veraltete Caches."""
         if not self.foto:
             return None
-        from django.urls import reverse
-
         version = self.foto.name.rsplit("/", 1)[-1].split(".")[0][:8]
         return f"{reverse('person_foto', args=[self.pk])}?v={version}"
 
@@ -204,7 +203,7 @@ class Konto(AbstractBaseUser):
     totp_seit = models.DateTimeField(null=True, blank=True, editable=False)
     totp_letzter_schritt = models.BigIntegerField(null=True, blank=True, editable=False)
     totp_ersatzcodes = models.JSONField(default=list, blank=True, editable=False)
-    # Persönliche Daten nach der Frist für deaktivierte Konten entfernt (kern.aufraeumen)
+    # Persönliche Daten nach der Frist für deaktivierte Konten entfernt (verwaltung.aufraeumen)
     daten_entfernt_am = models.DateTimeField(null=True, blank=True, editable=False)
 
     USERNAME_FIELD = "email"

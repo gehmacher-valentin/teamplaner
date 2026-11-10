@@ -25,6 +25,7 @@ from django.utils.crypto import constant_time_compare
 
 from kern import rechte as kern_rechte
 from kern import zwei_faktor
+from kern.middleware import LETZTE_AKTIVITAET
 from kern.models import Konto
 
 from . import rechte
@@ -108,8 +109,6 @@ _offen = defaultdict(int)  # offene Streams je Konto in diesem Prozess
 def _noch_gueltig(konto_pk, sitzungsschluessel):
     """Frisch geladenes Konto, wenn Sitzung und Konto noch gelten – sonst None (abgemeldet, abgelaufen,
     deaktiviert, Passwort geändert, zweiter Faktor fehlt, Admin zu lange inaktiv)."""
-    from kern.middleware import LETZTE_AKTIVITAET
-
     sitzung = import_module(settings.SESSION_ENGINE).SessionStore(sitzungsschluessel)
     if str(sitzung.get(SESSION_KEY)) != str(konto_pk):
         return None

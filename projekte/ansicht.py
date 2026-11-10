@@ -9,10 +9,12 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.formats import date_format
 
+from gantt.daten import ist_zeitraeume, verletzt
 from kern import rechte
 from kern.models import Gewerk, Person
 from planung import rechte as planungsrechte
 from planung.kalender import arbeitstage, freie_tage, werktage, zaehlende_tage
+from planung.models import Einteilung
 from planung.raster import aufgaben_kennzahlen
 from zusammenarbeit.verlauf import verlauf_eintraege
 
@@ -149,9 +151,6 @@ def aufgabe_kontext(request, aufgabe):
 
 def abhaengigkeiten_kontext(aufgabe):
     """Vorgänger/Nachfolger „A vor B“ mit Verletzungs-Hinweis."""
-    from gantt.daten import ist_zeitraeume, verletzt
-    from planung.models import Einteilung
-
     vorgaenger = list(aufgabe.vorgaenger_links.select_related("vorher__projekt"))
     nachfolger = list(aufgabe.nachfolger_links.select_related("nachher__projekt"))
     beteiligte = {aufgabe.pk, *(a.vorher_id for a in vorgaenger), *(a.nachher_id for a in nachfolger)}

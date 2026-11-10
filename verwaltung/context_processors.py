@@ -1,8 +1,14 @@
 from django.db.models import Q
 from django.utils.functional import SimpleLazyObject
 
-from . import rechte
-from .models import Systemeinstellungen
+from gantt import rechte as gantt_rechte
+from kern import rechte
+from kern.models import Systemeinstellungen
+from planung.rechte import hat_planungsansicht
+from projekte.models import Projekt
+from zusammenarbeit.models import Benachrichtigung
+
+from .einstellungen import verwaltungsseite
 
 
 def navigation(request):
@@ -12,12 +18,6 @@ def navigation(request):
     konto = getattr(request, "user", None)
     if konto is None or not konto.is_authenticated:
         return {"organisation": organisation}
-    from gantt import rechte as gantt_rechte
-    from kern.einstellungen import verwaltungsseite
-    from planung.rechte import hat_planungsansicht
-    from projekte.models import Projekt
-    from zusammenarbeit.models import Benachrichtigung
-
     verwalten = rechte.darf_projekte_verwalten(konto)
     projekte = Projekt.objects.aktiv()
     if not verwalten:
