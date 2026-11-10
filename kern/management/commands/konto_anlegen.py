@@ -1,6 +1,6 @@
 """Erstes Admin-Konto (oder weitere Konten) auf der Kommandozeile anlegen.
 
-    docker compose exec app python manage.py konto_anlegen --email admin@example.org \
+    python manage.py konto_anlegen --email admin@example.org \
         --name "Vorname Nachname" --bereich Allgemein --rolle admin [--systemkonto]
 
 --systemkonto: Konto steht in keiner Personenauswahl (z. B. ein technisches Admin-Konto).

@@ -42,7 +42,6 @@ urlpatterns = [
     path("einstellungen/kalender/<int:pk>/", einst.kalender_tag, name="einst_kalender_tag"),
     path("einstellungen/speicherplatz/", views.anhaenge, name="einst_speicherplatz"),
     path("einstellungen/speicherplatz/<int:pk>/loeschen/", views.anhang_entfernen, name="anhang_entfernen"),
-    path("einstellungen/version/", views.einstellungen_version, name="einstellungen_version"),
     path("einstellungen/ueber/", einst.ueber, name="einst_ueber"),
 
     # Aktionen zum Konto und zu Personen (nur POST)

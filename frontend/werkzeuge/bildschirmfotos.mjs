@@ -1,5 +1,5 @@
 // Bildschirmfotos für README und Doku (docs/bilder/*.png) aus der laufenden Entwicklungsumgebung.
-// Voraussetzung: docker compose up, frische Demodaten (python manage.py demodaten --neu), Frontend gebaut.
+// Voraussetzung: Entwicklungsserver läuft (docs/entwicklung.md), frische Demodaten (python manage.py demodaten --neu), Frontend gebaut.
 //   cd frontend && npm run bildschirmfotos
 // Nutzt den installierten Chrome; mit BROWSER=msedge den installierten Edge.
 import { createHmac } from "node:crypto";

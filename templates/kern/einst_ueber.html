@@ -5,9 +5,6 @@
 <h1>{% translate "Über" %}</h1>
 <section class="karte karte--innen stapel" aria-label="{% translate 'Über' %}">
   <div>{% if version %}{% blocktranslate %}Installiert: Teamplaner <span class="mono">{{ version }}</span>{% endblocktranslate %}{% else %}{% translate "Aus dem Quellcode gestartet (Entwicklungsstand, keine Versionsnummer)." %}{% endif %}</div>
-  {% if versionspruefung %}
-    <div hx-get="{% url 'einstellungen_version' %}" hx-trigger="load" hx-swap="outerHTML" class="klein gedaempft">{% translate "Suche nach neueren Versionen …" %}</div>
-  {% endif %}
   <div class="klein gedaempft stapel stapel--eng">
     <div>Copyright © 2026 Valentin Gehmacher</div>
     <div>{% translate "Freie Software unter der GNU AGPL-3.0 oder später, ohne Gewährleistung." %} <a href="{{ quellcode }}" rel="noopener">{% translate "Quellcode" %}</a></div>

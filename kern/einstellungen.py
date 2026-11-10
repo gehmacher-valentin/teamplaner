@@ -20,7 +20,7 @@ from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy, ngettext
 from django.views.decorators.http import require_POST
 
-from . import rechte, version, zwei_faktor
+from . import rechte, zwei_faktor
 from .hilfen import erfordert
 from .models import Systemeinstellungen
 from .protokoll import aenderungen, protokollieren
@@ -227,8 +227,7 @@ def allgemein(request):
 @login_required
 def ueber(request):
     return seite(request, "kern/einst_ueber.html", "ueber", version=settings.TEAMPLANER_VERSION,
-                 quellcode=settings.TEAMPLANER_QUELLCODE,
-                 versionspruefung=rechte.darf_systemeinstellungen(request.user) and version.pruefung_moeglich())
+                 quellcode=settings.TEAMPLANER_QUELLCODE)
 
 
 @erfordert(rechte.darf_konten_verwalten)

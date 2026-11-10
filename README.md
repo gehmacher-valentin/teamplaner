@@ -85,23 +85,22 @@ Die Bilder zeigen Demodaten mit Platzhalternamen.
 
 ## Installation
 
-| Weg | Für | Anleitung |
-| --- | --- | --- |
-| Linux-Server ohne Docker | Betrieb mit systemd, nginx oder Apache und PostgreSQL | [docs/installation-linux.md](docs/installation-linux.md) |
-| Docker | VM, gemieteter Server, Kleinrechner mit arm64 | [docs/betrieb.md](docs/betrieb.md) |
-
-Beide Wege bringen wöchentliche Sicherung und Updates auf Befehl mit: Vorher wird gesichert, und startet
-die neue Version nicht, geht es automatisch zurück.
+Teamplaner läuft direkt auf einem Linux-Server (Ubuntu 24.04 LTS, Python 3.12, PostgreSQL 16) mit
+systemd hinter nginx oder Apache: [docs/installation-linux.md](docs/installation-linux.md).
+Wöchentliche Sicherung und Updates auf Befehl sind dabei: Vorher wird gesichert, und startet die neue
+Version nicht, geht es automatisch zurück.
 
 ## Schnellstart
 
-Entwicklungsumgebung auf dem eigenen Rechner. Nötig sind Docker und Node.js 20 oder neuer.
+Entwicklungsumgebung auf Ubuntu 24.04 mit Python 3.12, PostgreSQL 16 und Node.js 22; einmalige
+Einrichtung (Datenbank, Python-Umgebung) in [docs/entwicklung.md](docs/entwicklung.md#einrichtung).
 
 ```bash
 cd frontend && npm ci && npm run build && cd ..
-docker compose up -d
-docker compose exec app python manage.py migrate
-docker compose exec app python manage.py demodaten
+. .venv/bin/activate && set -a && . werkzeuge/entwicklung.env && set +a
+python manage.py migrate
+python manage.py demodaten
+uvicorn teamplaner.asgi:application --reload --port 8000
 ```
 
 Dann http://localhost:8000 öffnen. Demo-Konten (nur lokal), Passwort jeweils `Teamplaner-Demo-2026`:
@@ -115,7 +114,8 @@ Dann http://localhost:8000 öffnen. Demo-Konten (nur lokal), Passwort jeweils `T
 | `admin@example.test` | Admin: zusätzlich Personen, Rollen, Einstellungen |
 
 Admin und Bereichsleitung richten bei der ersten Anmeldung die Zwei-Faktor-Anmeldung ein
-(Authenticator-App). Alle E-Mails landen in Mailpit unter http://localhost:8025.
+(Authenticator-App). E-Mails werden lokal nur mit eingerichtetem `EMAIL_HOST` verschickt
+(siehe `werkzeuge/entwicklung.env`).
 
 Tests und alles Weitere: [docs/entwicklung.md](docs/entwicklung.md).
 

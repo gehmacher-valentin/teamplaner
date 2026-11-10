@@ -1,6 +1,6 @@
 """Lasttest: Teamplaner mit 50 Personen × 20 Arbeitstagen.
 
-    docker compose exec app python manage.py lasttest
+    python manage.py lasttest
 
 Legt in einer Transaktion 50 Personen mit je 6 Einteilungen und einer Abwesenheit an,
 misst Laden des Rasters (4 Wochen) und Speichern einer Verschiebung über die API und

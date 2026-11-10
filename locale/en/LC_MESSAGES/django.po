@@ -2078,10 +2078,6 @@ msgstr "Installed: Teamplaner <span class=\"mono\">%(version)s</span>"
 msgid "Aus dem Quellcode gestartet (Entwicklungsstand, keine Versionsnummer)."
 msgstr "Started from source code (development state, no version number)."
 
-#: templates/kern/einst_ueber.html:9
-msgid "Suche nach neueren Versionen …"
-msgstr "Checking for newer versions …"
-
 #: templates/kern/einst_ueber.html:13
 msgid "Freie Software unter der GNU AGPL-3.0 oder später, ohne Gewährleistung."
 msgstr "Free software under the GNU AGPL-3.0 or later, without warranty."
@@ -2376,29 +2372,6 @@ msgstr "Newer"
 #: templates/kern/protokoll.html:63
 msgid "Ältere"
 msgstr "Older"
-
-#: templates/kern/version_hinweis.html:3
-#, python-format
-msgid ""
-"Neue Version <span class=\"mono\">%(neu)s</span> verfügbar. Einspielen auf "
-"dem Server im Installationsverzeichnis mit <code>./teamplaner update</code> "
-"(vorher wird automatisch gesichert)."
-msgstr ""
-"New version <span class=\"mono\">%(neu)s</span> available. Install it on the "
-"server in the installation directory with <code>./teamplaner update</code> "
-"(a backup is made automatically first)."
-
-#: templates/kern/version_hinweis.html:6
-msgid "Das ist die neueste Version."
-msgstr "This is the latest version."
-
-#: templates/kern/version_hinweis.html:8
-msgid ""
-"Ob es eine neuere Version gibt, lässt sich gerade nicht prüfen "
-"(Internetverbindung oder Zugang zur Paketquelle in der .env)."
-msgstr ""
-"Cannot check for a newer version right now (internet connection or package "
-"source access in the .env)."
 
 #: templates/kern/zwei_faktor_einrichten.html:6
 msgid "Zwei-Faktor-Anmeldung einrichten"

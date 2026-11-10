@@ -1,6 +1,6 @@
-# Probeserver Debian 12 (Python 3.11, PostgreSQL 15, nginx) mit systemd – nur für pruefung/linux/pruefen.sh.
-# Pakete wie in docs/installation-linux.md, Abschnitt „Pakete“ (Debian/Ubuntu).
-FROM debian:12
+# Probeserver Ubuntu 24.04 LTS (Python 3.12, PostgreSQL 16, nginx) mit systemd - nur für
+# pruefung/linux/pruefen.sh. Pakete wie in docs/installation-linux.md, Abschnitt „Pakete“.
+FROM ubuntu:24.04
 ENV container=docker DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
     && apt-get install -y --no-install-recommends systemd systemd-sysv dbus ca-certificates curl openssl procps \
@@ -9,7 +9,6 @@ RUN apt-get update \
     && systemctl mask getty.target console-getty.service systemd-logind.service \
        systemd-binfmt.service proc-sys-fs-binfmt_misc.automount proc-sys-fs-binfmt_misc.mount \
     && rm -f /etc/nginx/sites-enabled/default
-# systemd-binfmt würde die Emulations-Handler der Docker-VM zurücksetzen (privilegierter Container):
-# auf Apple-Rechnern fiele damit Rosetta für amd64 aus
+# systemd-binfmt würde die Emulations-Handler des Docker-Hosts zurücksetzen (privilegierter Container)
 STOPSIGNAL SIGRTMIN+3
 CMD ["/sbin/init"]

@@ -1,5 +1,5 @@
 # Laufzeit-Abhängigkeiten (Bereiche). Gepinnte Versionen stehen in requirements.txt,
-# erzeugt mit: docker compose run --rm app sh docker/abhaengigkeiten-sperren.sh
+# erzeugt mit: sh werkzeuge/abhaengigkeiten-sperren.sh (mit Python 3.12)
 Django>=5.2,<5.3
 djangorestframework>=3.15,<4
 psycopg[binary]>=3.2,<4

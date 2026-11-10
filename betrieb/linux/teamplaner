@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Teamplaner auf einem Linux-Server ohne Docker (INSTALLATION.md).
+# Teamplaner auf einem Linux-Server (Ubuntu 24.04 LTS, INSTALLATION.md).
 # Wird bei der Installation nach /usr/local/sbin/teamplaner kopiert, mit dem Ort der Konfiguration
 # fest eingetragen (KONFIG); Aufruf mit sudo. Alle übrigen Pfade stehen in der Konfiguration.
 set -euo pipefail
@@ -16,7 +16,7 @@ HILFE="Aufruf: sudo teamplaner <befehl> [-j|--ja]
   zurueck                     zurück auf die Version vor dem letzten Update (ohne Datenverlust)
   neu-aufbauen                Python-Umgebung der installierten und der vorherigen Version mit der
                               System-Python neu bauen, z. B. nach einem Upgrade der Distribution, das die
-                              Python-Version wechselt (Debian 12 → 13); startet sie nicht, bleibt die
+                              Python-Version wechselt (neues Ubuntu-LTS); startet sie nicht, bleibt die
                               bisherige. Andere Python: sudo TEAMPLANER_PYTHON=python3.12 teamplaner neu-aufbauen
   start | stop | neustart     Webanwendung und Mailversand starten, anhalten, neu starten
   logs [web|mailer|sicherung] Protokoll ansehen
@@ -246,7 +246,7 @@ dienste_starten() {
 dienste_stoppen() { systemctl stop "${DIENSTE[@]}"; }
 
 # Python-Aufrufe als root mit -I: nichts aus dem aktuellen Verzeichnis oder PYTHON*-Variablen laden
-python_finden() {  # Python ab 3.11 mit venv/ensurepip (Debian/Ubuntu: Paket python3-venv)
+python_finden() {  # Python ab 3.11 mit venv/ensurepip (Ubuntu: Paket python3-venv)
   local kandidat pfad
   for kandidat in "${TEAMPLANER_PYTHON:-}" python3.13 python3.12 python3.11 python3; do
     [[ -n $kandidat ]] || continue
@@ -307,7 +307,7 @@ umgebung_text() {
 # Python-Umgebung bauen. Setzt NEU_VERSION.
 version_installieren() {
   local quelle=$1 tmp v ziel python
-  python="$(python_finden)" || fehler "Python 3.11 oder neuer mit venv fehlt (Debian/Ubuntu: Paket python3-venv)."
+  python="$(python_finden)" || fehler "Python 3.11 oder neuer mit venv fehlt (Ubuntu: Paket python3-venv)."
   tmp="$(mktemp -d "$BASIS/versionen/.neu.XXXXXX")"
   if [[ -d $quelle ]]; then
     cp -a "$quelle/." "$tmp/"
@@ -408,9 +408,9 @@ cmd_einrichten() {
   wurzel
   local quelle=${1:?Quellverzeichnis fehlt} schluessel
   command -v systemd-run >/dev/null || fehler "systemd wird benötigt."
-  python_finden >/dev/null || fehler "Python 3.11 oder neuer mit venv fehlt (Debian/Ubuntu: Paket python3-venv)."
+  python_finden >/dev/null || fehler "Python 3.11 oder neuer mit venv fehlt (Ubuntu: Paket python3-venv)."
   command -v psql >/dev/null && command -v pg_dump >/dev/null && command -v pg_restore >/dev/null \
-    || fehler "PostgreSQL-Clientprogramme fehlen (Debian/Ubuntu: postgresql-client, RHEL: postgresql)."
+    || fehler "PostgreSQL-Clientprogramme fehlen (Ubuntu: Paket postgresql-client)."
   # Zweiter Aufruf ohne TEAMPLANER_KONFIG: den Ort aus dem ersten Aufruf nehmen
   if [[ -z ${TEAMPLANER_KONFIG:-} && -f $quelle/.konfig-ort ]]; then
     KONFIG="$(cat "$quelle/.konfig-ort")"
@@ -598,7 +598,7 @@ cmd_neu_aufbauen() {
   local v verz vorher python grund
   v="$(aktuelle_version)"
   verz="$BASIS/versionen/$v"
-  python="$(python_finden)" || fehler "Python 3.11 oder neuer mit venv fehlt (Debian/Ubuntu: Paket python3-venv)."
+  python="$(python_finden)" || fehler "Python 3.11 oder neuer mit venv fehlt (Ubuntu: Paket python3-venv)."
   echo "Version $v, Python-Umgebung bisher: $(umgebung_text "$verz")"
   bestaetigen "Neu bauen mit $("$python" --version 2>&1) ($python)? Teamplaner ist dabei kurz nicht erreichbar." \
     || fehler "Abgebrochen."
@@ -633,7 +633,7 @@ cmd_neu_aufbauen() {
   meldung "Zurück zur bisherigen Python-Umgebung"
   dienste_starten || true
   warten_bis_gesund || fehler "$grund Mit der bisherigen Umgebung startet Teamplaner auch nicht.
-Python 3.11, 3.12 oder 3.13 mit venv installieren, dann noch einmal: sudo teamplaner neu-aufbauen"
+Python 3.12 mit venv installieren (Ubuntu 24.04: python3-venv), dann noch einmal: sudo teamplaner neu-aufbauen"
   fehler "$grund Teamplaner läuft mit der bisherigen Umgebung weiter."
 }
 

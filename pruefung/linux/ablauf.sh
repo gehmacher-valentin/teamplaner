@@ -2,8 +2,9 @@
 # Läuft als root im Probeserver (pruefen.sh): die Schritte aus docs/installation-linux.md,
 # danach Proben für Webserver, Live-Verbindung, Update, Rücksprung, defektes Update, Wiederherstellung,
 # Wechsel der Python-Version durch ein Upgrade der Distribution (neu-aufbauen).
-# Debian mit den Standardpfaden, Rocky mit eigenen Pfaden für Konfiguration, Programm, Daten, Sicherungen.
-#   ablauf.sh debian|rocky [nach-neustart]
+# Beide auf Ubuntu 24.04: ubuntu-nginx mit den Standardpfaden, ubuntu-apache mit eigenen Pfaden für
+# Konfiguration, Programm, Daten, Sicherungen.
+#   ablauf.sh ubuntu-nginx|ubuntu-apache [nach-neustart]
 set -euo pipefail
 ART=$1
 PHASE=${2:-voll}
@@ -14,14 +15,10 @@ DEMO=Teamplaner-Demo-2026
 # Gehärteter Server (CIS): root arbeitet mit umask 0077, das Archiv wird wie von einem Benutzer mit
 # dieser umask entpackt (Dateien 600, Verzeichnisse 700)
 umask 0077
-# Python vor dem Upgrade der Distribution (Schritt 12) und danach. Rocky hat 3.11 und 3.12 im
-# Paketarchiv; Debian 12 nur 3.11 – dort steht eine Kopie des Interpreters für die alte Version.
-if [[ $ART == rocky ]]; then
-  ALT_PYTHON=/usr/bin/python3.11 NEU_PYTHON=/usr/bin/python3.12
-else
-  ALT_PYTHON=/usr/local/bin/python3.11 NEU_PYTHON=/usr/bin/python3.11
-fi
-if [[ $ART == rocky ]]; then
+# Python vor dem Upgrade der Distribution (Schritt 12) und danach. Ubuntu 24.04 hat nur 3.12 im
+# Paketarchiv: für die alte Version steht eine Kopie des Interpreters unter /usr/local/bin.
+ALT_PYTHON=/usr/local/bin/python3.12 NEU_PYTHON=/usr/bin/python3.12
+if [[ $ART == ubuntu-apache ]]; then
   KONF=/srv/tp/konfig/teamplaner.env PROG=/srv/tp/programm DAT=/srv/tp/daten SICH=/srv/tp/sicherungen
 else
   KONF=/etc/teamplaner/teamplaner.env PROG=/opt/teamplaner DAT=/var/lib/teamplaner SICH=/var/backups/teamplaner
@@ -52,23 +49,16 @@ if [[ $PHASE == nach-neustart ]]; then
 fi
 
 schritt "1 Datenbank (wie INSTALLATION.md)"
-if [[ $ART == rocky ]]; then
-  postgresql-setup --initdb >/dev/null
-  # Vor der ersten host-Zeile (dort steht bei RHEL ident)
-  sed -i '0,/^host/s//host    teamplaner    teamplaner    127.0.0.1\/32    scram-sha-256\nhost    teamplaner    teamplaner    ::1\/128         scram-sha-256\nhost/' \
-    /var/lib/pgsql/data/pg_hba.conf
-  systemctl enable --now postgresql
-fi
 runuser -u postgres -- psql -q -c "CREATE ROLE teamplaner LOGIN PASSWORD '$DBPASS'"
 runuser -u postgres -- psql -q -c "CREATE DATABASE teamplaner OWNER teamplaner ENCODING 'UTF8' TEMPLATE template0"
 pruefe "PostgreSQL $(runuser -u postgres -- psql -XAt -c 'show server_version' | cut -d' ' -f1) bereit" 'sql "select 1"'
 
 schritt "2 Teamplaner installieren (umask 0077, Python $ALT_PYTHON)"
-[[ $ART == rocky ]] || install -m 0755 /usr/bin/python3.11 "$ALT_PYTHON"
+install -m 0755 /usr/bin/python3.12 "$ALT_PYTHON"
 export TEAMPLANER_PYTHON=$ALT_PYTHON
 cd /root && tar -xzf "$P/teamplaner-0.1.0.tar.gz" --no-same-permissions && cd teamplaner-0.1.0
 pruefe "Archiv nur für root lesbar entpackt" '[[ $(stat -c %a requirements.txt) == 600 ]]'
-if [[ $ART == rocky ]]; then
+if [[ $ART == ubuntu-apache ]]; then
   # Wie ein vorab eingehängtes Laufwerk: leer bis auf lost+found, gehört root
   mkdir -p "$DAT/lost+found"
   TEAMPLANER_KONFIG=$KONF ./installieren.sh
@@ -82,7 +72,7 @@ sed -i -e "s|^DJANGO_ALLOWED_HOSTS=.*|DJANGO_ALLOWED_HOSTS=$DOMAIN|" \
   -e "s|^DJANGO_CSRF_TRUSTED_ORIGINS=.*|DJANGO_CSRF_TRUSTED_ORIGINS=https://$DOMAIN|" \
   -e "s|^TEAMPLANER_ADRESSE=.*|TEAMPLANER_ADRESSE=https://$DOMAIN|" \
   -e "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$DBPASS|" "$KONF"
-if [[ $ART == rocky ]]; then
+if [[ $ART == ubuntu-apache ]]; then
   pfad_in_konfig TEAMPLANER_PROGRAMM "$PROG"
   pfad_in_konfig TEAMPLANER_DATEN /srv
   pruefe "Systemverzeichnis als Datenpfad abgewiesen" '! ./installieren.sh'
@@ -94,10 +84,10 @@ if [[ $ART == rocky ]]; then
   pruefe "nicht betretbares Verzeichnis darüber gemeldet" '{ ./installieren.sh 2>&1 || true; } | grep -q "chmod o+x"'
   chmod 0755 /srv/tp
 fi
-# Rocky: zweiter Aufruf ohne TEAMPLANER_KONFIG, der Ort kommt aus dem ersten
+# ubuntu-apache: zweiter Aufruf ohne TEAMPLANER_KONFIG, der Ort kommt aus dem ersten
 ./installieren.sh
 pruefe "Version 0.1.0 aktiv" '[[ $(version) == 0.1.0 ]]'
-if [[ $ART == rocky ]]; then
+if [[ $ART == ubuntu-apache ]]; then
   pruefe "nichts unter den Standardpfaden" '[[ ! -e /opt/teamplaner && ! -e /etc/teamplaner && ! -e /var/lib/teamplaner && ! -e /var/backups/teamplaner ]]'
   pruefe "eingehängtes Datenverzeichnis übernommen (teamplaner 750)" '[[ $(stat -c "%U:%G %a" "$DAT") == "teamplaner:teamplaner 750" ]]'
   pruefe "Verwaltungsbefehl kennt den Ort der Konfiguration" 'grep -qx "KONFIG=$KONF" /usr/local/sbin/teamplaner'
@@ -115,7 +105,7 @@ schritt "3 Webserver mit Zertifikat"
 mkdir -p /etc/ssl/teamplaner
 openssl req -x509 -newkey rsa:2048 -nodes -days 30 -subj "/CN=$DOMAIN" \
   -keyout /etc/ssl/teamplaner/schluessel.pem -out /etc/ssl/teamplaner/zertifikat.pem 2>/dev/null
-if [[ $ART == debian ]]; then
+if [[ $ART == ubuntu-nginx ]]; then
   sed -e "s/teamplaner.example.org/$DOMAIN/g" -e "s|/opt/teamplaner/wartung|$PROG/wartung|g" "$PROG"/aktuell/betrieb/linux/nginx/teamplaner.conf \
     > /etc/nginx/sites-available/teamplaner.conf
   # Docker-Host ohne IPv6 (Kernel mit ipv6.disable=1): wie installation-linux.md die listen [::]-Zeilen entfernen
@@ -127,11 +117,12 @@ if [[ $ART == debian ]]; then
   nginx -t 2>&1 | tail -n 1
   systemctl reload nginx
 else
-  systemctl enable --now httpd
   sed -e "s/teamplaner.example.org/$DOMAIN/g" -e "s|/opt/teamplaner/wartung|$PROG/wartung|g" "$PROG"/aktuell/betrieb/linux/apache/teamplaner.conf \
-    > /etc/httpd/conf.d/teamplaner.conf
+    > /etc/apache2/sites-available/teamplaner.conf
+  a2enmod -q ssl proxy proxy_http headers http2 >/dev/null
+  a2ensite -q teamplaner >/dev/null
   apachectl configtest
-  systemctl reload httpd
+  systemctl reload apache2
 fi
 pruefe "HTTPS /gesund/ 200" '[[ $(code /gesund/) == 200 ]]'
 pruefe "Anmeldeseite" 'https "https://$DOMAIN/anmelden/" | grep -q "Teamplaner"'
@@ -144,14 +135,14 @@ pruefe "HSTS gesetzt" 'https -I "https://$DOMAIN/anmelden/" | grep -qi "strict-t
 mkdir -p /var/www/letsencrypt/.well-known/acme-challenge
 echo acme-probe > /var/www/letsencrypt/.well-known/acme-challenge/probe
 chmod -R a+rX /var/www/letsencrypt
-if [[ $ART == debian ]]; then
+if [[ $ART == ubuntu-nginx ]]; then
   sed -i 's/^\([[:space:]]*\)#acme /\1/' /etc/nginx/sites-available/teamplaner.conf
   nginx -t 2>&1 | tail -n 1
   systemctl reload nginx
 else
-  sed -i 's/^\([[:space:]]*\)#acme /\1/' /etc/httpd/conf.d/teamplaner.conf
+  sed -i 's/^\([[:space:]]*\)#acme /\1/' /etc/apache2/sites-available/teamplaner.conf
   apachectl configtest
-  systemctl reload httpd
+  systemctl reload apache2
 fi
 acme() { curl -sLk --resolve "$DOMAIN:80:127.0.0.1" --resolve "$DOMAIN:443:127.0.0.1" "http://$DOMAIN/.well-known/acme-challenge/probe"; }
 # reload kehrt zurück, bevor die neuen Worker übernehmen
@@ -248,12 +239,7 @@ pruefe "ohne passende Pakete bleibt die bisherige Umgebung, Teamplaner läuft we
   '! teamplaner neu-aufbauen --ja && [[ $(code /gesund/) == 200 && $(python_von 0.2.0) == $(readlink -f "$ALT_PYTHON") ]]'
 mv /root/wheelhaus "$PROG/versionen/0.2.0/wheelhaus"
 # Das Upgrade entfernt die alte Python-Version
-if [[ $ART == rocky ]]; then
-  mapfile -t alt < <(rpm -qa 'python3.11*')
-  rpm -e "${alt[@]}"
-else
-  rm "$ALT_PYTHON"
-fi
+rm "$ALT_PYTHON"
 unset TEAMPLANER_PYTHON
 pruefe "danach startet Teamplaner nicht mehr" '! teamplaner neustart'
 pruefe "status verweist auf neu-aufbauen" 'teamplaner status | grep "nicht lauffähig.*neu-aufbauen"'

@@ -1,7 +1,7 @@
 """Demodaten für die lokale Entwicklung (nur Platzhalternamen, keine echten Personen).
 
-    docker compose exec app python manage.py demodaten          # nur in leerer Datenbank
-    docker compose exec app python manage.py demodaten --neu    # vorher ALLES löschen
+    python manage.py demodaten          # nur in leerer Datenbank
+    python manage.py demodaten --neu    # vorher ALLES löschen
 
 Alle Demokonten haben das Passwort aus DEMO_PASSWORT (Standard siehe unten).
 Die Einteilungen beziehen sich auf die aktuelle Woche, damit der Teamplaner sofort etwas zeigt.
