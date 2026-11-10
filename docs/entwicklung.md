@@ -119,7 +119,8 @@ X für große Umbrüche.
    mit Zertifikat, Anmeldung und Live-Verbindung über HTTPS, Wartungsseite, Sicherung, Update
    mit Migration, Rücksprung ohne Datenverlust, defektes Update mit automatischem Rücksprung,
    Wiederherstellung, Python-Wechsel nach einem Upgrade der Distribution (`neu-aufbauen`),
-   Neustart des Servers. Am Ende muss je Server „ALLES OK“ stehen.
+   Neustart des Servers. Debian läuft mit den Standardpfaden, Rocky mit eigenen Pfaden für
+   Konfiguration, Programm, Daten und Sicherungen. Am Ende muss je Server „ALLES OK“ stehen.
    Mit `BEHALTEN=1` bleiben die Probeserver stehen (`docker exec -it tp-linux-debian bash`).
 3. Veröffentlichen:
    ```bash

@@ -100,9 +100,11 @@ sha256sum -c teamplaner-1.0.0.tar.gz.sha256
 tar -xzf teamplaner-1.0.0.tar.gz
 cd teamplaner-1.0.0
 sudo ./installieren.sh                      # legt /etc/teamplaner/teamplaner.env an
-sudo nano /etc/teamplaner/teamplaner.env    # Werte eintragen
+sudo nano /etc/teamplaner/teamplaner.env    # Werte eintragen, bei Bedarf andere Pfade
 sudo ./installieren.sh                      # installiert, richtet die Datenbank ein, startet
 ```
+
+Andere Installationspfade: siehe [Andere Pfade](#andere-pfade).
 
 Pflichtwerte in `/etc/teamplaner/teamplaner.env`:
 
@@ -130,22 +132,58 @@ Eine bestimmte Python-Version erzwingen: `sudo TEAMPLANER_PYTHON=python3.12 ./in
 
 Die Installation legt an:
 
-| Pfad | Inhalt |
-| --- | --- |
-| Benutzer und Gruppe `teamplaner` | Systembenutzer ohne Anmeldung |
-| `/opt/teamplaner/versionen/<version>` | Programm mit eigener Python-Umgebung, schreibgeschützt |
-| `/opt/teamplaner/aktuell` | Verweis auf die laufende Version |
-| `/etc/teamplaner/teamplaner.env` | Konfiguration, Rechte 0640 |
-| `/var/lib/teamplaner/medien` | Anhänge und Profilfotos |
-| `/var/backups/teamplaner` | Sicherungen |
-| `/etc/systemd/system/teamplaner-*` | Dienste und Timer |
-| `/usr/local/sbin/teamplaner` | Verwaltungsbefehl |
+| Pfad (Standard) | Inhalt | Ändern |
+| --- | --- | --- |
+| Benutzer und Gruppe `teamplaner` | Systembenutzer ohne Anmeldung | |
+| `/opt/teamplaner/versionen/<version>` | Programm mit eigener Python-Umgebung, schreibgeschützt | `TEAMPLANER_PROGRAMM` |
+| `/opt/teamplaner/aktuell` | Verweis auf die laufende Version | `TEAMPLANER_PROGRAMM` |
+| `/opt/teamplaner/wartung` | Wartungsseite für den Webserver | `TEAMPLANER_PROGRAMM` |
+| `/etc/teamplaner/teamplaner.env` | Konfiguration, Rechte 0640 | `TEAMPLANER_KONFIG` |
+| `/var/lib/teamplaner/medien` | Anhänge und Profilfotos | `TEAMPLANER_DATEN` |
+| `/var/lib/teamplaner/stand` | Update-Protokolle | `TEAMPLANER_DATEN` |
+| `/var/backups/teamplaner` | Sicherungen | `TEAMPLANER_SICHERUNGEN` |
+| `/etc/systemd/system/teamplaner-*` | Dienste und Timer | fest |
+| `/usr/local/sbin/teamplaner` | Verwaltungsbefehl | fest |
+
+#### Andere Pfade
+
+Programm-, Daten- und Sicherungsverzeichnis stehen in der Konfiguration im Abschnitt „Pfade“. Sie werden
+zwischen dem ersten und dem zweiten Aufruf von `installieren.sh` eingetragen und gelten ab dann fest:
+Die Installation schreibt sie in die systemd-Dienste und richtet Eigentümer und Rechte ein.
+
+```
+TEAMPLANER_PROGRAMM=/srv/teamplaner/programm
+TEAMPLANER_DATEN=/srv/teamplaner/daten
+TEAMPLANER_SICHERUNGEN=/srv/teamplaner/sicherungen
+```
+
+Den Ort der Konfiguration selbst legt der erste Aufruf fest. Der zweite Aufruf übernimmt ihn ohne
+erneute Angabe und trägt ihn fest in den Verwaltungsbefehl ein:
+
+```bash
+sudo TEAMPLANER_KONFIG=/srv/teamplaner/konfig/teamplaner.env ./installieren.sh
+```
+
+Regeln, die `installieren.sh` vor dem Installieren prüft:
+
+- absolute Pfade aus Buchstaben, Ziffern und `. _ -`
+- je ein eigenes Verzeichnis, nicht ineinander; die Konfiguration nicht in einem der drei
+- kein Systemverzeichnis wie `/srv` oder `/var/lib`, nichts unter `/home`, `/root`, `/run` oder `/tmp`
+  (für die gehärteten Dienste nicht sichtbar)
+- das Verzeichnis besteht noch nicht oder ist leer; ein vorab eingehängtes Laufwerk mit `lost+found`
+  geht
+- die Verzeichnisse darüber darf jeder betreten (`o+x`), sonst kommen Dienstbenutzer und Webserver nicht
+  hin; das betrifft vor allem selbst angelegte Verzeichnisse auf Servern mit `umask 077`
+
+Bei anderem Programmverzeichnis in der Webserver-Konfiguration auch den Pfad der Wartungsseite anpassen.
+Nach der Installation die Pfade nicht mehr ändern: `sudo teamplaner pruefen` meldet es, wenn sie nicht
+mehr zu den Diensten passen.
 
 ### 4. Webserver
 
 Zertifikat und Schlüssel ablegen, z. B. als `/etc/ssl/teamplaner/zertifikat.pem` und
 `/etc/ssl/teamplaner/schluessel.pem`. In der Vorlage die Domain anpassen (nginx 2×, Apache 3×), bei
-anderen Pfaden auch die Zertifikatspfade.
+anderen Pfaden auch die Zertifikatspfade und bei anderem `TEAMPLANER_PROGRAMM` den Pfad der Wartungsseite.
 
 **nginx** (Debian und Ubuntu; auf RHEL nach `/etc/nginx/conf.d/`):
 
@@ -184,7 +222,8 @@ Das gilt für eine eigene Konfiguration oder einen zentralen Proxy:
 - `/api/planung/stream` (Server-Sent Events) nicht puffern und bis 1 Stunde offen halten
 - HTTP/2 zum Browser: jede offene Seite hält eine Live-Verbindung, mit HTTP/1.1 gehen nur sechs je Browser
 - Anfragen bis 30 MB zulassen
-- bei 502 und 503 die Wartungsseite `/opt/teamplaner/wartung/wartung.html` zeigen
+- bei 502 und 503 die Wartungsseite `/opt/teamplaner/wartung/wartung.html` zeigen (liegt unter
+  `TEAMPLANER_PROGRAMM`)
 
 Proxy auf einem anderen Rechner: in der Konfiguration `TEAMPLANER_HOST=0.0.0.0` und
 `TEAMPLANER_PROXY_IPS=<IP des Proxys>` setzen und Port 8000 nur für den Proxy freigeben.
@@ -222,8 +261,8 @@ Danach in der Anwendung unter **Einstellungen**:
 | `sudo teamplaner verwalten BEFEHL` | Django-Verwaltungsbefehl als Dienstbenutzer |
 
 **Sicherung.** Sonntags um 02:30 nach `/var/backups/teamplaner` (`datenbank_*.dump`, `anhaenge_*.tar.gz`),
-vor jedem Update zusätzlich. Bitte dieses Verzeichnis und `/etc/teamplaner` in die eigene Sicherung
-aufnehmen. Zeitpunkt ändern: `sudo systemctl edit teamplaner-sicherung.timer`.
+vor jedem Update zusätzlich. Bitte dieses Verzeichnis und `/etc/teamplaner` (bzw. die eigenen Pfade) in die
+eigene Sicherung aufnehmen. Zeitpunkt ändern: `sudo systemctl edit teamplaner-sicherung.timer`.
 
 **Überwachung.** `https://<domain>/gesund/` liefert `{"status": "ok"}`, solange Anwendung und Datenbank
 erreichbar sind.
@@ -248,7 +287,7 @@ sudo teamplaner update teamplaner-1.1.0.tar.gz
 3. Datenbank und Anhänge sichern (`…_vor-update-<version>`).
 4. Umschalten, Migrationen, Start, Gesundheitsprüfung.
 5. **Startet die neue Version nicht, geht es automatisch zurück**, mit der alten Version und der
-   Datenbank aus Schritt 3. Das Protokoll liegt unter `/var/lib/teamplaner/stand/`.
+   Datenbank aus Schritt 3. Das Protokoll liegt unter `/var/lib/teamplaner/stand/` (Datenverzeichnis).
 
 Nicht erreichbar ist Teamplaner meist unter einer Minute. Zurück auf die vorherige Version, Einträge seit
 dem Update bleiben erhalten:
@@ -257,7 +296,7 @@ dem Update bleiben erhalten:
 sudo teamplaner zurueck
 ```
 
-Die letzten drei Versionen bleiben unter `/opt/teamplaner/versionen`. Betriebssystem, PostgreSQL und
+Die letzten drei Versionen bleiben unter `versionen` im Programmverzeichnis. Betriebssystem, PostgreSQL und
 Webserver werden unabhängig davon aktualisiert, Python-Bibliotheken kommen mit den Teamplaner-Versionen.
 
 ## Fehlersuche
@@ -285,15 +324,15 @@ sudo rm /etc/systemd/system/teamplaner-* /usr/local/sbin/teamplaner && sudo syst
 sudo rm -rf /opt/teamplaner
 ```
 
-Erhalten bleiben Datenbank, `/var/lib/teamplaner`, `/var/backups/teamplaner` und `/etc/teamplaner`.
+Erhalten bleiben Datenbank, `/var/lib/teamplaner`, `/var/backups/teamplaner` und `/etc/teamplaner`. Bei
+[anderen Pfaden](#andere-pfade) gelten die eigenen.
 
 ## Sicherheit
 
 - Die Dienste laufen als unprivilegierter Benutzer mit systemd-Härtung (`ProtectSystem=strict`,
-  `NoNewPrivileges`, eigenes `/tmp`). Schreiben dürfen sie nur in `/var/lib/teamplaner` und
-  `/var/backups/teamplaner`.
-- Installation und Updates setzen die Rechte unter `/opt/teamplaner/versionen` selbst, auch bei strenger
-  umask von root (027, 077).
+  `NoNewPrivileges`, eigenes `/tmp`). Schreiben dürfen sie nur im Daten- und im Sicherungsverzeichnis.
+- Installation und Updates setzen die Rechte im Programmverzeichnis selbst, auch bei strenger umask von
+  root (027, 077).
 - Die Anwendung lauscht nur lokal und verbindet sich nach außen nur mit dem SMTP-Server.
 - Passwörter mit Argon2, Sperre je Konto und je IP-Adresse, Cookies nur über HTTPS, Content-Security-Policy.
   Zwei-Faktor-Anmeldung ist Pflicht für Admin und Bereichsleitung.

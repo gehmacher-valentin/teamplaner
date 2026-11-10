@@ -1,6 +1,8 @@
+# Vorlage: @PROGRAMM@, @KONFIG@, @DATEN@ und @SICHERUNGEN@ setzt teamplaner beim Installieren
+# und bei Updates aus der Konfiguration ein (einheiten_installieren).
 [Unit]
 Description=Teamplaner – wöchentliche Sicherung
-Documentation=file:///opt/teamplaner/aktuell/INSTALLATION.md
+Documentation=file://@PROGRAMM@/aktuell/INSTALLATION.md
 
 [Timer]
 # Uhrzeit ändern: sudo systemctl edit teamplaner-sicherung.timer

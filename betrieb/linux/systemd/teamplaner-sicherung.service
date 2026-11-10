@@ -1,15 +1,18 @@
+# Vorlage: @PROGRAMM@, @KONFIG@, @DATEN@ und @SICHERUNGEN@ setzt teamplaner beim Installieren
+# und bei Updates aus der Konfiguration ein (einheiten_installieren).
 [Unit]
 Description=Teamplaner – Sicherung von Datenbank und Anhängen
-Documentation=file:///opt/teamplaner/aktuell/INSTALLATION.md
+Documentation=file://@PROGRAMM@/aktuell/INSTALLATION.md
 After=network-online.target postgresql.service
 
 [Service]
 Type=oneshot
 User=teamplaner
 Group=teamplaner
-EnvironmentFile=/etc/teamplaner/teamplaner.env
-WorkingDirectory=/opt/teamplaner/aktuell
-ExecStart=/opt/teamplaner/aktuell/betrieb/linux/sicherung.sh jetzt
+EnvironmentFile=@KONFIG@
+Environment=BACKUP_ZIEL=@SICHERUNGEN@ MEDIEN_VERZEICHNIS=@DATEN@/medien
+WorkingDirectory=@PROGRAMM@/aktuell
+ExecStart=@PROGRAMM@/aktuell/betrieb/linux/sicherung.sh jetzt
 # Sicherungen enthalten alle Daten: nur für den Dienstbenutzer lesbar
 UMask=0077
 NoNewPrivileges=yes
@@ -21,4 +24,4 @@ ProtectKernelTunables=yes
 ProtectKernelModules=yes
 ProtectControlGroups=yes
 RestrictSUIDSGID=yes
-ReadWritePaths=/var/backups/teamplaner
+ReadWritePaths=@SICHERUNGEN@

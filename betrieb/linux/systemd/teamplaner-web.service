@@ -1,6 +1,8 @@
+# Vorlage: @PROGRAMM@, @KONFIG@, @DATEN@ und @SICHERUNGEN@ setzt teamplaner beim Installieren
+# und bei Updates aus der Konfiguration ein (einheiten_installieren).
 [Unit]
 Description=Teamplaner – Webanwendung
-Documentation=file:///opt/teamplaner/aktuell/INSTALLATION.md
+Documentation=file://@PROGRAMM@/aktuell/INSTALLATION.md
 After=network-online.target postgresql.service
 Wants=network-online.target
 
@@ -8,15 +10,16 @@ Wants=network-online.target
 Type=exec
 User=teamplaner
 Group=teamplaner
-EnvironmentFile=/etc/teamplaner/teamplaner.env
-WorkingDirectory=/opt/teamplaner/aktuell
-ExecStart=/opt/teamplaner/aktuell/betrieb/linux/web.sh
+EnvironmentFile=@KONFIG@
+Environment=TEAMPLANER_MEDIA_ROOT=@DATEN@/medien
+WorkingDirectory=@PROGRAMM@/aktuell
+ExecStart=@PROGRAMM@/aktuell/betrieb/linux/web.sh
 Restart=on-failure
 RestartSec=5
 # Offene Live-Verbindungen (SSE) werden nach 10 s beendet
 TimeoutStopSec=20
 UMask=0027
-# Härtung: Code und System nur lesbar, schreiben nur in /var/lib/teamplaner
+# Härtung: Code und System nur lesbar, schreiben nur im Datenverzeichnis
 NoNewPrivileges=yes
 PrivateTmp=yes
 PrivateDevices=yes
@@ -27,7 +30,7 @@ ProtectKernelModules=yes
 ProtectControlGroups=yes
 RestrictSUIDSGID=yes
 LockPersonality=yes
-ReadWritePaths=/var/lib/teamplaner
+ReadWritePaths=@DATEN@
 
 [Install]
 WantedBy=multi-user.target
