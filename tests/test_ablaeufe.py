@@ -228,7 +228,7 @@ def test_platzhalter_in_konto_umwandeln_behaelt_einteilungen(konten, platzhalter
 # --- Meine Aufgaben, Widget, Suche ---
 
 def test_arbeitstage_widget(konten, aufgabe, person_a, platzhalter):
-    from projekte.views import arbeitstage_widget
+    from projekte.ansicht import arbeitstage_widget
 
     e1 = Einteilung.objects.create(aufgabe=aufgabe, person=person_a, von=FR, bis=MI2)  # Fr + Di, Mi (Mo Feiertag)
     e2 = Einteilung.objects.create(aufgabe=aufgabe, person=platzhalter, von=DI, bis=DO)

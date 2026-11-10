@@ -16,7 +16,7 @@ from kern import rechte as kern_rechte
 from kern.heic import heic_umwandeln
 from kern.hilfen import TEXT_MAX_ZEICHEN, als_zahl, erfordert
 from kern.protokoll import protokollieren
-from zusammenarbeit.views import INLINE_TYPEN, dateityp
+from zusammenarbeit.anhaenge import INLINE_TYPEN, dateityp
 
 from . import rechte
 from .forms import OrdnerForm
