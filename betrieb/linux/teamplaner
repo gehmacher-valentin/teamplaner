@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Teamplaner auf einem Linux-Server ohne Docker (INSTALLATION.md).
-# Wird bei der Installation nach /usr/local/sbin/teamplaner kopiert; Aufruf mit sudo.
+# Wird bei der Installation nach /usr/local/sbin/teamplaner kopiert, mit dem Ort der Konfiguration
+# fest eingetragen (KONFIG); Aufruf mit sudo. Alle übrigen Pfade stehen in der Konfiguration.
 set -euo pipefail
 # Was dieses Skript anlegt, muss der Dienstbenutzer lesen können, auch wenn root auf gehärteten Servern
 # eine strengere umask hat (CIS: 027 oder 077). Vertrauliches bekommt seine Rechte ausdrücklich.
@@ -29,11 +30,11 @@ HILFE="Aufruf: sudo teamplaner <befehl> [-j|--ja]
 
 Erstinstallation: im entpackten Archiv sudo ./installieren.sh"
 
-BASIS=/opt/teamplaner
-KONFIG=/etc/teamplaner/teamplaner.env
-DATEN=/var/lib/teamplaner
-SICHERUNGEN=/var/backups/teamplaner
-STAND=$DATEN/stand
+# Ort der Konfiguration. Bei der Erstinstallation aus TEAMPLANER_KONFIG (Standard /etc/teamplaner);
+# cli_installieren ersetzt diese Zeile in /usr/local/sbin/teamplaner durch den festen Ort.
+KONFIG=${TEAMPLANER_KONFIG:-/etc/teamplaner/teamplaner.env}
+# Programm, Daten und Sicherungen: aus der Konfiguration (pfade_lesen)
+BASIS="" DATEN="" SICHERUNGEN="" STAND=""
 BENUTZER=teamplaner
 DIENSTE=(teamplaner-web teamplaner-mailer)
 BEHALTEN=3
@@ -56,11 +57,79 @@ wurzel() { [[ $(id -u) == 0 ]] || fehler "Bitte mit sudo aufrufen: sudo teamplan
 
 # Wert aus der Konfiguration (letzte Zeile gewinnt, umgebende Anführungszeichen entfernt), sonst $2
 konfig_wert() {
-  local wert
-  wert="$(sed -n "s/^$1=//p" "$KONFIG" 2>/dev/null | tail -n 1)"
+  local wert=""
+  [[ -r $KONFIG ]] && wert="$(sed -n "s/^$1=//p" "$KONFIG" 2>/dev/null | tail -n 1)"
   wert="${wert%\"}"
   wert="${wert#\"}"
   printf '%s' "${wert:-${2:-}}"
+}
+
+# Pfade aus der Konfiguration; solange es keine gibt (vor der Installation), die Standardwerte
+pfade_lesen() {
+  BASIS="$(konfig_wert TEAMPLANER_PROGRAMM /opt/teamplaner)"
+  DATEN="$(konfig_wert TEAMPLANER_DATEN /var/lib/teamplaner)"
+  SICHERUNGEN="$(konfig_wert TEAMPLANER_SICHERUNGEN /var/backups/teamplaner)"
+  STAND=$DATEN/stand
+}
+
+# Pfade stehen unverändert in den systemd-Units: absolut, nur Buchstaben, Ziffern und . _ -, nicht in
+# Verzeichnissen, die die gehärteten Dienste nicht sehen (ProtectHome, PrivateTmp). Gibt Fehlertext aus.
+pfad_gueltig() {  # NAME PFAD
+  if [[ ! $2 =~ ^(/[A-Za-z0-9_.-]+)+$ || $2/ == */./* || $2/ == */../* ]]; then
+    echo "  $1=$2: absoluter Pfad aus Buchstaben, Ziffern und . _ - erwartet"
+    return 1
+  fi
+  case $2/ in
+    /home/* | /root/* | /run/* | /tmp/* | /var/tmp/* | /proc/* | /sys/* | /dev/*)
+      echo "  $1=$2: unter /home, /root, /run, /tmp, /var/tmp, /proc, /sys oder /dev nicht möglich"
+      return 1 ;;
+  esac
+}
+
+# Verzeichnis für Programm (ART programm, gehört root) oder Daten/Sicherungen (ART dienst, gehört dem
+# Dienstbenutzer). Die Installation übernimmt es und setzt Eigentümer und Rechte: kein Systemverzeichnis,
+# und nur leer (ein eingehängtes Laufwerk darf lost+found haben) oder von einem früheren Aufruf angelegt.
+verzeichnis_frei() {  # NAME PFAD ART
+  local name=$1 pfad=$2 art=$3
+  pfad_gueltig "$name" "$pfad" || return 1
+  if [[ $pfad =~ ^/[^/]+$ || $pfad =~ ^/(usr|var)/[^/]+$ \
+        || $pfad =~ ^/usr/local/(bin|sbin|lib|lib64|libexec|share|include|src|etc|games|man)$ ]]; then
+    echo "  $name=$pfad: Systemverzeichnis; ein eigenes Verzeichnis angeben, z. B. /srv/teamplaner/…"
+    return 1
+  fi
+  [[ -e $pfad ]] || return 0
+  [[ -d $pfad && ! -L $pfad ]] || { echo "  $name=$pfad: ist kein Verzeichnis"; return 1; }
+  [[ -z $(find "$pfad" -mindepth 1 -maxdepth 1 ! -name lost+found -print -quit) ]] && return 0
+  if [[ $art == programm ]]; then
+    [[ -d $pfad/versionen && $(stat -c %U "$pfad") == root ]] && return 0
+  else
+    [[ $(stat -c %U "$pfad") == "$BENUTZER" ]] && return 0
+  fi
+  echo "  $name=$pfad: Verzeichnis ist nicht leer"
+  return 1
+}
+
+ineinander() { [[ $1 == "$2" || $1 == "$2"/* || $2 == "$1"/* ]]; }
+
+pfade_pruefen() {  # vor der Installation; gibt Fehlertexte aus, Rückgabe 1 bei Fehlern
+  local ok=0 konfig_verz p
+  konfig_verz="$(dirname "$KONFIG")"
+  pfad_gueltig TEAMPLANER_KONFIG "$KONFIG" || ok=1
+  verzeichnis_frei TEAMPLANER_PROGRAMM "$BASIS" programm || ok=1
+  verzeichnis_frei TEAMPLANER_DATEN "$DATEN" dienst || ok=1
+  verzeichnis_frei TEAMPLANER_SICHERUNGEN "$SICHERUNGEN" dienst || ok=1
+  if ineinander "$BASIS" "$DATEN" || ineinander "$BASIS" "$SICHERUNGEN" || ineinander "$DATEN" "$SICHERUNGEN"; then
+    echo "  TEAMPLANER_PROGRAMM, TEAMPLANER_DATEN und TEAMPLANER_SICHERUNGEN: getrennte Verzeichnisse, nicht ineinander"
+    ok=1
+  fi
+  # Die Konfiguration enthält Passwörter: nicht dort, wo der Dienstbenutzer schreiben darf
+  for p in "$BASIS" "$DATEN" "$SICHERUNGEN"; do
+    if [[ $konfig_verz == "$p" || $konfig_verz == "$p"/* ]]; then
+      echo "  Konfiguration $KONFIG liegt in $p; sie braucht einen Ort außerhalb"
+      ok=1
+    fi
+  done
+  return $ok
 }
 
 ist_version() { [[ $1 =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; }
@@ -71,7 +140,11 @@ hoeher() {  # ist Version $1 neuer als $2?
 
 aktuelle_version() { basename "$(readlink "$BASIS/aktuell")"; }
 
-installiert() { [[ -L $BASIS/aktuell ]] || fehler "Teamplaner ist nicht installiert (Erstinstallation: sudo ./installieren.sh)."; }
+installiert() {
+  [[ -L $BASIS/aktuell ]] || fehler "Teamplaner ist nicht installiert, $BASIS/aktuell fehlt (Erstinstallation: sudo ./installieren.sh)."
+  [[ -d $STAND && -d $SICHERUNGEN ]] \
+    || fehler "Daten- oder Sicherungsverzeichnis fehlt ($DATEN, $SICHERUNGEN). Pfade in $KONFIG nach der Installation geändert?"
+}
 
 # Befehl als Dienstbenutzer, mit derselben Konfiguration und Härtung wie die Dienste.
 #   als_dienst [-d VERZEICHNIS] [-u UMASK] BEFEHL …   (Standardverzeichnis: aktuelle Version)
@@ -84,6 +157,8 @@ als_dienst() {
   systemd-run --quiet --wait --pipe --collect \
     --uid="$BENUTZER" --gid="$BENUTZER" \
     -p EnvironmentFile="$KONFIG" -p WorkingDirectory="$verz" -p UMask="$umask" \
+    -p Environment="TEAMPLANER_MEDIA_ROOT=$DATEN/medien" -p Environment="MEDIEN_VERZEICHNIS=$DATEN/medien" \
+    -p Environment="BACKUP_ZIEL=$SICHERUNGEN" \
     -p NoNewPrivileges=yes -p PrivateTmp=yes -p ProtectSystem=strict -p ProtectHome=yes \
     -p ReadWritePaths="$DATEN $SICHERUNGEN" \
     -- "$@"
@@ -239,6 +314,7 @@ version_installieren() {
   else
     tar -xzf "$quelle" -C "$tmp" --strip-components=1 --no-same-owner
   fi
+  rm -f "$tmp/.konfig-ort"
   v="$(cat "$tmp/VERSION" 2>/dev/null || true)"
   if ! ist_version "$v"; then
     rm -rf "$tmp"
@@ -254,15 +330,26 @@ version_installieren() {
   NEU_VERSION=$v
 }
 
-einheiten_installieren() {  # systemd-Dienste und Wartungsseite aus Versionsverzeichnis $1
-  install -m 0644 "$1"/betrieb/linux/systemd/teamplaner-* /etc/systemd/system/
+# systemd-Dienste aus den Vorlagen in Versionsverzeichnis $1, mit den Pfaden dieser Installation;
+# dazu die Wartungsseite für den Webserver
+einheiten_installieren() {
+  local vorlage ziel
+  for vorlage in "$1"/betrieb/linux/systemd/teamplaner-*; do
+    ziel="/etc/systemd/system/${vorlage##*/}"
+    sed -e "s|@PROGRAMM@|$BASIS|g" -e "s|@KONFIG@|$KONFIG|g" -e "s|@DATEN@|$DATEN|g" \
+        -e "s|@SICHERUNGEN@|$SICHERUNGEN|g" "$vorlage" > "$ziel"
+    chmod 0644 "$ziel"
+  done
   systemctl daemon-reload
   install -d -m 0755 "$BASIS/wartung"
   install -m 0644 "$1/betrieb/linux/wartung.html" "$BASIS/wartung/wartung.html"
 }
 
-cli_installieren() {  # über eine neue Datei ersetzen: ein laufendes teamplaner liest ungestört weiter
-  install -m 0755 "$1/betrieb/linux/teamplaner" /usr/local/sbin/teamplaner.neu
+# Mit dem festen Ort der Konfiguration; über eine neue Datei ersetzen: ein laufendes teamplaner liest
+# ungestört weiter
+cli_installieren() {
+  sed "s|^KONFIG=.*|KONFIG=$KONFIG|" "$1/betrieb/linux/teamplaner" > /usr/local/sbin/teamplaner.neu
+  chmod 0755 /usr/local/sbin/teamplaner.neu
   mv -f /usr/local/sbin/teamplaner.neu /usr/local/sbin/teamplaner
 }
 
@@ -315,35 +402,58 @@ adresse_intern() { echo "$(konfig_wert TEAMPLANER_HOST 127.0.0.1):$(konfig_wert 
 
 # ---------------------------------------------------------------------------------------------
 
-cmd_einrichten() {  # Erstinstallation aus dem entpackten Archiv (installieren.sh)
+# Erstinstallation aus dem entpackten Archiv (installieren.sh), in zwei Aufrufen: der erste legt die
+# Konfiguration an, der zweite installiert mit den Werten und Pfaden daraus.
+cmd_einrichten() {
   wurzel
   local quelle=${1:?Quellverzeichnis fehlt} schluessel
   command -v systemd-run >/dev/null || fehler "systemd wird benötigt."
   python_finden >/dev/null || fehler "Python 3.11 oder neuer mit venv fehlt (Debian/Ubuntu: Paket python3-venv)."
   command -v psql >/dev/null && command -v pg_dump >/dev/null && command -v pg_restore >/dev/null \
     || fehler "PostgreSQL-Clientprogramme fehlen (Debian/Ubuntu: postgresql-client, RHEL: postgresql)."
+  # Zweiter Aufruf ohne TEAMPLANER_KONFIG: den Ort aus dem ersten Aufruf nehmen
+  if [[ -z ${TEAMPLANER_KONFIG:-} && -f $quelle/.konfig-ort ]]; then
+    KONFIG="$(cat "$quelle/.konfig-ort")"
+    pfade_lesen
+    echo "Konfiguration aus dem ersten Aufruf: $KONFIG"
+  fi
   if [[ -L $BASIS/aktuell ]]; then
     fehler "Teamplaner $(aktuelle_version) ist bereits installiert. Neue Versionen: sudo teamplaner update ARCHIV"
   fi
-
-  id "$BENUTZER" >/dev/null 2>&1 \
-    || useradd --system --user-group --home-dir "$DATEN" --no-create-home --shell /usr/sbin/nologin \
-         --comment "Teamplaner" "$BENUTZER"
-  install -d -m 0755 "$BASIS" "$BASIS/versionen"
-  install -d -o "$BENUTZER" -g "$BENUTZER" -m 0750 "$DATEN" "$DATEN/medien" "$SICHERUNGEN"
-  install -d -m 0700 "$STAND"
+  getent group "$BENUTZER" >/dev/null || groupadd --system "$BENUTZER"
 
   if [[ ! -f $KONFIG ]]; then
-    install -d -m 0750 -g "$BENUTZER" "$(dirname "$KONFIG")"
+    pfad_gueltig TEAMPLANER_KONFIG "$KONFIG" || fehler "Anderen Ort für die Konfiguration angeben."
+    # Ein vorhandenes Verzeichnis (etwa /etc) bleibt, wie es ist
+    [[ -d $(dirname "$KONFIG") ]] || install -d -m 0750 -g "$BENUTZER" "$(dirname "$KONFIG")"
     schluessel="$(head -c 48 /dev/urandom | base64 | tr -d '\n/+=')"
-    sed "s|^DJANGO_SECRET_KEY=.*|DJANGO_SECRET_KEY=$schluessel|" "$quelle/betrieb/linux/teamplaner.env" > "$KONFIG"
+    # Enthält den Geheimschlüssel: von Anfang an nur für root lesbar
+    (umask 0077 && sed "s|^DJANGO_SECRET_KEY=.*|DJANGO_SECRET_KEY=$schluessel|" "$quelle/betrieb/linux/teamplaner.env" > "$KONFIG")
     chown root:"$BENUTZER" "$KONFIG"
     chmod 0640 "$KONFIG"
+    [[ -z ${TEAMPLANER_KONFIG:-} ]] || printf '%s\n' "$KONFIG" > "$quelle/.konfig-ort" 2>/dev/null || true
     meldung "Konfiguration angelegt: $KONFIG"
-    echo "Bitte Adresse, Datenbank und E-Mail eintragen, dann noch einmal: sudo ./installieren.sh"
+    echo "Bitte Adresse, Datenbank und E-Mail eintragen, bei Bedarf die Pfade ändern,"
+    echo "dann noch einmal: sudo ./installieren.sh"
     return 0
   fi
+  pfade_pruefen || fehler "Bitte die Pfade in $KONFIG ändern, dann noch einmal: sudo ./installieren.sh"
   konfig_pruefen || fehler "Bitte in $KONFIG ergänzen, dann noch einmal: sudo ./installieren.sh"
+
+  id "$BENUTZER" >/dev/null 2>&1 \
+    || useradd --system --gid "$BENUTZER" --home-dir "$DATEN" --no-create-home --shell /usr/sbin/nologin \
+         --comment "Teamplaner" "$BENUTZER"
+  # Eigentümer ausdrücklich: auch ein vorab angelegtes Verzeichnis (eingehängtes Laufwerk) bekommt sie
+  install -d -o root -g root -m 0755 "$BASIS" "$BASIS/versionen"
+  install -d -o "$BENUTZER" -g "$BENUTZER" -m 0750 "$DATEN" "$DATEN/medien" "$SICHERUNGEN"
+  install -d -m 0700 "$STAND"
+  # Vorab angelegte Verzeichnisse darüber (etwa mit umask 077) sperren den Dienstbenutzer und damit
+  # auch den Webserver (Wartungsseite) aus
+  local p
+  for p in "$BASIS/versionen" "$DATEN/medien" "$SICHERUNGEN"; do
+    runuser -u "$BENUTZER" -- test -x "$p" \
+      || fehler "Der Dienstbenutzer $BENUTZER kommt nicht nach $p. Die Verzeichnisse darüber brauchen das Recht zum Betreten für alle (chmod o+x), dann noch einmal: sudo ./installieren.sh"
+  done
 
   meldung "Version installieren"
   version_installieren "$quelle"
@@ -366,7 +476,8 @@ cmd_einrichten() {  # Erstinstallation aus dem entpackten Archiv (installieren.s
 
   meldung "Teamplaner $NEU_VERSION läuft (intern auf $(adresse_intern))."
   echo "Weiter (INSTALLATION.md):"
-  echo "  1. Webserver einrichten (Vorlagen in $BASIS/aktuell/betrieb/linux/nginx bzw. apache)"
+  echo "  1. Webserver einrichten (Vorlagen in $BASIS/aktuell/betrieb/linux/nginx bzw. apache,"
+  echo "     Wartungsseite $BASIS/wartung/wartung.html)"
   echo "  2. Erstes Konto: sudo teamplaner konto-anlegen --email … --name … --bereich Allgemein --rolle admin"
   echo "  3. Prüfen: sudo teamplaner pruefen"
 }
@@ -531,6 +642,8 @@ cmd_status() {
   installiert
   local letzte dienst
   echo "Installierte Version:  $(aktuelle_version) ($BASIS/aktuell)"
+  echo "Konfiguration:         $KONFIG"
+  echo "Daten, Sicherungen:    $DATEN, $SICHERUNGEN"
   echo "Python:                $(umgebung_text "$BASIS/aktuell")"
   for dienst in "${DIENSTE[@]}" teamplaner-sicherung.timer; do
     printf '%-22s %s\n' "$dienst:" "$(systemctl is-active "$dienst" 2>/dev/null || true)"
@@ -559,6 +672,15 @@ cmd_pruefen() {
   if konfig_pruefen >/dev/null; then ok "Pflichtwerte gesetzt"; else schlecht "Pflichtwerte: $(konfig_pruefen | tr -s ' ' | tr '\n' ';')"; fi
   if [[ -n $(konfig_wert EMAIL_HOST) ]]; then ok "E-Mail-Versand über $(konfig_wert EMAIL_HOST)"; else warnung "EMAIL_HOST leer – keine E-Mails, Einladungslinks nur zum Kopieren"; fi
   [[ $(konfig_wert DJANGO_ALLOWED_HOSTS) != *example.org* ]] || warnung "DJANGO_ALLOWED_HOSTS enthält noch die Beispieladresse"
+  # Die Dienste entstehen mit den Pfaden bei der Installation; später geänderte Pfade passen nicht mehr
+  if grep -qxF "EnvironmentFile=$KONFIG" /etc/systemd/system/teamplaner-web.service 2>/dev/null \
+     && grep -qxF "WorkingDirectory=$BASIS/aktuell" /etc/systemd/system/teamplaner-web.service \
+     && grep -qxF "ReadWritePaths=$DATEN" /etc/systemd/system/teamplaner-web.service \
+     && grep -qxF "ReadWritePaths=$SICHERUNGEN" /etc/systemd/system/teamplaner-sicherung.service; then
+    ok "Dienste passen zu den Pfaden"
+  else
+    schlecht "Dienste passen nicht zu den Pfaden in $KONFIG (nach der Installation geändert?)"
+  fi
 
   meldung "Anwendung"
   if umgebung_ok "$BASIS/aktuell"; then
@@ -614,6 +736,7 @@ main() {
     esac
   done
   set -- "${argumente[@]+"${argumente[@]}"}"
+  pfade_lesen
   BEFEHL="${BEFEHL:-${1:-hilfe}}"
   [[ $# -eq 0 ]] || shift
   case "$BEFEHL" in
