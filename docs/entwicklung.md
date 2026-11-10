@@ -167,6 +167,8 @@ X für große Umbrüche.
    mit Apache und eigenen Pfaden für Konfiguration, Programm, Daten und Sicherungen. Am Ende muss
    je Server „ALLES OK“ stehen.
    Mit `BEHALTEN=1` bleiben die Probeserver stehen (`docker exec -it tp-linux-ubuntu-nginx bash`).
+   Ohne Rechner mit Ubuntu 24.04 auf x86_64 läuft dieselbe Probe auf GitHub:
+   `gh workflow run installationsprobe.yml` (`.github/workflows/installationsprobe.yml`).
 3. Veröffentlichen:
    ```bash
    git tag v1.2.0

@@ -1,0 +1,32 @@
+# Probe der Linux-Installation (pruefung/linux/pruefen.sh) auf einem x86_64-Rechner mit Ubuntu 24.04,
+# z. B. vor einer Veröffentlichung, wenn kein passender Rechner zur Hand ist. Start von Hand unter
+# „Actions“ oder mit: gh workflow run installationsprobe.yml
+name: Installationsprobe
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        server: [ubuntu-nginx, ubuntu-apache]
+    name: probe (${{ matrix.server }})
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Installation, Update, Rücksprung, Wiederherstellung, Neustart
+        run: bash pruefung/linux/pruefen.sh "${{ matrix.server }}"
