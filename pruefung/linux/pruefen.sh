@@ -1,25 +1,26 @@
 #!/usr/bin/env bash
-# Probe der Linux-Installation ohne Docker (docs/installation-linux.md):
+# Probe der Linux-Installation (docs/installation-linux.md):
 # baut drei Archive (aktueller Stand als 0.1.0, 0.2.0 mit zusätzlicher Migration, 0.3.0 absichtlich
-# defekt), startet Probeserver mit systemd – Debian 12 mit nginx, Rocky Linux 9 mit Apache – und
+# defekt), startet Probeserver mit systemd wie das Zielsystem (Ubuntu 24.04 LTS, Python 3.12,
+# PostgreSQL 16), einen mit nginx und Standardpfaden, einen mit Apache und eigenen Pfaden, und
 # spielt darauf als root mit umask 0077 Installation, Webserver, Update, Rücksprung, defektes Update,
 # Wiederherstellung, Python-Wechsel nach einem Upgrade der Distribution (neu-aufbauen) und einen
-# Neustart des Servers durch (ablauf.sh). Braucht nur Docker auf dem Entwicklungsrechner.
-#   pruefung/linux/pruefen.sh              beide Probeserver
-#   pruefung/linux/pruefen.sh debian       nur einer
-#   BEHALTEN=1 pruefung/linux/pruefen.sh   Probeserver danach nicht löschen (docker exec -it tp-linux-debian bash)
+# Neustart des Servers durch (ablauf.sh). Braucht auf dem Entwicklungsrechner Docker (nur für die
+# Probeserver) und alles für werkzeuge/paket-bauen.sh (Python 3.12, Node.js 22).
+#   pruefung/linux/pruefen.sh                beide Probeserver
+#   pruefung/linux/pruefen.sh ubuntu-nginx   nur einer
+#   BEHALTEN=1 pruefung/linux/pruefen.sh     Probeserver danach nicht löschen (docker exec -it tp-linux-ubuntu-nginx bash)
 set -euo pipefail
 cd "$(dirname "$0")/../.."
-export MSYS_NO_PATHCONV=1   # Git Bash unter Windows: Pfade für docker nicht umschreiben
 ARBEIT=pruefung/linux/arbeit
 SERVER=("$@")
-[[ ${#SERVER[@]} -gt 0 ]] || SERVER=(debian rocky)
+[[ ${#SERVER[@]} -gt 0 ]] || SERVER=(ubuntu-nginx ubuntu-apache)
 
 schritt() { printf '\n======== %s\n' "$*"; }
 
 schritt "Archive bauen"
 rm -rf "$ARBEIT" && mkdir -p "$ARBEIT/pakete" "$ARBEIT/v2"
-docker build -q --target linux-paket --build-arg TEAMPLANER_VERSION=0.1.0 --output "type=local,dest=$ARBEIT/pakete" . >/dev/null
+werkzeuge/paket-bauen.sh 0.1.0 . "$ARBEIT/pakete" >/dev/null
 # 0.2.0: aktueller Stand plus eine Migration; 0.3.0: zusätzlich eine Migration, die fehlschlägt
 git ls-files -co --exclude-standard -z | xargs -0 tar -cf - | tar -xf - -C "$ARBEIT/v2"
 migrationen=(kern/migrations/0*.py)  # Glob ist sortiert; ohne find -printf, läuft auch auf macOS (bash 3.2)
@@ -33,7 +34,7 @@ class Migration(migrations.Migration):
     dependencies = [("kern", "${letzte%.py}")]
     operations = [migrations.AddField("bereich", "probe", models.CharField(max_length=10, null=True, blank=True))]
 EOF
-docker build -q --target linux-paket --build-arg TEAMPLANER_VERSION=0.2.0 --output "type=local,dest=$ARBEIT/pakete" "$ARBEIT/v2" >/dev/null
+werkzeuge/paket-bauen.sh 0.2.0 "$ARBEIT/v2" "$ARBEIT/pakete" >/dev/null
 cat > "$ARBEIT/v2/kern/migrations/0901_probe_defekt.py" <<'EOF'
 # Nur für die Probe: schlägt absichtlich fehl
 from django.db import migrations
@@ -47,7 +48,7 @@ class Migration(migrations.Migration):
     dependencies = [("kern", "0900_probe_update")]
     operations = [migrations.RunPython(fehler, migrations.RunPython.noop)]
 EOF
-docker build -q --target linux-paket --build-arg TEAMPLANER_VERSION=0.3.0 --output "type=local,dest=$ARBEIT/pakete" "$ARBEIT/v2" >/dev/null
+werkzeuge/paket-bauen.sh 0.3.0 "$ARBEIT/v2" "$ARBEIT/pakete" >/dev/null
 ls -l "$ARBEIT/pakete"
 
 starten() {  # Probeserver mit systemd starten und warten, bis er hochgefahren ist
@@ -65,7 +66,7 @@ ergebnis=0
 for art in "${SERVER[@]}"; do
   name="tp-linux-$art"
   schritt "Probeserver $art"
-  # amd64 wie die Archive (sie enthalten amd64-Pakete); auf Apple-Rechnern emuliert
+  # amd64 wie die Archive (sie enthalten amd64-Pakete)
   docker build -q --platform linux/amd64 -t "$name" -f "pruefung/linux/$art.Dockerfile" pruefung/linux >/dev/null
   docker rm -f "$name" >/dev/null 2>&1 || true
   docker run -d --platform linux/amd64 --privileged --cgroupns=host -v /sys/fs/cgroup:/sys/fs/cgroup:rw \

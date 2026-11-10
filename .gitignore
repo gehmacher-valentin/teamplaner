@@ -1,7 +1,6 @@
 # Lokale Einstellungen und Geheimnisse
 .env
 .env.*
-!.env.example
 
 # Editor / Betriebssystem
 .vscode/

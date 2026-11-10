@@ -16,7 +16,7 @@ PO = Path(settings.BASE_DIR) / "locale" / "en" / "LC_MESSAGES" / "django.po"
 
 
 def _po_werkzeug():
-    spec = importlib.util.spec_from_file_location("po_werkzeug", Path(settings.BASE_DIR) / "docker" / "po_werkzeug.py")
+    spec = importlib.util.spec_from_file_location("po_werkzeug", Path(settings.BASE_DIR) / "werkzeuge" / "po_werkzeug.py")
     modul = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(modul)
     return modul

@@ -2,8 +2,7 @@
 
 Für Administrator:innen, die Linux-Server betreiben. Teamplaner läuft direkt auf dem Server, ohne
 Container, als systemd-Dienste unter einem eigenen Benutzer hinter nginx oder Apache. Die Installation
-braucht kein Internet, alle Python-Pakete liegen dem Archiv bei. Wer lieber Docker nutzt:
-[betrieb.md](betrieb.md).
+braucht kein Internet, alle Python-Pakete liegen dem Archiv bei.
 
 | Teil | Aufgabe |
 | --- | --- |
@@ -64,37 +63,27 @@ Tage trägt ein Admin in der Anwendung ein.
 
 | | |
 | --- | --- |
-| System | Linux x86_64 mit systemd und glibc ab 2.28: Debian 12, Ubuntu 24.04, RHEL, Rocky oder Alma 8 und 9 |
-| Python | 3.11, 3.12 oder 3.13 mit `venv` (Ubuntu 22.04 scheidet aus: dort nur 3.10) |
-| PostgreSQL | ab 14, mit `psql`, `pg_dump`, `pg_restore` mindestens in der Hauptversion des Servers |
-| Webserver | nginx oder Apache httpd, mit HTTP/2; ein vorhandener geht |
+| System | Ubuntu 24.04 LTS x86_64 |
+| Python | 3.12 aus Ubuntu (Pakete `python3`, `python3-venv`); das Archiv enthält die Python-Pakete genau dafür |
+| PostgreSQL | 16 aus Ubuntu (Pakete `postgresql`, `postgresql-client`) |
+| Webserver | nginx oder Apache, mit HTTP/2; ein vorhandener geht |
 | Ressourcen | 2 CPU-Kerne, 4 GB RAM, 20 GB Speicher plus Platz für Anhänge und Sicherungen |
 | Netzwerk | eingehend 80 und 443 zum Webserver, ausgehend nur der SMTP-Server; 8000 bleibt lokal |
 
-Die Installation wird automatisch auf Debian 12 mit nginx und Rocky Linux 9 mit Apache geprüft, auf Rocky
-mit eigenen Pfaden.
+Die Installation wird automatisch auf Ubuntu 24.04 LTS (Python 3.12, PostgreSQL 16) geprüft: mit nginx
+und den Standardpfaden sowie mit Apache und eigenen Pfaden.
 
 ## Installation
 
 ### 1. Pakete
 
-Für die Anwendung, Debian und Ubuntu:
+Für die Anwendung:
 
 ```bash
 sudo apt install python3 python3-venv postgresql postgresql-client
 ```
 
-RHEL 9, Rocky, Alma (RHEL 8: `python3.11` statt `python3.12`):
-
-```bash
-sudo dnf module enable postgresql:16
-sudo dnf install python3.12 postgresql-server postgresql tar
-sudo postgresql-setup --initdb
-sudo systemctl enable --now postgresql
-```
-
-Nur wenn noch kein Webserver läuft: Debian und Ubuntu `sudo apt install nginx`, RHEL und verwandte
-`sudo dnf install httpd mod_ssl mod_http2`.
+Nur wenn noch kein Webserver läuft: `sudo apt install nginx` (oder `apache2`).
 
 ### 2. Datenbank
 
@@ -104,15 +93,6 @@ sudo -u postgres psql -c "CREATE DATABASE teamplaner OWNER teamplaner ENCODING '
 ```
 
 Superuser-Rechte sind nicht nötig, die Rolle muss nur Eigentümerin der Datenbank sein.
-
-Auf RHEL und verwandten Systemen meldet PostgreSQL lokale Netzwerkverbindungen per `ident` an. Deshalb
-in `/var/lib/pgsql/data/pg_hba.conf` vor den übrigen `host`-Zeilen ergänzen und
-`sudo systemctl reload postgresql` ausführen:
-
-```
-host    teamplaner    teamplaner    127.0.0.1/32    scram-sha-256
-host    teamplaner    teamplaner    ::1/128         scram-sha-256
-```
 
 ### 3. Teamplaner
 
@@ -216,7 +196,7 @@ In der Vorlage anpassen:
   Vorlage, wie sie ist.
 - bei anderem `TEAMPLANER_PROGRAMM` den Pfad der Wartungsseite
 
-**nginx** (Debian und Ubuntu; auf RHEL nach `/etc/nginx/conf.d/`):
+**nginx**:
 
 ```bash
 sudo cp /opt/teamplaner/aktuell/betrieb/linux/nginx/teamplaner.conf /etc/nginx/sites-available/
@@ -225,27 +205,13 @@ sudo ln -s /etc/nginx/sites-available/teamplaner.conf /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-**Apache** (RHEL und verwandte):
+**Apache** (statt nginx, Paket `apache2`):
 
 ```bash
-sudo systemctl enable --now httpd    # nur bei neuem Apache: erzeugt das Standardzertifikat von mod_ssl
-sudo cp /opt/teamplaner/aktuell/betrieb/linux/apache/teamplaner.conf /etc/httpd/conf.d/
-sudo nano /etc/httpd/conf.d/teamplaner.conf
-sudo apachectl configtest && sudo systemctl reload httpd
-```
-
-Auf Debian und Ubuntu liegt die Datei in `/etc/apache2/sites-available/`, danach
-`sudo a2enmod ssl proxy proxy_http headers http2 && sudo a2ensite teamplaner && sudo systemctl reload apache2`.
-
-**RHEL und verwandte** brauchen die SELinux-Freigabe, damit der Webserver zu Port 8000 verbinden darf,
-und, falls 80 und 443 noch nicht offen sind, die Firewall:
-
-```bash
-sudo setsebool -P httpd_can_network_connect 1
-```
-
-```bash
-sudo firewall-cmd --permanent --add-service=http --add-service=https && sudo firewall-cmd --reload
+sudo cp /opt/teamplaner/aktuell/betrieb/linux/apache/teamplaner.conf /etc/apache2/sites-available/
+sudo nano /etc/apache2/sites-available/teamplaner.conf
+sudo a2enmod ssl proxy proxy_http headers http2 && sudo a2ensite teamplaner
+sudo apachectl configtest && sudo systemctl reload apache2
 ```
 
 #### Zertifikat und Erneuerung
@@ -253,7 +219,7 @@ sudo firewall-cmd --permanent --add-service=http --add-service=https && sudo fir
 Das Zertifikat liest nur der Webserver. Wird es erneuert, reicht wie bei den übrigen vHosts ein Reload
 des Webservers; an Teamplaner wird nichts weitergegeben und nichts neu gestartet. certbot lädt den
 Webserver mit dem nginx- bzw. Apache-Plugin selbst neu, sonst mit
-`--deploy-hook "systemctl reload nginx"` (bzw. `httpd`, `apache2`).
+`--deploy-hook "systemctl reload nginx"` (bzw. `apache2`).
 
 Prüft certbot per Webroot (HTTP-01), muss `/.well-known/acme-challenge/` aus dem Webroot kommen statt aus
 der Anwendung. Let's Encrypt folgt der Weiterleitung von Port 80 auf HTTPS; deshalb steht die Ausnahme
@@ -323,6 +289,9 @@ erreichbar sind.
 Wechselt ein Upgrade diese Version, startet Teamplaner nicht mehr und `sudo teamplaner status` zeigt die
 Umgebung als „nicht lauffähig“. `sudo teamplaner neu-aufbauen` baut sie ohne Internet neu, auch für die
 vorherige Version. Daten bleiben unberührt, und startet die neue Umgebung nicht, gilt wieder die alte.
+Das Archiv enthält die Python-Pakete nur für Python 3.12 (Ubuntu 24.04). Vor einem Upgrade auf ein
+Ubuntu mit anderer Python-Version muss das Bauskript (`werkzeuge/paket-bauen.sh`) diese Version mit
+abdecken, sonst bleibt nach dem Upgrade nur die alte, nicht mehr lauffähige Umgebung.
 
 ## Updates
 
@@ -355,7 +324,6 @@ Webserver werden unabhängig davon aktualisiert, Python-Bibliotheken kommen mit 
 | --- | --- |
 | `nginx -t` meldet `Address family not supported by protocol` | Server ohne IPv6: in der Vorlage die Zeilen `listen [::]…` entfernen |
 | 502 oder Wartungsseite bleibt stehen | Anwendung läuft nicht: `sudo teamplaner status`, `sudo teamplaner logs web` |
-| 502 auf RHEL, Anwendung läuft | SELinux: `sudo setsebool -P httpd_can_network_connect 1` |
 | 400 Bad Request | Domain fehlt in `DJANGO_ALLOWED_HOSTS` |
 | 403 beim Anmelden | Adresse mit `https://` fehlt in `DJANGO_CSRF_TRUSTED_ORIGINS` |
 | Anmeldung springt zurück oder Weiterleitungsschleife | Proxy setzt `X-Forwarded-Proto: https` nicht, oder seine IP fehlt in `TEAMPLANER_PROXY_IPS` |

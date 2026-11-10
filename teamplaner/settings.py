@@ -26,7 +26,7 @@ if not SECRET_KEY:
     raise RuntimeError("DJANGO_SECRET_KEY muss gesetzt sein.")
 
 DEBUG = env_bool("DJANGO_DEBUG")
-# 127.0.0.1 zusätzlich für den Health-Check im Container
+# 127.0.0.1 zusätzlich für Aufrufe am Server selbst (Health-Check /gesund/, teamplaner status)
 ALLOWED_HOSTS = [*env_list("DJANGO_ALLOWED_HOSTS", "localhost"), "127.0.0.1"]
 CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
 
@@ -211,16 +211,12 @@ DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "Teamplaner <teamplaner@localhost
 # Öffentliche Adresse für Links in E-Mails
 TEAMPLANER_ADRESSE = env("TEAMPLANER_ADRESSE", "http://localhost:8000")
 
-# --- Version und Updates ---
+# --- Version ---
 # VERSION entsteht beim Bauen des Pakets aus dem Git-Tag; ohne Datei läuft der Quellcode.
 _VERSION_DATEI = BASE_DIR / "VERSION"
 TEAMPLANER_VERSION = _VERSION_DATEI.read_text().strip() if _VERSION_DATEI.exists() else ""
-# Paketquelle, in der nach neueren Versionen gesehen wird (Hinweis in den Einstellungen)
-TEAMPLANER_IMAGE = env("TEAMPLANER_IMAGE", "ghcr.io/gehmacher-valentin/teamplaner-app")
 # Adresse des Quellcodes (Seite „Über“); bei einer geänderten Fassung auf deren Quellcode zeigen lassen
 TEAMPLANER_QUELLCODE = env("TEAMPLANER_QUELLCODE", "https://github.com/gehmacher-valentin/teamplaner")
-REGISTRY_BENUTZER = env("REGISTRY_BENUTZER", "")
-REGISTRY_TOKEN = env("REGISTRY_TOKEN", "")
 
 LOGGING = {
     "version": 1,

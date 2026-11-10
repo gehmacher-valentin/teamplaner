@@ -2,8 +2,8 @@
 name = "teamplaner"
 version = "0.1.0"
 description = "Aufgabenverwaltung und Wochenplanung für Teams"
-# Container: 3.13; Linux-Server ohne Docker: Python des Servers ab 3.11 (docs/installation-linux.md)
-requires-python = ">=3.11"
+# Zielsystem: Ubuntu 24.04 LTS mit Python 3.12 (docs/installation-linux.md)
+requires-python = ">=3.12"
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "teamplaner.settings"
@@ -13,7 +13,7 @@ filterwarnings = ["ignore::DeprecationWarning:axes.*", "ignore:No directory at:U
 
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py312"
 extend-exclude = ["*/migrations/*", "frontend", "node_modules"]
 
 [tool.ruff.lint]

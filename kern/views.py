@@ -25,7 +25,7 @@ from django.views.decorators.http import require_POST
 
 from projekte.models import Status
 
-from . import fotos, rechte, version, zwei_faktor
+from . import fotos, rechte, zwei_faktor
 from .auth import zu_viele_fehlversuche_von_ip
 from .forms import (
     AnmeldeForm,
@@ -755,13 +755,6 @@ def anhang_entfernen(request, pk):
     return redirect(weiter)
 
 
-@erfordert(rechte.darf_systemeinstellungen)
-def einstellungen_version(request):
-    """Hinweis auf eine neuere Version – per HTMX nachgeladen, damit die Seite nicht auf die Registry wartet."""
-    stand, neu = version.update_stand()
-    return render(request, "kern/version_hinweis.html", {"stand": stand, "neu": neu})
-
-
 # ---------- Posteingang ----------
 
 @login_required
@@ -822,7 +815,7 @@ def benachrichtigung_oeffnen(request, pk):
 
 
 def gesund(request):
-    """Für Docker-Healthcheck und Monitoring: Anwendung und Datenbank erreichbar?"""
+    """Für teamplaner status/update und Monitoring: Anwendung und Datenbank erreichbar?"""
     from django.db import connection
 
     try:

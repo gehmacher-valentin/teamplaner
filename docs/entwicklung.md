@@ -1,26 +1,47 @@
 # Entwicklung
 
-## Voraussetzungen
+Entwickelt und getestet wird auf demselben System wie im Betrieb: Ubuntu 24.04 LTS mit Python 3.12
+und PostgreSQL 16 aus den Ubuntu-Paketen, dazu Node.js 22 für den Frontend-Build.
 
-- Docker
-- Node.js 20.19+ oder 22 für den Frontend-Build
+## Einrichtung
 
-Python und PostgreSQL laufen im Container, lokal ist nichts weiter nötig.
+Einmalig:
+
+```bash
+sudo apt install python3 python3-venv postgresql postgresql-client gettext shellcheck
+sudo -u postgres psql -c "CREATE ROLE teamplaner LOGIN CREATEDB PASSWORD 'teamplaner-dev'"
+sudo -u postgres psql -c "CREATE DATABASE teamplaner OWNER teamplaner ENCODING 'UTF8' TEMPLATE template0"
+python3 -m venv .venv
+.venv/bin/pip install -r requirements-dev.txt
+```
+
+`CREATEDB` braucht pytest für die Testdatenbank. Node.js 22 z. B. aus den Paketen von NodeSource oder
+über nvm (Ubuntu 24.04 selbst hat nur Node.js 18).
 
 ## Start
 
+In jeder neuen Shell Python-Umgebung und Entwicklungseinstellungen laden:
+
+```bash
+. .venv/bin/activate && set -a && . werkzeuge/entwicklung.env && set +a
+```
+
+Dann:
+
 ```bash
 cd frontend && npm ci && npm run build && cd ..
-docker compose up -d
-docker compose exec app python manage.py migrate
-docker compose exec app python manage.py demodaten
+python manage.py migrate
+python manage.py demodaten
+uvicorn teamplaner.asgi:application --reload --port 8000
 ```
 
 Danach unter http://localhost:8000 anmelden. Die Demokonten stehen in der [README](../README.md#schnellstart). `demodaten --neu` leert die Datenbank vorher. Der Befehl läuft nur mit
 `DJANGO_DEBUG=1` (Entwicklung) oder `TEAMPLANER_DEMO=1` (Test- und Demo-Umgebung), nie im Produktivbetrieb.
 
-E-Mails landen in Mailpit: http://localhost:8025 (nichts geht nach außen). Der Versanddienst
-`mailer` lädt Codeänderungen nicht selbst nach: `docker compose restart mailer`.
+E-Mails verschickt der Versanddienst, in einer zweiten Shell: `python manage.py mails_versenden --dauerhaft`
+(lädt Codeänderungen nicht selbst nach, dann neu starten). Ohne `EMAIL_HOST` geht nichts hinaus; zum
+Ansehen der Mails einen lokalen SMTP-Fänger wie Mailpit starten und die Zeilen in
+`werkzeuge/entwicklung.env` aktivieren.
 
 Python-Änderungen lädt der Server automatisch neu. Für das Frontend `npm run watch` im
 Ordner `frontend` laufen lassen.
@@ -28,12 +49,14 @@ Ordner `frontend` laufen lassen.
 ## Tests
 
 ```bash
-docker compose exec app pytest                 # Backend
-docker compose exec app ruff check .           # Code-Stil
+pytest                                         # Backend
+ruff check .                                   # Code-Stil
+shellcheck --severity=warning werkzeuge/*.sh betrieb/linux/teamplaner betrieb/linux/*.sh pruefung/linux/*.sh
 cd frontend && npm test && npm run typecheck   # Frontend
 ```
 
-GitHub Actions führt alles bei jedem Push aus (`.github/workflows/tests.yml`).
+GitHub Actions führt alles bei jedem Push aus (`.github/workflows/tests.yml`), und zwar wie auf dem
+Zielserver: Ubuntu 24.04 LTS mit Python 3.12 und PostgreSQL 16.
 
 Für Rechteprüfung und Einteilungslogik sind automatische Tests Pflicht.
 
@@ -53,13 +76,13 @@ Für Rechteprüfung und Einteilungslogik sind automatische Tests Pflicht.
 | `tests/test_notizen.py`, `tests/test_bestellungen.py` | Notizen (Sichtbarkeit, Ordnerrechte, Markdown) und Bestellungen (Prio, Liefertermin und Warnung, „bestellt“ ausfüllen, Lieferanten-Vorschläge) |
 | `tests/test_heic.py` | HEIC-Fotos werden zu JPEG (Anhänge, Notiz-Anhänge, Profilfoto), Testbild in `tests/daten/` |
 | `tests/test_projektliste.py` | Projektpriorität, Navigation, Mitgliederauswahl, Protokoll „erledigt“, Posteingang im Kopf, Gesamtansicht |
-| `tests/test_version.py` | Versionsanzeige, Suche nach neueren Versionen in der Registry |
+| `tests/test_version.py` | Versionsanzeige auf der Seite „Über“ |
 | `tests/test_direkt_bearbeiten.py` | Aufgabendetail direkt bearbeiten, Konflikte, Toasts, Gantt-Einstellung am Konto |
 | `tests/test_einstellungen.py` | Einstellungsbereich: Schalter, Listen-Editor, Kalender mit Zeiträumen, Personen, Freigaben, Ansichten |
 | `frontend/src/teamplaner/*.test.ts` | Rasterlogik und Übersetzung im Browser |
 | `frontend/src/editor/*.test.ts`, `frontend/src/lib/*.test.ts` | Markdown beim Einfügen, Editor-Rundlauf, Spaltenbreiten, Personenauswahl, Vorschläge, Restzeit der Admin-Sitzung |
 
-Dazu prüft `shellcheck` die Betriebsskripte in `docker/`.
+Dazu prüft `shellcheck` die Betriebs- und Bauskripte.
 
 ## Aufbau
 
@@ -75,9 +98,9 @@ Dazu prüft `shellcheck` die Betriebsskripte in `docker/`.
 | `templates/` | Django-Templates (HTMX) |
 | `frontend/` | Vite-Projekt: `src/main.ts` (alle Seiten), `src/teamplaner/` und `src/gantt/` (React), `src/editor/` (Tiptap) |
 | `locale/en/` | englische Übersetzung |
-| `betrieb/linux/` | Linux-Server ohne Docker: Verwaltungsbefehl `teamplaner`, `installieren.sh`, systemd-Dienste, nginx-/Apache-Vorlagen, Konfigurationsvorlage |
-| `pruefung/linux/` | Probeserver (Debian, Rocky) und Ablauf für die lokale Prüfung der Linux-Installation |
-| `docker/` | Container-Betrieb (`teamplaner.sh` = `./teamplaner`, Start, Auspacken, Wiederherstellung), Caddy-Konfiguration; `backup.sh` dient beiden Betriebsarten |
+| `betrieb/linux/` | Linux-Server: Verwaltungsbefehl `teamplaner`, `installieren.sh`, Sicherung, systemd-Dienste, nginx-/Apache-Vorlagen, Konfigurationsvorlage |
+| `pruefung/linux/` | Probeserver (Ubuntu 24.04) und Ablauf für die lokale Prüfung der Linux-Installation |
+| `werkzeuge/` | Entwicklung: Installationsarchiv bauen (`paket-bauen.sh`), Abhängigkeiten sperren, Übersetzungswerkzeug, Entwicklungseinstellungen |
 
 Grundregeln:
 
@@ -93,11 +116,11 @@ Quelltexte sind deutsch. Neue Texte:
 
 1. Django: in `gettext(...)`/`{% translate %}` einschließen, dann
    ```bash
-   docker compose exec app python manage.py makemessages -l en --ignore=frontend --ignore=static --ignore=staticfiles --ignore=tests --ignore=media
+   python manage.py makemessages -l en --ignore=frontend --ignore=static --ignore=staticfiles --ignore=tests --ignore=media --ignore=.venv
    ```
    englischen Text in `locale/en/LC_MESSAGES/django.po` eintragen (Texteditor oder Poedit),
-   danach `docker compose exec app python manage.py compilemessages --ignore="*site-packages*"`.
-   `docker/po_werkzeug.py pruefen locale/en/LC_MESSAGES/django.po` listet fehlende Übersetzungen.
+   danach `python manage.py compilemessages --ignore=.venv`.
+   `python werkzeuge/po_werkzeug.py pruefen locale/en/LC_MESSAGES/django.po` listet fehlende Übersetzungen.
 2. Frontend: Schlüssel in `frontend/src/teamplaner/texte.ts` bzw. `frontend/src/lib/texte.ts`
    in beiden Wörterbüchern ergänzen.
 
@@ -107,53 +130,51 @@ Versionsnummern nach dem Schema `X.Y.Z`: Z für Fehlerbehebungen, Y für neue Fu
 X für große Umbrüche.
 
 1. Tests lokal grün (siehe oben).
-2. Installation lokal prüfen (nur Docker nötig; etwa 3 Minuten, beim ersten Mal
+2. Installation lokal prüfen (Docker nur für die Probeserver; etwa 10 Minuten, beim ersten Mal
    länger, weil die Probeserver gebaut werden):
    ```bash
    bash pruefung/linux/pruefen.sh
    ```
-   Baut das Installationsarchiv und spielt auf zwei nachgestellten Servern mit systemd –
-   Debian 12 mit nginx und Rocky Linux 9 (wie RHEL) mit Apache – genau die Schritte aus
-   [installation-linux.md](installation-linux.md) durch – als root mit umask 0077 wie auf
+   Baut das Installationsarchiv und spielt auf zwei nachgestellten Servern mit systemd wie
+   dem Zielsystem (Ubuntu 24.04 LTS, Python 3.12, PostgreSQL 16) genau die Schritte aus
+   [installation-linux.md](installation-linux.md) durch, als root mit umask 0077 wie auf
    gehärteten Servern: Datenbank, Installation, Webserver
    mit Zertifikat, Anmeldung und Live-Verbindung über HTTPS, Wartungsseite, Sicherung, Update
    mit Migration, Rücksprung ohne Datenverlust, defektes Update mit automatischem Rücksprung,
    Wiederherstellung, Python-Wechsel nach einem Upgrade der Distribution (`neu-aufbauen`),
-   Neustart des Servers. Debian läuft mit den Standardpfaden, Rocky mit eigenen Pfaden für
-   Konfiguration, Programm, Daten und Sicherungen. Am Ende muss je Server „ALLES OK“ stehen.
-   Mit `BEHALTEN=1` bleiben die Probeserver stehen (`docker exec -it tp-linux-debian bash`).
+   Neustart des Servers. `ubuntu-nginx` läuft mit nginx und den Standardpfaden, `ubuntu-apache`
+   mit Apache und eigenen Pfaden für Konfiguration, Programm, Daten und Sicherungen. Am Ende muss
+   je Server „ALLES OK“ stehen.
+   Mit `BEHALTEN=1` bleiben die Probeserver stehen (`docker exec -it tp-linux-ubuntu-nginx bash`).
 3. Veröffentlichen:
    ```bash
    git tag v1.2.0
    git push origin v1.2.0
    ```
 
-Der Workflow `.github/workflows/release.yml` führt alle Tests aus und baut
-- das **Installationsarchiv** `teamplaner-1.2.0.tar.gz` mit Prüfsumme für Linux-Server ohne
-  Docker, beides am Release-Eintrag auf GitHub (siehe [installation-linux.md](installation-linux.md#updates));
-- die **Container-Pakete** für amd64 und arm64 unter `ghcr.io/gehmacher-valentin/teamplaner-app`
-  (Tags `1.2.0`, `1.2`, `latest`) für Docker-Installationen (siehe [betrieb.md](betrieb.md#update)).
+Der Workflow `.github/workflows/release.yml` führt alle Tests aus, baut auf Ubuntu 24.04 das
+**Installationsarchiv** `teamplaner-1.2.0.tar.gz` mit Prüfsumme und hängt beides an den
+Release-Eintrag auf GitHub (siehe [installation-linux.md](installation-linux.md#updates)).
 
-Das Archiv lässt sich auch lokal bauen:
-`docker build --target linux-paket --build-arg TEAMPLANER_VERSION=1.2.0 --output type=local,dest=dist .`
+Das Archiv lässt sich auch lokal bauen (Ergebnis in `dist/`):
 
-Lokal ausprobieren, ohne zu veröffentlichen:
-`docker compose -f compose.prod.yaml -f compose.build.yaml --env-file .env up -d --build`
-(eigene `.env` mit anderen Ports und `COMPOSE_PROJECT_NAME`).
+```bash
+werkzeuge/paket-bauen.sh 1.2.0
+```
 
 Datenbank-Migrationen sollten sich rückwärts ausführen lassen (bei `RunPython` eine
-Rückwärtsfunktion angeben), damit `./teamplaner zurueck` ohne Datenverlust funktioniert.
+Rückwärtsfunktion angeben), damit `sudo teamplaner zurueck` ohne Datenverlust funktioniert.
 
 ## Abhängigkeiten aktualisieren
 
 - Python: Bereiche in `requirements.in`/`requirements-dev.in`, gepinnte Versionen erzeugen mit
-  `docker run --rm -v "$(pwd)":/app -w /app python:3.13-slim sh docker/abhaengigkeiten-sperren.sh`
+  `sh werkzeuge/abhaengigkeiten-sperren.sh` (mit Python 3.12)
 - Frontend: `cd frontend && npm outdated && npm update`, danach `npm audit --omit=dev`.
 
 ## Lasttest
 
 ```bash
-docker compose exec app python manage.py lasttest
+python manage.py lasttest
 ```
 
 Legt vorübergehend 50 zusätzliche Personen mit Einteilungen und Abwesenheiten an, misst
@@ -167,7 +188,7 @@ Demodaten, per Skript im installierten Chrome (`BROWSER=msedge` für Edge). Das 
 Zwei-Faktor-Anmeldung der Bereichsleitung selbst ein und braucht deshalb frische Demodaten:
 
 ```bash
-docker compose exec app python manage.py demodaten --neu
+python manage.py demodaten --neu
 cd frontend && npm run bildschirmfotos
 ```
 

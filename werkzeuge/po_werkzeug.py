@@ -1,8 +1,8 @@
 """Kleines Werkzeug für die Übersetzungsdatei (ohne Zusatzpakete).
 
-    python docker/po_werkzeug.py liste locale/en/LC_MESSAGES/django.po      # msgids als JSON
-    python docker/po_werkzeug.py fuellen locale/en/LC_MESSAGES/django.po uebersetzungen.json
-    python docker/po_werkzeug.py pruefen locale/en/LC_MESSAGES/django.po    # fehlende Übersetzungen
+    python werkzeuge/po_werkzeug.py liste locale/en/LC_MESSAGES/django.po      # msgids als JSON
+    python werkzeuge/po_werkzeug.py fuellen locale/en/LC_MESSAGES/django.po uebersetzungen.json
+    python werkzeuge/po_werkzeug.py pruefen locale/en/LC_MESSAGES/django.po    # fehlende Übersetzungen
 """
 
 import json
