@@ -73,11 +73,16 @@ Für Rechteprüfung und Einteilungslogik sind automatische Tests Pflicht.
 | `tests/test_mail.py` | E-Mail-Einstellungen, Versand, Einladung, Passwort vergessen |
 | `tests/test_feiern.py`, `tests/test_foto.py` | Feieranimation, Profilfoto |
 | `tests/test_tagesfreigabe.py` | Zeile „Tagesfreigabe“: Rechte, Protokoll, Stufen, Name, Ein- und Ausschalten |
-| `tests/test_notizen.py`, `tests/test_bestellungen.py` | Notizen (Sichtbarkeit, Ordnerrechte, Markdown) und Bestellungen (Prio, Liefertermin und Warnung, „bestellt“ ausfüllen, Lieferanten-Vorschläge) |
+| `tests/test_notizen.py`, `tests/test_bestellungen.py` | Notizen (Sichtbarkeit, Ordnerrechte, Markdown, Längengrenze und Frist der Umwandlung) und Bestellungen (Prio, Liefertermin und Warnung, „bestellt“ ausfüllen, Lieferanten-Vorschläge) |
 | `tests/test_heic.py` | HEIC-Fotos werden zu JPEG (Anhänge, Notiz-Anhänge, Profilfoto), Testbild in `tests/daten/` |
 | `tests/test_projektliste.py` | Projektpriorität, Navigation, Mitgliederauswahl, Protokoll „erledigt“, Posteingang im Kopf, Gesamtansicht |
 | `tests/test_version.py` | Versionsanzeige auf der Seite „Über“ |
 | `tests/test_direkt_bearbeiten.py` | Aufgabendetail direkt bearbeiten, Konflikte, Toasts, Gantt-Einstellung am Konto |
+| `tests/test_sicherheit.py` | Zwei-Faktor-Anmeldung, Sitzungen, Konten übernehmen, Passwort-Links und Postausgang, Live-Verbindung, ungültige Eingaben (400 statt 500, NUL-Zeichen) |
+| `tests/test_mail_versand.py`, `tests/test_organisation.py` | E-Mail-Versand global abschaltbar, Passwort-Link als QR-Code, Organisationsname |
+| `tests/test_aufgabenbaum.py`, `tests/test_unteraufgaben.py`, `tests/test_seitenleiste.py` | Projektliste als Baum (Ziehen, Ebenen, Rechte), Unteraufgaben bis drei Ebenen, Aufgabendetail als Seitenleiste |
+| `tests/test_termine.py` | Termine nachziehen: Hauptaufgaben, Nachfolger, Sammelaufgaben; Gantt-Daten mit zwei Ebenen |
+| `tests/test_tagesinfo.py`, `tests/test_personen.py` | Info-Zeile im Teamplaner; Systemkonto, Personenauswahl mit Tippsuche |
 | `tests/test_einstellungen.py` | Einstellungsbereich: Schalter, Listen-Editor, Kalender mit Zeiträumen, Personen, Freigaben, Ansichten |
 | `frontend/src/teamplaner/*.test.ts` | Rasterlogik und Übersetzung im Browser |
 | `frontend/src/editor/*.test.ts`, `frontend/src/lib/*.test.ts` | Markdown beim Einfügen, Editor-Rundlauf, Spaltenbreiten, Personenauswahl, Vorschläge, Restzeit der Admin-Sitzung |
@@ -88,12 +93,12 @@ Dazu prüft `shellcheck` die Betriebs- und Bauskripte.
 
 | Ordner | Inhalt |
 | --- | --- |
-| `kern/` | Person, Konto, Rolle, Bereich, Gewerk, Protokoll; `rechte.py` = zentrale Rechteprüfung |
-| `projekte/` | Projekte, Tags, Abschnitte, Status, Aufgaben (Unteraufgaben = Aufgaben mit `eltern`) |
+| `kern/` | Person, Konto, Rolle, Bereich, Gewerk, Protokoll; `rechte.py` = zentrale Rechteprüfung, `middleware.py` (Sitzung, Zwei-Faktor, CSP, Abweisen von NUL-Zeichen), `hilfen.py` (`als_zahl`, `TEXT_MAX_ZEICHEN`) |
+| `projekte/` | Projekte, Tags, Abschnitte, Status, Aufgaben (Unteraufgaben = Aufgaben mit `eltern`); `dienste.py` (Schreiben mit Verlauf), `ansicht.py` (Aufgaben für Liste und Detail laden und aufbereiten), `seitenleiste.py` (Aufgabendetail neben der Liste) |
 | `planung/` | Einteilung, Abwesenheit, freie Tage, Ansichten; `kalender.py` (Feiertage, Regeln), `dienste.py` (Schreiben mit Prüfungen), `api.py`, `live.py` (SSE) |
-| `zusammenarbeit/` | Kommentare, Erwähnungen, Anhänge, Benachrichtigungen; `mail.py` (E-Mail-Kategorien und Versand) |
+| `zusammenarbeit/` | Kommentare, Erwähnungen, Anhänge, Benachrichtigungen; `mail.py` (E-Mail-Kategorien und Versand), `verlauf.py` (Kommentare und Änderungen als lesbare Einträge), `anhaenge.py` (Inhaltstyp, Anzeige im Browser) |
 | `gantt/` | Gantt-Ansichten mit Freigaben; `daten.py` (Abgleich, Verletzungen), `dienste.py` (Termine, Abhängigkeiten, neue Projekte in Gesamtansichten) |
-| `notizen/` | Persönliche Notizen und freigegebene Gruppenordner; `rechte.py`, `markdown.py` (Markdown → bereinigtes HTML) |
+| `notizen/` | Persönliche Notizen und freigegebene Gruppenordner; `rechte.py`, `markdown.py` (Markdown → bereinigtes HTML, mit Frist gegen aufwendige Eingaben) |
 | `bestellungen/` | Bestellungsverfolgung (eine Liste für alle); `warnungen.py` (überschrittene Liefertermine) |
 | `templates/` | Django-Templates (HTMX) |
 | `frontend/` | Vite-Projekt: `src/main.ts` (alle Seiten), `src/teamplaner/` und `src/gantt/` (React), `src/editor/` (Tiptap) |
@@ -109,6 +114,10 @@ Grundregeln:
 - Einteilungen und Abwesenheiten nur über `planung.dienste` ändern (Prüfungen,
   Versionskonflikt, Protokoll, Live-Meldung).
 - Aufgaben über `projekte.dienste.aufgabe_speichern` ändern (Versionskonflikt, Verlauf).
+- Nichts aus der `views.py` einer anderen App importieren. Gemeinsam genutzte Helfer gehören in ein
+  eigenes Modul ohne View-Code (z. B. `zusammenarbeit/verlauf.py`, `projekte/ansicht.py`).
+- IDs und Versionen aus Anfragen über `kern.hilfen.als_zahl` lesen: ungültige Eingaben ergeben 400
+  oder 404, nie einen Fehler 500. Lange Freitexte auf `TEXT_MAX_ZEICHEN` begrenzen.
 
 ## Übersetzungen
 

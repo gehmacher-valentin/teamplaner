@@ -9,6 +9,7 @@ from django.utils.formats import date_format
 from django.utils.translation import gettext_lazy as _
 
 from .models import Benachrichtigung, Benachrichtigungsart, MailStatus
+from .verlauf import FELDNAMEN
 
 A = Benachrichtigungsart
 
@@ -88,8 +89,6 @@ def aufgabe_geaendert_benachrichtigen(konto, aufgabe, felder):
         felder = [f for f in felder if f != "status"]
     felder = [f for f in felder if f != "verantwortlich"]  # dafür gibt es die Zuweisung
     if felder and aufgabe.verantwortlich_id:
-        from .views import FELDNAMEN
-
         namen = lambda: ", ".join(str(FELDNAMEN.get(f, f)) for f in felder)  # noqa: E731
         benachrichtigen(aufgabe.verantwortlich, A.AUFGABE_GEAENDERT,
                         _("%(akteur)s hat „%(titel)s“ geändert (%(felder)s)."),

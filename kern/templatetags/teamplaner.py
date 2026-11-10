@@ -10,6 +10,8 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
 
+from zusammenarbeit.verlauf import verlauf_text, wert_text, zeitraum_text
+
 register = template.Library()
 
 
@@ -153,8 +155,6 @@ AKTIONEN = {
 @register.simple_tag
 def protokoll_text(eintrag):
     """Lesbare Zusammenfassung eines Protokolleintrags."""
-    from zusammenarbeit.views import _wert, _zeitraum, verlauf_text
-
     if eintrag.objekt_typ in {"aufgabe", "einteilung", "unteraufgabe", "anhang", "abhaengigkeit"}:
         text = verlauf_text(eintrag)
         if eintrag.aufgabe_id:
@@ -163,17 +163,17 @@ def protokoll_text(eintrag):
     d = eintrag.daten
     kopf = f"{OBJEKTE.get(eintrag.objekt_typ, eintrag.objekt_typ)} {AKTIONEN.get(eintrag.aktion, eintrag.aktion)}"
     if eintrag.objekt_typ == "abwesenheit" and eintrag.aktion != "geaendert":
-        return f"{kopf}: {_wert(d.get('person'))}, {_zeitraum(d)}"
+        return f"{kopf}: {wert_text(d.get('person'))}, {zeitraum_text(d)}"
     teile = []
     for schluessel, wert in d.items():
         if isinstance(wert, list) and len(wert) == 2 and eintrag.aktion == "geaendert":
-            teile.append(f"{schluessel}: {_wert(wert[0])} → {_wert(wert[1])}")
+            teile.append(f"{schluessel}: {wert_text(wert[0])} → {wert_text(wert[1])}")
         elif isinstance(wert, list):
             teile.append(f"{schluessel}: {', '.join(map(str, wert)) or '–'}")
         elif isinstance(wert, dict) and "name" not in wert:
             teile.append(f"{schluessel}: {', '.join(f'{k}={v}' for k, v in wert.items()) or '–'}")
         else:
-            teile.append(f"{schluessel}: {_wert(wert)}")
+            teile.append(f"{schluessel}: {wert_text(wert)}")
     return f"{kopf}: {'; '.join(teile)}" if teile else kopf
 
 
