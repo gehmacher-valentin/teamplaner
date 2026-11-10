@@ -140,6 +140,24 @@ pruefe "Statische Dateien (gehasht) $CSS" '[[ -n $CSS && $(code "$CSS") == 200 ]
 pruefe "HTTP/2" '[[ $(https --http2 -o /dev/null -w "%{http_version}" "https://$DOMAIN/gesund/") == 2 ]]'
 pruefe "http → https" '[[ $(curl -s -o /dev/null -w "%{http_code}" -H "Host: $DOMAIN" http://127.0.0.1/) == 301 ]]'
 pruefe "HSTS gesetzt" 'https -I "https://$DOMAIN/anmelden/" | grep -qi "strict-transport-security"'
+# Let's Encrypt per Webroot: „#acme “ in der Vorlage entfernen (installation-linux.md, Zertifikat)
+mkdir -p /var/www/letsencrypt/.well-known/acme-challenge
+echo acme-probe > /var/www/letsencrypt/.well-known/acme-challenge/probe
+chmod -R a+rX /var/www/letsencrypt
+if [[ $ART == debian ]]; then
+  sed -i 's/^\([[:space:]]*\)#acme /\1/' /etc/nginx/sites-available/teamplaner.conf
+  nginx -t 2>&1 | tail -n 1
+  systemctl reload nginx
+else
+  sed -i 's/^\([[:space:]]*\)#acme /\1/' /etc/httpd/conf.d/teamplaner.conf
+  apachectl configtest
+  systemctl reload httpd
+fi
+acme() { curl -sLk --resolve "$DOMAIN:80:127.0.0.1" --resolve "$DOMAIN:443:127.0.0.1" "http://$DOMAIN/.well-known/acme-challenge/probe"; }
+# reload kehrt zurück, bevor die neuen Worker übernehmen
+for _ in $(seq 1 10); do [[ $(acme) == acme-probe ]] && break; sleep 1; done
+pruefe "Let's Encrypt: Prüfdatei über die Weiterleitung von Port 80 erreichbar" '[[ $(acme) == acme-probe ]]'
+pruefe "übrige Anfragen weiter an die Anwendung" '[[ $(code /gesund/) == 200 ]]'
 
 schritt "4 Konto, Demodaten, Anmeldung, Live-Verbindung"
 # demodaten nur mit TEAMPLANER_DEMO=1; verwalten liest die Konfiguration, danach wieder wie im Betrieb

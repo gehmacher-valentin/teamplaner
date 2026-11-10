@@ -11,8 +11,24 @@ braucht kein Internet, alle Python-Pakete liegen dem Archiv bei. Wer lieber Dock
 | `teamplaner-mailer.service` | verschickt E-Mails, wendet täglich die Löschfristen an, prüft Liefertermine |
 | `teamplaner-sicherung.timer` | sichert Datenbank und Anhänge jeden Sonntag um 02:30 |
 | PostgreSQL | Daten |
-| nginx oder Apache | HTTPS, Weiterleitung an die Anwendung, Wartungsseite bei Updates |
+| nginx oder Apache | HTTPS mit Zertifikat, Weiterleitung an die Anwendung, Wartungsseite bei Updates |
 | `teamplaner` | Verwaltungsbefehl (`sudo teamplaner hilfe`) |
+
+## Aufbau
+
+```
+Browser ── 443 HTTPS ──▶ Webserver (nginx/Apache, Zertifikat) ── HTTP ──▶ 127.0.0.1:8000 Teamplaner ──▶ PostgreSQL
+        ── 80 HTTP ───▶ Webserver: nur 301 auf HTTPS
+```
+
+- Von außen erreichbar ist nur der Webserver: 443 für HTTPS, 80 nur für die Weiterleitung auf HTTPS
+  (und, falls genutzt, die Let's-Encrypt-Prüfung).
+- Die Anwendung lauscht nur auf `127.0.0.1:8000`, ohne TLS. Port 8000 wird nicht freigegeben; er ist von
+  außen ohnehin nicht erreichbar.
+- Der Webserver ist Pflicht (Reverse Proxy): Er beendet TLS und reicht die Anfragen weiter. Die Anwendung
+  braucht und kennt kein Zertifikat.
+- Ein vorhandener Webserver lässt sich nutzen: Teamplaner bekommt dort einen eigenen vHost, siehe
+  [Webserver](#4-webserver). Installation der Anwendung (Schritte 1 bis 3) und Webserver sind getrennt.
 
 ## Vor der Installation
 
@@ -20,10 +36,10 @@ braucht kein Internet, alle Python-Pakete liegen dem Archiv bei. Wer lieber Dock
 
 | Frage | Möglichkeiten | Worauf es ankommt |
 | --- | --- | --- |
-| Unter welcher Adresse läuft Teamplaner? | eigene Domain oder Subdomain | Die Adresse steht in allen Links in E-Mails. Später ändern heißt: alte Links gelten nicht mehr. |
-| Wer soll es erreichen? | nur intern oder VPN, oder aus dem Internet | Die Anmeldung ist für den Betrieb aus dem Internet ausgelegt (Zwei-Faktor, Sperren). Die Firewall braucht eingehend nur 80 und 443. |
-| Woher kommt das Zertifikat? | Let's Encrypt, interne CA, gekauft | HTTPS ist Pflicht, ohne funktionieren Anmeldung und Cookies nicht. Erneuern liegt beim Betrieb des Webservers. |
-| Welcher Webserver? | nginx, Apache oder ein vorhandener zentraler Proxy | Vorlagen liegen für nginx und Apache bei. Für einen eigenen Proxy siehe [Anforderungen an den Webserver](#anforderungen-an-den-webserver). |
+| Unter welcher Adresse läuft Teamplaner? | eigene Domain oder Subdomain | Die Adresse steht in allen Links in E-Mails. Später ändern heißt: alte Links gelten nicht mehr. Ein Unterpfad wie `https://intranet.example.org/teamplaner/` geht nicht, Teamplaner liegt immer unter `/`. |
+| Wer soll es erreichen? | nur intern oder VPN, oder aus dem Internet | Die Anmeldung ist für den Betrieb aus dem Internet ausgelegt (Zwei-Faktor, Sperren). Die Firewall braucht eingehend nur 80 und 443, beide zum Webserver. |
+| Woher kommt das Zertifikat? | vorhandenes, Let's Encrypt, interne CA, gekauft | Nur der Webserver braucht es, nicht die Anwendung. Es muss die Adresse abdecken (Name im Zertifikat oder Wildcard). Ein vorhandenes, automatisch erneuertes Zertifikat geht; die Erneuerung bleibt beim Webserver, Teamplaner merkt davon nichts. HTTPS ist Pflicht, ohne funktionieren Anmeldung und Cookies nicht. |
+| Welcher Webserver? | vorhandener nginx oder Apache, neu installierter, zentraler Proxy | Vorlagen liegen für nginx und Apache bei. Für einen eigenen Proxy siehe [Anforderungen an den Webserver](#anforderungen-an-den-webserver). |
 | Wo läuft die Datenbank? | auf demselben Server (empfohlen) oder zentral | Zentral: Verbindung ist nicht verschlüsselt und PgBouncer im Transaktionsmodus geht nicht, weil die Live-Aktualisierung `LISTEN/NOTIFY` nutzt. |
 | Gibt es E-Mail? | SMTP-Server oder keiner | Dringend empfohlen. Ohne E-Mail keine Einladungen, kein „Passwort vergessen“ und keine Benachrichtigungen per Mail; Links gibt dann die Verwaltung von Hand weiter. |
 | Wohin gehen die Sicherungen zusätzlich? | Backup-System, Netzlaufwerk | Die eingebaute Sicherung liegt auf demselben Server. Sie schützt vor Fehlbedienung, nicht vor dem Ausfall des Servers. |
@@ -37,7 +53,8 @@ Tage trägt ein Admin in der Anwendung ein.
 
 - [ ] Server, der die [Anforderungen](#anforderungen) erfüllt, mit `sudo`-Zugang
 - [ ] DNS-Eintrag der Adresse auf den Server
-- [ ] Zertifikat mit Zwischenzertifikaten und privater Schlüssel, jeweils als PEM-Datei
+- [ ] für den Webserver: Zertifikat für die Adresse mit Zwischenzertifikaten und privatem Schlüssel
+      (PEM), oder das vorhandene, falls es die Adresse abdeckt
 - [ ] SMTP: Server, Port, Benutzer, Passwort und Absenderadresse
 - [ ] E-Mail-Adresse und Name für das erste Admin-Konto
 - [ ] Installationsarchiv `teamplaner-X.Y.Z.tar.gz` und `.sha256` von der
@@ -50,30 +67,34 @@ Tage trägt ein Admin in der Anwendung ein.
 | System | Linux x86_64 mit systemd und glibc ab 2.28: Debian 12, Ubuntu 24.04, RHEL, Rocky oder Alma 8 und 9 |
 | Python | 3.11, 3.12 oder 3.13 mit `venv` (Ubuntu 22.04 scheidet aus: dort nur 3.10) |
 | PostgreSQL | ab 14, mit `psql`, `pg_dump`, `pg_restore` mindestens in der Hauptversion des Servers |
-| Webserver | nginx oder Apache httpd, mit HTTP/2 |
+| Webserver | nginx oder Apache httpd, mit HTTP/2; ein vorhandener geht |
 | Ressourcen | 2 CPU-Kerne, 4 GB RAM, 20 GB Speicher plus Platz für Anhänge und Sicherungen |
-| Netzwerk | eingehend 80 und 443, ausgehend nur der SMTP-Server |
+| Netzwerk | eingehend 80 und 443 zum Webserver, ausgehend nur der SMTP-Server; 8000 bleibt lokal |
 
-Die Installation wird automatisch auf Debian 12 mit nginx und Rocky Linux 9 mit Apache geprüft.
+Die Installation wird automatisch auf Debian 12 mit nginx und Rocky Linux 9 mit Apache geprüft, auf Rocky
+mit eigenen Pfaden.
 
 ## Installation
 
 ### 1. Pakete
 
-Debian und Ubuntu:
+Für die Anwendung, Debian und Ubuntu:
 
 ```bash
-sudo apt install python3 python3-venv postgresql postgresql-client nginx
+sudo apt install python3 python3-venv postgresql postgresql-client
 ```
 
 RHEL 9, Rocky, Alma (RHEL 8: `python3.11` statt `python3.12`):
 
 ```bash
 sudo dnf module enable postgresql:16
-sudo dnf install python3.12 postgresql-server postgresql httpd mod_ssl mod_http2 tar
+sudo dnf install python3.12 postgresql-server postgresql tar
 sudo postgresql-setup --initdb
 sudo systemctl enable --now postgresql
 ```
+
+Nur wenn noch kein Webserver läuft: Debian und Ubuntu `sudo apt install nginx`, RHEL und verwandte
+`sudo dnf install httpd mod_ssl mod_http2`.
 
 ### 2. Datenbank
 
@@ -181,9 +202,19 @@ mehr zu den Diensten passen.
 
 ### 4. Webserver
 
-Zertifikat und Schlüssel ablegen, z. B. als `/etc/ssl/teamplaner/zertifikat.pem` und
-`/etc/ssl/teamplaner/schluessel.pem`. In der Vorlage die Domain anpassen (nginx 2×, Apache 3×), bei
-anderen Pfaden auch die Zertifikatspfade und bei anderem `TEAMPLANER_PROGRAMM` den Pfad der Wartungsseite.
+Teamplaner bekommt im Webserver einen eigenen vHost für seine Adresse. Die Vorlage ist genau dieser
+vHost: Port 80 leitet auf HTTPS weiter, Port 443 reicht an die Anwendung weiter. Bei einem vorhandenen
+Webserver kommt nur diese eine Datei dazu; übrige vHosts, Zertifikatserneuerung und Firewall bleiben,
+wie sie sind.
+
+In der Vorlage anpassen:
+
+- Domain: nginx 2×, Apache 3×
+- Zertifikat und Schlüssel: die Pfade des vorhandenen Zertifikats, bei certbot z. B.
+  `/etc/letsencrypt/live/<domain>/fullchain.pem` und `privkey.pem`. Ein neues Zertifikat z. B. als
+  `/etc/ssl/teamplaner/zertifikat.pem` und `/etc/ssl/teamplaner/schluessel.pem` ablegen, dann bleibt die
+  Vorlage, wie sie ist.
+- bei anderem `TEAMPLANER_PROGRAMM` den Pfad der Wartungsseite
 
 **nginx** (Debian und Ubuntu; auf RHEL nach `/etc/nginx/conf.d/`):
 
@@ -197,7 +228,7 @@ sudo nginx -t && sudo systemctl reload nginx
 **Apache** (RHEL und verwandte):
 
 ```bash
-sudo systemctl enable --now httpd    # erzeugt beim ersten Start das Standardzertifikat von mod_ssl
+sudo systemctl enable --now httpd    # nur bei neuem Apache: erzeugt das Standardzertifikat von mod_ssl
 sudo cp /opt/teamplaner/aktuell/betrieb/linux/apache/teamplaner.conf /etc/httpd/conf.d/
 sudo nano /etc/httpd/conf.d/teamplaner.conf
 sudo apachectl configtest && sudo systemctl reload httpd
@@ -206,17 +237,34 @@ sudo apachectl configtest && sudo systemctl reload httpd
 Auf Debian und Ubuntu liegt die Datei in `/etc/apache2/sites-available/`, danach
 `sudo a2enmod ssl proxy proxy_http headers http2 && sudo a2ensite teamplaner && sudo systemctl reload apache2`.
 
-**RHEL und verwandte** brauchen zusätzlich die SELinux-Freigabe und die Firewall:
+**RHEL und verwandte** brauchen die SELinux-Freigabe, damit der Webserver zu Port 8000 verbinden darf,
+und, falls 80 und 443 noch nicht offen sind, die Firewall:
 
 ```bash
 sudo setsebool -P httpd_can_network_connect 1
+```
+
+```bash
 sudo firewall-cmd --permanent --add-service=http --add-service=https && sudo firewall-cmd --reload
 ```
+
+#### Zertifikat und Erneuerung
+
+Das Zertifikat liest nur der Webserver. Wird es erneuert, reicht wie bei den übrigen vHosts ein Reload
+des Webservers; an Teamplaner wird nichts weitergegeben und nichts neu gestartet. certbot lädt den
+Webserver mit dem nginx- bzw. Apache-Plugin selbst neu, sonst mit
+`--deploy-hook "systemctl reload nginx"` (bzw. `httpd`, `apache2`).
+
+Prüft certbot per Webroot (HTTP-01), muss `/.well-known/acme-challenge/` aus dem Webroot kommen statt aus
+der Anwendung. Let's Encrypt folgt der Weiterleitung von Port 80 auf HTTPS; deshalb steht die Ausnahme
+in beiden Vorlagen vorbereitet im HTTPS-vHost: dort `#acme ` vor den Zeilen entfernen, Webroot
+`/var/www/letsencrypt`. Mit dem nginx- oder Apache-Plugin von certbot und mit DNS-01 ist nichts zu tun.
 
 #### Anforderungen an den Webserver
 
 Das gilt für eine eigene Konfiguration oder einen zentralen Proxy:
 
+- eigener vHost für die Adresse, Weiterleitung von `/` (kein Unterpfad)
 - Weiterleitung an `http://127.0.0.1:8000` mit `X-Forwarded-Proto: https` und dem `Host` des Aufrufs
 - Adresse der Besucher in `X-Forwarded-For`, sonst sperrt die IP-Sperre im Zweifel alle
 - `/api/planung/stream` (Server-Sent Events) nicht puffern und bis 1 Stunde offen halten
@@ -226,7 +274,9 @@ Das gilt für eine eigene Konfiguration oder einen zentralen Proxy:
   `TEAMPLANER_PROGRAMM`)
 
 Proxy auf einem anderen Rechner: in der Konfiguration `TEAMPLANER_HOST=0.0.0.0` und
-`TEAMPLANER_PROXY_IPS=<IP des Proxys>` setzen und Port 8000 nur für den Proxy freigeben.
+`TEAMPLANER_PROXY_IPS=<IP des Proxys>` setzen und Port 8000 nur für den Proxy freigeben. Die Strecke vom
+Proxy zur Anwendung ist dann unverschlüsseltes HTTP im internen Netz. Die Wartungsseite auf den Proxy
+kopieren, wenn er sie zeigen soll.
 
 ### 5. Erstes Konto und Prüfung
 
