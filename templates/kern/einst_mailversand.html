@@ -14,7 +14,7 @@
 <section class="karte" aria-label="{% translate 'Überblick' %}">
   <dl class="einst-daten">
     <dt>{% translate "Versand" %}</dt><dd>{% if mail_aktiv %}<span class="badge badge--ok">{% translate "eingeschaltet" %}</span>{% else %}<span class="badge badge--warn">{% translate "aus" %}</span>{% endif %}</dd>
-    <dt>{% translate "Offen" %}</dt><dd id="mail-offen">{{ zahlen.offen }}{% if zahlen.aelteste_offene %} <span class="gedaempft klein">{% blocktranslate with seit=zahlen.aelteste_offene|date:"d.m.Y H:i" %}älteste seit {{ seit }}{% endblocktranslate %}</span>{% endif %}</dd>
+    <dt>{% translate "Offen" context "E-Mail" %}</dt><dd id="mail-offen">{{ zahlen.offen }}{% if zahlen.aelteste_offene %} <span class="gedaempft klein">{% blocktranslate with seit=zahlen.aelteste_offene|date:"d.m.Y H:i" %}älteste seit {{ seit }}{% endblocktranslate %}</span>{% endif %}</dd>
     <dt>{% translate "Aufgegeben" %}</dt><dd id="mail-fehler">{% if zahlen.fehler %}<span class="badge badge--warn">{{ zahlen.fehler }}</span>{% else %}0{% endif %} <span class="gedaempft klein">{% blocktranslate with n=max_versuche %}nach {{ n }} Versuchen{% endblocktranslate %}</span></dd>
     <dt>{% translate "Verschickt" %}</dt><dd id="mail-gesendet">{{ zahlen.gesendet_24h }} <span class="gedaempft klein">{% translate "in den letzten 24 Stunden" %}</span></dd>
   </dl>

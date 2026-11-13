@@ -28,11 +28,12 @@ def _eintraege():
         d = e["daten"]
         msgid = werkzeug._str(d["msgid"])
         if msgid:
-            yield msgid, {k: werkzeug._str(v) for k, v in d.items() if k.startswith("msgstr")}, e["kommentare"]
+            kontext = werkzeug._str(d["msgctxt"]) if "msgctxt" in d else None
+            yield msgid, kontext, {k: werkzeug._str(v) for k, v in d.items() if k.startswith("msgstr")}, e["kommentare"]
 
 
 def test_englische_uebersetzung_vollstaendig():
-    fehlend = [m for m, werte, kommentare in _eintraege()
+    fehlend = [m for m, _kontext, werte, kommentare in _eintraege()
                if not all(werte.values()) or any(k.startswith("#, fuzzy") for k in kommentare)]
     assert fehlend == [], "Fehlende englische Übersetzungen – bitte locale/en/LC_MESSAGES/django.po ergänzen"
 
@@ -40,8 +41,9 @@ def test_englische_uebersetzung_vollstaendig():
 def test_kompilierte_datei_passt_zur_quelle():
     """Schlägt fehl, wenn nach dem Bearbeiten der .po-Datei compilemessages vergessen wurde."""
     with translation.override("en"):
-        veraltet = [m for m, werte, _k in _eintraege()
-                    if "msgstr" in werte and translation.gettext(m) != werte["msgstr"]]
+        veraltet = [m for m, kontext, werte, _k in _eintraege()
+                    if "msgstr" in werte
+                    and (translation.pgettext(kontext, m) if kontext else translation.gettext(m)) != werte["msgstr"]]
     assert veraltet == [], "django.mo ist veraltet: python manage.py compilemessages ausführen"
 
 
