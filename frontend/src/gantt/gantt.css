@@ -107,6 +107,22 @@
 .gt-pfeil:hover .gt-pfeil__linie { stroke-width: 2.5; }
 .gt-verbinden { stroke: var(--akzent); stroke-width: 2; stroke-dasharray: 4 3; pointer-events: none; }
 
+/* Warnzeichen in der Namensspalte: Einteilung verletzt Abhängigkeit */
+.gt-warn { position: relative; flex: none; display: inline-flex; color: var(--warn-text); cursor: help; border-radius: 4px; }
+.gt-warn:focus-visible { outline: 2px solid var(--akzent); outline-offset: 2px; }
+.gt-warn__symbol { flex: none; color: var(--warn-text); }
+.gt-warn__hinweis {
+  display: none; position: absolute; left: -4px; top: calc(100% + 6px); z-index: 20; width: max-content; max-width: 340px;
+  flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 8px; background: var(--flaeche); color: var(--text);
+  border: 1px solid #f0c7aa; box-shadow: 0 6px 20px rgba(26, 29, 27, 0.16); font-size: 13px; font-weight: 400; line-height: 1.4;
+  white-space: normal; text-transform: none; letter-spacing: 0; cursor: default;
+}
+.gt-warn__hinweis strong { color: var(--warn-text); }
+.gt-warn:hover .gt-warn__hinweis, .gt-warn:focus .gt-warn__hinweis { display: flex; }
+/* Der Hinweis ragt über die folgenden Zeilen: deren Namensspalte liegt sonst darüber */
+.gt-links:has(.gt-warn:hover), .gt-links:has(.gt-warn:focus) { z-index: 9; }
+.legende .gt-warn__symbol { vertical-align: -3px; }
+
 /* Legende */
 .gt-legende-geplant { background: #dce5f6; border: 1px solid #4f79c9; }
 .gt-legende-ist { background: #1c3766; height: 4px !important; opacity: 0.55; }

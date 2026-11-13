@@ -207,6 +207,118 @@ def test_verletzung_nach_tatsaechlichen_einteilungen(konten, projekt, person_a):
     assert verletzt(a, b, ist_zeitraeume(Einteilung.objects.all()))
 
 
+# --- Verletzte Abhängigkeiten: geplante Termine (roter Pfeil) und Einteilungen (Warnzeichen) ---
+
+def gantt_fuer(konten, *projekte):
+    ansicht = GanttAnsicht.objects.create(name="Gesamt")
+    ansicht.projekte.add(*projekte)
+    return client_fuer(konten[BL]).get(f"/api/gantt/{ansicht.pk}").json()
+
+
+def test_verletzung_nur_nach_plan(konten, projekt):
+    """Erledigte Nachfolger werden nicht nachgezogen: die geplanten Balken überschneiden sich."""
+    a, b = neu(projekt, "A", MO, MI), neu(projekt, "B", DI, DO, erledigt=True)
+    Abhaengigkeit.objects.create(vorher=a, nachher=b)
+    daten = gantt_fuer(konten, projekt)
+    assert [(d["verletzt_plan"], d["verletzt_ist"]) for d in daten["abhaengigkeiten"]] == [(True, False)]
+    assert daten["warnungen"] == []
+
+
+def test_verletzung_nur_nach_einteilung(konten, projekt, person_a):
+    """Geplant passt alles, im Teamplaner ist B aber eingeteilt, bevor A fertig ist: der Pfeil bleibt
+    grau, die Warnung steht in der Zeile des Nachfolgers und nennt beide Zeiträume."""
+    a, b = neu(projekt, "A", MO, DI), neu(projekt, "B", MI, DO)
+    Abhaengigkeit.objects.create(vorher=a, nachher=b)
+    Einteilung.objects.create(aufgabe=a, person=person_a, von=MO, bis=DO)
+    Einteilung.objects.create(aufgabe=b, person=person_a, von=MI, bis=DO)
+    daten = gantt_fuer(konten, projekt)
+    assert [(d["verletzt_plan"], d["verletzt_ist"]) for d in daten["abhaengigkeiten"]] == [(False, True)]
+    assert daten["warnungen"] == [{
+        "aufgabe": b.pk, "nachher": {"id": b.pk, "titel": "B"},
+        "vorher": {"id": a.pk, "titel": "A", "projekt": projekt.name},
+        "nachher_von": MI.isoformat(), "nachher_art": "ist", "vorher_bis": DO.isoformat(), "vorher_art": "ist",
+    }]
+    # Geplante Termine im Gantt zu verschieben ändert daran nichts, die Einteilung zu kürzen schon
+    Aufgabe.objects.filter(pk=b.pk).update(beginn_am=MI2, faellig_am=MI2)
+    assert len(gantt_fuer(konten, projekt)["warnungen"]) == 1
+    Einteilung.objects.filter(aufgabe=a).update(bis=DI)
+    daten = gantt_fuer(konten, projekt)
+    assert daten["warnungen"] == [] and not daten["abhaengigkeiten"][0]["verletzt_ist"]
+
+
+def test_verletzung_nach_plan_und_einteilung(konten, projekt, person_a):
+    a, b = neu(projekt, "A", MO, MI), neu(projekt, "B", DI, DO, erledigt=True)
+    offen = neu(projekt, "C", DI, DO)
+    Aufgabe.objects.filter(pk=offen.pk).update(beginn_am=DI)  # offen und trotzdem überschneidend (nicht nachgezogen)
+    Abhaengigkeit.objects.create(vorher=a, nachher=b)
+    Abhaengigkeit.objects.create(vorher=a, nachher=offen)
+    Einteilung.objects.create(aufgabe=a, person=person_a, von=MO, bis=MI)
+    Einteilung.objects.create(aufgabe=b, person=person_a, von=DI, bis=DI)
+    Einteilung.objects.create(aufgabe=offen, person=person_a, von=DI, bis=DI)
+    daten = gantt_fuer(konten, projekt)
+    nach = {d["nachher"]: (d["verletzt_plan"], d["verletzt_ist"]) for d in daten["abhaengigkeiten"]}
+    assert nach[offen.pk] == (True, True)
+    assert nach[b.pk] == (True, False)  # erledigter Nachfolger: roter Pfeil ja, Warnung nein
+    assert [w["aufgabe"] for w in daten["warnungen"]] == [offen.pk]
+
+
+def test_mischfall_nachfolger_ohne_plan_aber_eingeteilt(konten, projekt, person_a):
+    """A ist im Gantt geplant, B hat keine Termine, ist aber zu früh eingeteilt: Warnung, kein roter Pfeil."""
+    a, b = neu(projekt, "A", MO, MI), neu(projekt, "B")
+    Abhaengigkeit.objects.create(vorher=a, nachher=b)
+    Einteilung.objects.create(aufgabe=b, person=person_a, von=DI, bis=DI)
+    daten = gantt_fuer(konten, projekt)
+    assert [(d["verletzt_plan"], d["verletzt_ist"]) for d in daten["abhaengigkeiten"]] == [(False, True)]
+    w = daten["warnungen"][0]
+    assert (w["nachher_von"], w["nachher_art"], w["vorher_bis"], w["vorher_art"]) == (DI.isoformat(), "ist", MI.isoformat(), "plan")
+
+
+def test_mischfall_vorgaenger_ohne_plan_aber_eingeteilt(konten, projekt, person_a):
+    """A hat keine Termine, ist aber bis Do eingeteilt, B ist ab Mi geplant: Warnung, kein roter Pfeil."""
+    a, b = neu(projekt, "A"), neu(projekt, "B", MI, FR)
+    Abhaengigkeit.objects.create(vorher=a, nachher=b)
+    Einteilung.objects.create(aufgabe=a, person=person_a, von=MO, bis=DO)
+    daten = gantt_fuer(konten, projekt)
+    assert [(d["verletzt_plan"], d["verletzt_ist"]) for d in daten["abhaengigkeiten"]] == [(False, True)]
+    w = daten["warnungen"][0]
+    assert (w["nachher_von"], w["nachher_art"], w["vorher_bis"], w["vorher_art"]) == (MI.isoformat(), "plan", DO.isoformat(), "ist")
+
+
+def test_warnung_tieferer_ebene_steht_an_der_sichtbaren_unteraufgabe(konten, projekt, person_a):
+    haupt = neu(projekt, "Halle")
+    eins = neu(projekt, "Boden", eltern=haupt)
+    tief_a = neu(projekt, "Estrich", eltern=eins)
+    tief_b = neu(projekt, "Platten", eltern=eins)
+    andere = neu(projekt, "Dichtheit")
+    Abhaengigkeit.objects.create(vorher=andere, nachher=tief_b)
+    Abhaengigkeit.objects.create(vorher=tief_a, nachher=tief_b)  # beide unter derselben sichtbaren Zeile: kein Pfeil
+    Einteilung.objects.create(aufgabe=andere, person=person_a, von=MO, bis=MI)
+    Einteilung.objects.create(aufgabe=tief_a, person=person_a, von=MO, bis=DI)
+    Einteilung.objects.create(aufgabe=tief_b, person=person_a, von=DI, bis=DI)
+    daten = gantt_fuer(konten, projekt)
+    assert [(d["vorher"], d["nachher"]) for d in daten["abhaengigkeiten"]] == [(andere.pk, eins.pk)]
+    assert {w["aufgabe"] for w in daten["warnungen"]} == {eins.pk}
+    assert {(w["vorher"]["titel"], w["nachher"]["titel"]) for w in daten["warnungen"]} == {("Dichtheit", "Platten"), ("Estrich", "Platten")}
+
+
+def test_warnung_bei_externem_nachfolger(konten, projekt, person_a):
+    """Der Nachfolger liegt in einem Projekt außerhalb der Ansicht: Warnung in seiner Zeile unter „Extern“,
+    mit dem Projektnamen des Vorgängers."""
+    from projekte.models import Projekt
+
+    fremd = Projekt.objects.create(name="Prototyp Förderband", farbe="blau")
+    a, b = neu(projekt, "A", MO, DI), neu(fremd, "B", MI, DO)
+    Abhaengigkeit.objects.create(vorher=a, nachher=b)
+    Einteilung.objects.create(aufgabe=a, person=person_a, von=MO, bis=MI)
+    Einteilung.objects.create(aufgabe=b, person=person_a, von=MI, bis=DO)
+    daten = gantt_fuer(konten, projekt)
+    assert daten["aufgaben"][str(b.pk)]["extern"] is True
+    assert [(w["aufgabe"], w["vorher"]["projekt"]) for w in daten["warnungen"]] == [(b.pk, projekt.name)]
+    # und umgekehrt: Vorgänger extern, der Projektname kommt trotzdem mit
+    daten = gantt_fuer(konten, fremd)
+    assert [(w["aufgabe"], w["vorher"]["projekt"]) for w in daten["warnungen"]] == [(b.pk, projekt.name)]
+
+
 def test_naechster_werktag_und_dauer():
     assert termine.naechster_werktag(FR) == DI2  # Wochenende und Nationalfeiertag
     assert termine.mit_gleicher_dauer(MO, MI, FR) == MI2  # drei Werktage ab Fr: Fr, Di, Mi

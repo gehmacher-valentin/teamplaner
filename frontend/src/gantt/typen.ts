@@ -44,7 +44,22 @@ export interface GAbhaengigkeit {
   id: number;
   vorher: number;
   nachher: number;
-  verletzt: boolean;
+  /** Die geplanten Termine überschneiden sich: im Gantt-Diagramm zu sehen und zu beheben (roter Pfeil) */
+  verletzt_plan: boolean;
+  /** Eine Einteilung aus dem Teamplaner ist beteiligt: Warnzeichen in der Namensspalte (``warnungen``) */
+  verletzt_ist: boolean;
+}
+
+/** Einteilungen verletzen „A vor B“. ``art``: Tag aus einer Einteilung (ist) oder aus dem geplanten Termin. */
+export interface GWarnung {
+  /** Sichtbare Aufgabe, in deren Zeile die Warnung steht (Nachfolger oder dessen Unteraufgabe der ersten Ebene) */
+  aufgabe: number;
+  nachher: { id: number; titel: string };
+  vorher: { id: number; titel: string; projekt: string };
+  nachher_von: string;
+  nachher_art: "ist" | "plan";
+  vorher_bis: string;
+  vorher_art: "ist" | "plan";
 }
 
 export interface GDaten {
@@ -57,6 +72,7 @@ export interface GDaten {
   externe_projekte: Record<string, { id: number; name: string; farbe: string }>;
   aufgaben: Record<string, GAufgabe>;
   abhaengigkeiten: GAbhaengigkeit[];
+  warnungen: GWarnung[];
 }
 
 export interface GOptionen {

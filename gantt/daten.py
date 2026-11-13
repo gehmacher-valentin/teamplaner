@@ -8,7 +8,7 @@ from django.urls import reverse
 
 from planung.kalender import freie_tage
 from planung.models import Einteilung
-from projekte.models import Abhaengigkeit, Aufgabe
+from projekte.models import Abhaengigkeit, Aufgabe, Projekt
 
 from . import rechte
 
@@ -26,15 +26,35 @@ def ist_zeitraeume(einteilungen):
     return ist
 
 
-def verletzt(vorher, nachher, ist):
-    """„A vor B“ verletzt, wenn B spätestens an dem Tag beginnt, an dem A endet – nach den geplanten
-    Terminen (die projekte.termine nachzieht, also nur noch bei erledigten Nachfolgern) oder nach den
-    tatsächlichen Einteilungen, die nie automatisch verschoben werden."""
-    ende_a = vorher.faellig_am or ist.get(vorher.pk, (None, None))[1]
-    beginn_b = nachher.beginn_am or ist.get(nachher.pk, (None, None))[0] or nachher.faellig_am
-    geplant = ende_a is not None and beginn_b is not None and beginn_b <= ende_a
+def verletzung(vorher, nachher, ist):
+    """„A vor B“ verletzt, wenn B spätestens an dem Tag beginnt, an dem A endet. Zwei Arten:
+
+    - ``plan``: nach den geplanten Terminen beider Aufgaben. ``projekte.termine`` zieht Nachfolger
+      nach, das bleibt also nur bei erledigten Nachfolgern stehen. Im Gantt-Diagramm zu sehen und
+      dort zu beheben (roter Pfeil).
+    - ``ist``: nach den tatsächlichen Einteilungen aus dem Teamplaner, die nie automatisch
+      verschoben werden. Hat nur eine Seite eine Einteilung, zählt für die andere ihr geplanter
+      Termin. Bei erledigten Nachfolgern entfällt die Warnung. Ergebnis: ``None`` oder die beiden
+      Tage mit ihrer Herkunft (``"ist"`` bzw. ``"plan"``), für den Hinweistext.
+    """
+    plan_ende_a = vorher.faellig_am
+    plan_beginn_b = nachher.beginn_am or nachher.faellig_am
+    plan = plan_ende_a is not None and plan_beginn_b is not None and plan_beginn_b <= plan_ende_a
+
     ist_a, ist_b = ist.get(vorher.pk), ist.get(nachher.pk)
-    return geplant or (ist_a is not None and ist_b is not None and ist_b[0] <= ist_a[1])
+    ende_a, art_a = (ist_a[1], "ist") if ist_a else (plan_ende_a, "plan")
+    beginn_b, art_b = (ist_b[0], "ist") if ist_b else (plan_beginn_b, "plan")
+    warnung = None
+    if ("ist" in (art_a, art_b) and ende_a is not None and beginn_b is not None and beginn_b <= ende_a
+            and not nachher.status.ist_erledigt):
+        warnung = {"vorher_bis": ende_a, "vorher_art": art_a, "nachher_von": beginn_b, "nachher_art": art_b}
+    return {"plan": plan, "ist": warnung}
+
+
+def verletzt(vorher, nachher, ist):
+    """Verletzt nach den geplanten Terminen oder nach den Einteilungen (Aufgabendetail)."""
+    ergebnis = verletzung(vorher, nachher, ist)
+    return ergebnis["plan"] or ergebnis["ist"] is not None
 
 
 # Im Gantt-Diagramm nur Hauptaufgaben und die erste Ebene Unteraufgaben
@@ -157,6 +177,23 @@ def gantt_daten(konto, ansicht):
         return sichtbar_fuer(nach_id[pk]).pk
 
     externe_projekte = {a.projekt_id: a.projekt for a in extern.values()}
+    verletzungen = {abh.pk: verletzung(nach_id[abh.vorher_id], nach_id[abh.nachher_id], ist) for abh in abhaengigkeiten}
+    projektnamen = {p.pk: p.name for p in projekte}
+    fehlend = {nach_id[abh.vorher_id].projekt_id for abh in abhaengigkeiten if verletzungen[abh.pk]["ist"]} - set(projektnamen)
+    projektnamen.update(Projekt.objects.filter(pk__in=fehlend).values_list("pk", "name"))
+
+    def warnung(abh):
+        """Hinweis für die Namensspalte: steht in der Zeile des Nachfolgers (bei tieferen Ebenen an
+        der sichtbaren Unteraufgabe darüber) und nennt die tatsächlich betroffenen Aufgaben."""
+        vorher, nachher, w = nach_id[abh.vorher_id], nach_id[abh.nachher_id], verletzungen[abh.pk]["ist"]
+        return {
+            "aufgabe": anzeige(abh.nachher_id),
+            "nachher": {"id": nachher.pk, "titel": nachher.titel},
+            "vorher": {"id": vorher.pk, "titel": vorher.titel, "projekt": projektnamen.get(vorher.projekt_id, "")},
+            "nachher_von": _iso(w["nachher_von"]), "nachher_art": w["nachher_art"],
+            "vorher_bis": _iso(w["vorher_bis"]), "vorher_art": w["vorher_art"],
+        }
+
     return {
         "ansicht": {"id": ansicht.pk, "name": ansicht.name, "recht": rechte.recht(konto, ansicht)},
         "heute": heute.isoformat(),
@@ -183,8 +220,11 @@ def gantt_daten(konto, ansicht):
         # Endpunkte tieferer Ebenen zeigen auf ihre Unteraufgabe der ersten Ebene
         "abhaengigkeiten": [
             {"id": abh.pk, "vorher": anzeige(abh.vorher_id), "nachher": anzeige(abh.nachher_id),
-             "verletzt": verletzt(nach_id[abh.vorher_id], nach_id[abh.nachher_id], ist)}
+             "verletzt_plan": verletzungen[abh.pk]["plan"], "verletzt_ist": verletzungen[abh.pk]["ist"] is not None}
             for abh in abhaengigkeiten
             if anzeige(abh.vorher_id) != anzeige(abh.nachher_id)
         ],
+        # Einteilungen aus dem Teamplaner verletzen eine Abhängigkeit: Warnzeichen in der Namensspalte.
+        # Auch wenn beide Aufgaben in derselben sichtbaren Zeile liegen (dann gibt es keinen Pfeil).
+        "warnungen": [warnung(abh) for abh in abhaengigkeiten if verletzungen[abh.pk]["ist"]],
     }

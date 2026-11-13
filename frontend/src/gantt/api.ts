@@ -8,12 +8,13 @@ export class GanttFehler extends Error {
   }
 }
 
-async function anfrage<T>(methode: string, url: string, body?: unknown): Promise<T> {
+async function anfrage<T>(methode: string, url: string, body?: unknown, signal?: AbortSignal): Promise<T> {
   const antwort = await fetch(url, {
     method: methode,
     headers: { Accept: "application/json", "Content-Type": "application/json", "X-CSRFToken": csrfToken() },
     credentials: "same-origin",
     body: body === undefined ? undefined : JSON.stringify(body),
+    signal,
   });
   if (antwort.status === 204) return undefined as T;
   let daten: Record<string, unknown> = {};
@@ -32,7 +33,7 @@ async function anfrage<T>(methode: string, url: string, body?: unknown): Promise
 export const api = {
   optionen: () => anfrage<GOptionen>("GET", "/api/gantt/ansichten"),
   unteraufgabenOffen: (wert: boolean) => anfrage<{ unteraufgaben_offen: boolean }>("PATCH", "/api/gantt/einstellungen", { unteraufgaben_offen: wert }),
-  daten: (ansicht: number) => anfrage<GDaten>("GET", `/api/gantt/${ansicht}`),
+  daten: (ansicht: number, signal?: AbortSignal) => anfrage<GDaten>("GET", `/api/gantt/${ansicht}`, undefined, signal),
   aufgabe: (ansicht: number, id: number, werte: { beginn: string | null; ende: string | null; version: number }) =>
     anfrage<{ version: number }>("PATCH", `/api/gantt/${ansicht}/aufgaben/${id}`, werte),
   projekt: (ansicht: number, id: number, werte: { beginn: string | null; ende: string | null }) =>
