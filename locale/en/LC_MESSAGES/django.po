@@ -1497,12 +1497,12 @@ msgstr "Lists"
 
 #: templates/kern/einst_mailversand.html:8
 msgid "Auf diesem Server ist kein SMTP-Server eingerichtet. Es wird nichts verschickt; Einladungs- und Passwort-Links lassen sich nur kopieren."
-msgstr "No SMTP server is set up on this server. Nothing is sent; invitation and password links can only be copied."
+msgstr "No SMTP server is configured on this server. No emails are sent; invitation and password links can only be copied."
 
 #: templates/kern/einst_mailversand.html:10
 #, python-format
 msgid "Der E-Mail-Versand ist abgeschaltet (<a href=\"%(allgemein)s\">Allgemein</a>). Es wird nichts verschickt."
-msgstr "Email sending is switched off (<a href=\"%(allgemein)s\">General</a>). Nothing is sent."
+msgstr "Email sending is turned off (<a href=\"%(allgemein)s\">General</a>). No emails are sent."
 
 #: templates/kern/einst_mailversand.html:12
 #, python-format
@@ -1510,48 +1510,44 @@ msgid "Die älteste offene E-Mail wartet seit %(seit)s. Vermutlich läuft der Ve
 msgstr "The oldest pending email has been waiting since %(seit)s. The mail service is probably not running. On the server: <code>sudo teamplaner status</code> and <code>sudo teamplaner logs mailer</code>."
 
 #: templates/kern/einst_mailversand.html:14
-#| msgid "Über"
 msgid "Überblick"
 msgstr "Overview"
 
 #: templates/kern/einst_mailversand.html:16
-#| msgid "E-Mail-Versand"
 msgid "Versand"
-msgstr "Sending"
+msgstr "Email sending"
 
 #: templates/kern/einst_mailversand.html:16
-#| msgid "Eingerichtet"
 msgid "eingeschaltet"
 msgstr "on"
 
 #: templates/kern/einst_mailversand.html:16
-#| msgid "Status"
 msgid "aus"
 msgstr "off"
 
-#: templates/kern/einst_mailversand.html:17 templates/projekte/projekt.html:42
+#: templates/projekte/projekt.html:42
 msgid "Offen"
 msgstr "Open"
 
 #: templates/kern/einst_mailversand.html:17
-#| msgid "Eingerichtet seit %(seit)s"
+msgctxt "E-Mail"
+msgid "Offen"
+msgstr "Pending"
+
+#: templates/kern/einst_mailversand.html:17
 msgid "älteste seit %(seit)s"
 msgstr "oldest since %(seit)s"
 
 #: templates/kern/einst_mailversand.html:18
-#| msgid "Aufgaben"
 msgid "Aufgegeben"
-msgstr "Given up"
+msgstr "Failed"
 
 #: templates/kern/einst_mailversand.html:18
-#| msgid "%(n)s Person"
-#| msgid_plural "%(n)s Personen"
 msgid "nach %(n)s Versuchen"
 msgstr "after %(n)s attempts"
 
 #: templates/kern/einst_mailversand.html:19
 #: templates/kern/einst_mailversand.html:35
-#| msgid "verschickt"
 msgid "Verschickt"
 msgstr "Sent"
 
@@ -1561,15 +1557,13 @@ msgstr "in the last 24 hours"
 
 #: templates/kern/einst_mailversand.html:26
 msgid "Alle, Offene und Aufgegebene zuerst"
-msgstr "All, pending and given up first"
+msgstr "All, pending and failed first"
 
 #: templates/kern/einst_mailversand.html:33
-#| msgid "E-Mail"
 msgid "E-Mails"
 msgstr "Emails"
 
 #: templates/kern/einst_mailversand.html:35
-#| msgid "bestellt"
 msgid "Erstellt"
 msgstr "Created"
 
@@ -1582,38 +1576,33 @@ msgid "Empfänger"
 msgstr "Recipient"
 
 #: templates/kern/einst_mailversand.html:35
-#| msgid "Person suchen"
 msgid "Versuche"
 msgstr "Attempts"
 
 #: templates/kern/einst_mailversand.html:41
-#| msgid "Nur Freigegebene"
 msgid "aufgegeben"
-msgstr "given up"
+msgstr "failed"
 
 #: templates/kern/einst_mailversand.html:46
-#| msgid "Personen suchen"
 msgid "Erneut versuchen"
 msgstr "Try again"
 
 #: templates/kern/einst_mailversand.html:48
 msgid "Der Text mit dem Link wurde nach dem Aufgeben gelöscht. Auf der Seite der Person einen neuen Link erzeugen."
-msgstr "The text with the link was deleted after giving up. Create a new link on the person's page."
+msgstr "The message with the link was deleted when sending failed. Create a new link on the person's page."
 
 #: templates/kern/einst_mailversand.html:48
-#| msgid "Konto anlegen und Link erzeugen"
 msgid "neuen Link erzeugen"
 msgstr "create a new link"
 
 #: templates/kern/einst_mailversand.html:53
-#| msgid "keine E-Mail"
 msgid "Keine E-Mails."
 msgstr "No emails."
 
 #: templates/kern/einst_mailversand.html:64
 #, python-format
 msgid "Betreff und Text werden nicht angezeigt. Der Verlauf reicht %(n)s Tage zurück. Am Server zeigt <code>sudo teamplaner verwalten mail_protokoll</code> dieselben Angaben."
-msgstr "Subject and text are not shown. The history goes back %(n)s days. On the server, <code>sudo teamplaner verwalten mail_protokoll</code> shows the same information."
+msgstr "Subject and body are not shown. The history covers the last %(n)s days. On the server, <code>sudo teamplaner verwalten mail_protokoll</code> shows the same information."
 
 #: templates/kern/einst_profil.html:3 templates/kern/einst_profil.html:5
 #: templates/kern/einst_profil.html:6 verwaltung/einstellungen.py:62
@@ -1890,25 +1879,20 @@ msgid "Einladung"
 msgstr "Invitation"
 
 #: templates/kern/person_eingeladen.html:13
-#| msgid "Der Link geht zusätzlich per E-Mail an %(email)s."
 msgid "Der Link wird nur jetzt angezeigt. Er geht zusätzlich per E-Mail an die Person."
-msgstr "The link is shown only now. It is also sent to the person by email."
+msgstr "The link is shown only this once. It is also sent to the person by email."
 
 #: templates/kern/person_eingeladen.html:13
-#| msgid ""
-#| "Das bisherige Passwort gilt nicht mehr. Bitte den Link an die Person "
-#| "weitergeben."
 msgid "Der Link wird nur jetzt angezeigt. Bitte jetzt kopieren und an die Person weitergeben."
-msgstr "The link is shown only now. Please copy it now and pass it on to the person."
+msgstr "The link is shown only this once. Please copy it now and pass it on to the person."
 
 #: templates/kern/person_eingeladen.html:14
 msgid "Konten mit gleicher oder höherer Rolle können Sie danach nicht bearbeiten. Einen neuen Link erzeugt eine höhere Rolle, für Admin-Konten die Kommandozeile."
-msgstr "You cannot edit accounts with the same or a higher role afterwards. A higher role creates a new link; for admin accounts, use the command line."
+msgstr "You cannot edit accounts with the same or a higher role than yours. A new link has to come from someone with a higher role, or from the command line for admin accounts."
 
 #: templates/kern/person_eingeladen.html:15
-#| msgid "Personentage"
 msgid "Zur Personenliste"
-msgstr "To the list of people"
+msgstr "Back to people"
 
 #: templates/kern/person_einladen.html:3 templates/kern/person_einladen.html:5
 #: templates/kern/person_einladen.html:6 templates/kern/personen.html:10
@@ -2766,14 +2750,12 @@ msgid "Gespeichert"
 msgstr "Saved"
 
 #: verwaltung/einstellungen.py:270
-#| msgid "Diese Ansicht ist für Sie nicht freigegeben."
 msgid "Diese E-Mail ist nicht mehr aufgegeben."
-msgstr "This email is no longer given up."
+msgstr "This email is no longer marked as failed."
 
 #: verwaltung/einstellungen.py:272
-#| msgid "wird verschickt"
 msgid "Die E-Mail wird erneut verschickt."
-msgstr "The email will be sent again."
+msgstr "The email has been queued again."
 
 #: verwaltung/einstellungen.py:284
 msgid "Feiertage, Status, Systemeinstellungen"
@@ -3075,7 +3057,7 @@ msgstr "project removed"
 
 #: verwaltung/templatetags/verwaltung.py:38
 msgid "E-Mail erneut eingereiht"
-msgstr "email queued again"
+msgstr "email requeued"
 
 #: verwaltung/views.py:117
 msgid "Die Zeit für die Eingabe ist abgelaufen. Bitte erneut anmelden."
