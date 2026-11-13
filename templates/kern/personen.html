@@ -13,9 +13,9 @@
 <section class="karte" id="personen-liste" aria-label="{% translate 'Personen' %}">
   {# Filter per HTMX: nur die Liste wird ersetzt (Spaltenbreiten bleiben) #}
   <form method="get" class="filterleiste" hx-get="{% url 'einst_personen' %}" hx-target="#personen-liste" hx-select="#personen-liste" hx-swap="outerHTML" hx-push-url="true"
-    hx-trigger="submit, change, input changed delay:300ms from:find input[type=search]">
+    hx-trigger="submit, change, input changed delay:300ms from:find .personen-suche">
     <label class="suchfeld"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-      <input type="search" name="q" value="{{ suche }}" aria-label="{% translate 'Personen suchen' %}" placeholder="{% if mit_konten %}{% translate 'Name oder E-Mail' %}{% else %}{% translate 'Name' %}{% endif %}">
+      <input type="search" name="q" class="personen-suche" value="{{ suche }}" aria-label="{% translate 'Personen suchen' %}" placeholder="{% if mit_konten %}{% translate 'Name oder E-Mail' %}{% else %}{% translate 'Name' %}{% endif %}">
     </label>
     <input type="hidden" name="bereich" value="{{ filter_bereich|default:'' }}">
     <div class="chipgruppe" role="group" aria-label="{% translate 'Bereich' %}">

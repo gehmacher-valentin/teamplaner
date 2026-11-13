@@ -40,3 +40,14 @@ for (const [name, rolle, neueRolle, bearbeitbar] of faelle) {
     await gast.close();
   });
 }
+
+test("Personen: Suche filtert beim Tippen", async ({ seiteFuer }) => {
+  const seite = await seiteFuer("admin");
+  await seite.goto("/einstellungen/personen/");
+  const liste = seite.locator("#personen-liste");
+  await expect(liste).toContainText("Person 01");
+  await seite.getByLabel("Personen suchen").pressSequentially("Person 05");
+  await expect(liste).not.toContainText("Person 01");
+  await expect(liste).toContainText("Person 05");
+  await expect(seite).toHaveURL(/q=Person(\+|%20)05/);
+});
