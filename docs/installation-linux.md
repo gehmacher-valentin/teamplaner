@@ -252,7 +252,9 @@ sudo teamplaner konto-anlegen --email admin@example.org --name "Vorname Nachname
 sudo teamplaner pruefen
 ```
 
-`konto-anlegen` gibt einen Link aus, 7 Tage gültig, unter dem das Passwort gesetzt wird. Bei der ersten
+`konto-anlegen` gibt einen Link aus, 7 Tage gültig, unter dem das Passwort gesetzt wird. Ist der
+E-Mail-Versand eingerichtet, geht die Einladung zusätzlich per E-Mail an die Person (`--keine-mail`
+unterdrückt das); ohne Versand sagt der Befehl ausdrücklich, dass keine E-Mail hinausgeht. Bei der ersten
 Anmeldung richtet das Konto die Zwei-Faktor-Anmeldung ein; die Ersatzcodes sicher aufbewahren.
 `pruefen` kontrolliert Konfiguration, Datenbank, Dienste, Sicherung und Rechte.
 
@@ -275,6 +277,26 @@ Danach in der Anwendung unter **Einstellungen**:
 | `sudo teamplaner wiederherstellen DUMP [ANHAENGE]` | Sicherung einspielen (fragt nach) |
 | `sudo teamplaner neu-aufbauen` | Python-Umgebung nach einem Upgrade der Distribution neu bauen |
 | `sudo teamplaner verwalten BEFEHL` | Django-Verwaltungsbefehl als Dienstbenutzer |
+| `sudo teamplaner verwalten mail_protokoll [--tage N] [--status offen\|gesendet\|fehler]` | was wann an wen verschickt wurde, was offen ist, was fehlschlug |
+
+**E-Mail-Versand.** Der Dienst `teamplaner-mailer` verschickt alle paar Sekunden, was offen ist, und
+versucht es bei Fehlern bis zu fünfmal. Nachvollziehen lässt sich der Versand auf drei Wegen:
+
+- In der Anwendung unter **Einstellungen → E-Mail-Versand** (nur Admin): offene, aufgegebene und
+  verschickte E-Mails, mit Warnung, wenn offene E-Mails länger als 15 Minuten liegen. Aufgegebene
+  Benachrichtigungen lassen sich dort erneut einreihen.
+- `sudo teamplaner verwalten mail_protokoll`: dieselben Angaben als Tabelle.
+- `sudo teamplaner logs mailer`: je E-Mail eine Zeile mit Art, Empfänger und Eintrag, bei Fehlern mit
+  Versuch und Grund.
+
+Betreff und Text stehen nirgends im Protokoll (der Betreff enthält Aufgabentitel, der Text
+Passwort-Links). Die Empfängeradressen im Journal sind personenbezogene Daten, und das Journal hat
+eine eigene Aufbewahrung (`journald.conf`), unabhängig von `TEAMPLANER_AUFBEWAHRUNG_TAGE`. Mit
+`TEAMPLANER_PROTOKOLL_EMPFAENGER=0` in der Konfiguration stehen sie dort gekürzt. In der Anwendung
+sieht sie nur der Admin, der die Konten ohnehin verwaltet.
+
+`sudo teamplaner verwalten mails_versenden` ist ein einzelner Versandlauf, kein Protokoll: Läuft der
+Dienst, ist meist nichts mehr offen.
 
 **Sicherung.** Sonntags um 02:30 nach `/var/backups/teamplaner` (`datenbank_*.dump`, `anhaenge_*.tar.gz`),
 vor jedem Update zusätzlich. Bitte dieses Verzeichnis und `/etc/teamplaner` (bzw. die eigenen Pfade) in die
@@ -329,7 +351,7 @@ Webserver werden unabhängig davon aktualisiert, Python-Bibliotheken kommen mit 
 | Anmeldung springt zurück oder Weiterleitungsschleife | Proxy setzt `X-Forwarded-Proto: https` nicht, oder seine IP fehlt in `TEAMPLANER_PROXY_IPS` |
 | Änderungen anderer erscheinen erst nach dem Neuladen | Proxy puffert `/api/planung/stream` |
 | Datenbankfehler „ident authentication failed“ | Eintrag in `pg_hba.conf` fehlt, siehe [Datenbank](#2-datenbank) |
-| Mails kommen nicht an | `sudo teamplaner logs mailer`; Schalter „E-Mail-Versand“ unter Einstellungen → Allgemein prüfen |
+| Mails kommen nicht an | Einstellungen → E-Mail-Versand oder `sudo teamplaner verwalten mail_protokoll`: offen (Dienst läuft nicht? `sudo teamplaner status`), aufgegeben (Grund in `sudo teamplaner logs mailer`) oder verschickt (Spam-Ordner, Mailserver des Empfängers). Schalter „E-Mail-Versand“ unter Einstellungen → Allgemein prüfen |
 | Konto gesperrt | `sudo teamplaner verwalten axes_reset_username <email>` (kleingeschrieben) |
 | IP-Adresse gesperrt | `sudo teamplaner verwalten axes_reset_ip <ip>` |
 | Admin hat das Telefon verloren | `sudo teamplaner verwalten zwei_faktor_zuruecksetzen <email>` |

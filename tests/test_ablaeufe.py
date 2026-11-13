@@ -26,6 +26,42 @@ def angemeldet(konto):
 
 # --- Einladung und Anmeldung ---
 
+@pytest.mark.parametrize("rolle", [A, BL])
+def test_einladen_in_der_eigenen_rolle_zeigt_den_link(konten, bereich_a, rolle):
+    """Einladen in der eigenen Rolle ist erlaubt, Bearbeiten des neuen Kontos nicht: statt 403 eine
+    Bestätigungsseite mit dem Link, der genau einmal und nur zu diesem Konto erscheint."""
+    c = angemeldet(konten[rolle])
+    antwort = c.post("/einstellungen/personen/einladen/", {"anzeigename": "Person 43", "email": "person43@example.test",
+                                                          "bereich": bereich_a.pk, "rolle": rolle}, follow=True)
+    neu = Konto.objects.get(email="person43@example.test")
+    assert antwort.redirect_chain[-1][0] == f"/einstellungen/personen/{neu.pk}/eingeladen/"
+    assert antwort.status_code == 200
+    seite = antwort.content.decode()
+    assert "/passwort/setzen/" in seite and "Konto für Person 43 angelegt." in seite
+    assert 'name="anzeigename"' not in seite  # kein Formular zum Bearbeiten
+    # Einmalig: beim zweiten Aufruf zurück zur Liste; die Seite der Person bleibt gesperrt
+    assert c.get(f"/einstellungen/personen/{neu.pk}/eingeladen/").url == "/einstellungen/personen/"
+    assert c.get(f"/einstellungen/personen/{neu.pk}/").status_code == 403
+
+
+def test_link_erscheint_nur_beim_eingeladenen_konto(konten, bereich_a):
+    c = angemeldet(konten[A])
+    c.post("/einstellungen/personen/einladen/", {"anzeigename": "Person 44", "email": "person44@example.test",
+                                                "bereich": bereich_a.pk, "rolle": A})
+    # Bevor die Bestätigungsseite geöffnet wird: eine andere Personenseite zeigt den Link nicht
+    assert "/passwort/setzen/" not in c.get(f"/einstellungen/personen/{konten[M].pk}/").content.decode()
+    neu = Konto.objects.get(email="person44@example.test")
+    assert "/passwort/setzen/" in c.get(f"/einstellungen/personen/{neu.pk}/eingeladen/").content.decode()
+
+
+def test_bestaetigungsseite_ohne_einladung(konten):
+    """Ohne gemerkten Link gibt die Seite nichts preis; bearbeitbare Konten haben ihre normale Seite."""
+    c = angemeldet(konten[BL])
+    assert c.get(f"/einstellungen/personen/{konten[A].pk}/eingeladen/").url == "/einstellungen/personen/"
+    assert c.get(f"/einstellungen/personen/{konten[M].pk}/eingeladen/").url == f"/einstellungen/personen/{konten[M].pk}/"
+    assert angemeldet(konten[P]).get(f"/einstellungen/personen/{konten[M].pk}/eingeladen/").status_code == 403
+
+
 def test_einladung_annehmen_und_anmelden(konten, bereich_a):
     bl = angemeldet(konten[BL])
     antwort = bl.post("/einstellungen/personen/einladen/", {"anzeigename": "Person 41", "email": "Person41@Example.test",
@@ -100,8 +136,15 @@ def test_sperre_je_ip_adresse_ueber_alle_konten(konten, settings):
     assert andere.session["_auth_user_id"] == str(konten[M].pk)
 
 
-def test_passwort_wird_mit_argon2_gespeichert(konten):
+@pytest.mark.argon2
+def test_passwort_wird_mit_argon2_gespeichert(konten, settings):
+    assert settings.PASSWORD_HASHERS[0].endswith("Argon2PasswordHasher")
     assert konten[M].password.startswith("argon2")
+
+
+def test_tests_laufen_mit_schnellem_hasher(konten):
+    """Gegenprobe zur Fixture ``schneller_passwort_hasher``."""
+    assert konten[M].password.startswith("md5$")
 
 
 # --- Erwähnungen und Benachrichtigungen ---

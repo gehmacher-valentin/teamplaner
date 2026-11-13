@@ -11,6 +11,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from django.core.paginator import Paginator
 from django.db import IntegrityError, transaction
 from django.db.models import Count, Max, ProtectedError
 from django.http import Http404, HttpResponse
@@ -30,7 +31,15 @@ from kern.protokoll import aenderungen, protokollieren
 from planung.kalender import gesetzliche_feiertage, neue_freie_tage, zeitraeume
 from planung.models import FreierTag, FreigabeStufe
 from projekte.models import Aufgabe, Status, Statusfarbe, Tag
-from zusammenarbeit.mail import KATEGORIEN, mail_aktiv, mail_eingerichtet, wartende_verwerfen
+from zusammenarbeit import mailverlauf
+from zusammenarbeit.mail import (
+    KATEGORIEN,
+    MAX_VERSUCHE,
+    mail_aktiv,
+    mail_eingerichtet,
+    wartende_verwerfen,
+)
+from zusammenarbeit.models import MailStatus
 
 from . import freigaben
 from .forms import BereichForm, FreigabeStufeForm, GewerkForm, StatusForm, TagForm
@@ -58,6 +67,7 @@ SEITEN = [
     ("team", "ansichten", gettext_lazy("Ansichten & Freigaben"), "einst_ansichten", _darf_ansichten),
     ("team", "rollen", gettext_lazy("Rollen & Rechte"), "einst_rollen", rechte.darf_konten_verwalten),
     ("system", "allgemein", gettext_lazy("Allgemein"), "einst_allgemein", rechte.darf_systemeinstellungen),
+    ("system", "mailversand", gettext_lazy("E-Mail-Versand"), "einst_mailversand", rechte.darf_systemeinstellungen),
     ("system", "listen", gettext_lazy("Listen"), "einst_listen", rechte.darf_systemeinstellungen),
     ("system", "kalender", gettext_lazy("Kalender"), "einst_kalender", rechte.darf_systemeinstellungen),
     ("system", "speicherplatz", gettext_lazy("Speicherplatz"), "einst_speicherplatz", rechte.darf_systemeinstellungen),
@@ -222,6 +232,45 @@ def allgemein(request):
     return seite(request, "kern/einst_allgemein.html", "allgemein", einstellungen=objekt,
                  freigabestufen=_liste_kontext("freigabestufe"),
                  mail_aktiv=mail_aktiv(), kein_smtp=not mail_eingerichtet())
+
+
+# Offene und aufgegebene E-Mails zuerst: das ist, was auf der Seite gesucht wird
+_MAIL_REIHENFOLGE = {MailStatus.FEHLER: 0, MailStatus.OFFEN: 1, MailStatus.GESENDET: 2}
+MAIL_JE_SEITE = 50
+MAIL_HOECHSTENS = 2000
+
+
+@erfordert(rechte.darf_systemeinstellungen)
+def mailversand(request):
+    """Postausgang für Admins ohne Zugang zum Server: was offen ist, was fehlschlug, was verschickt
+    wurde. Dieselben Angaben wie ``mail_protokoll`` auf der Kommandozeile, nie Betreff oder Text."""
+    status = request.GET.get("status", "")
+    if status not in mailverlauf.STATUS:
+        status = ""
+    eintraege = mailverlauf.verlauf(tage=settings.TEAMPLANER_AUFBEWAHRUNG_TAGE, status=status or None, limit=MAIL_HOECHSTENS)
+    if not status:
+        eintraege.sort(key=lambda e: _MAIL_REIHENFOLGE[e.status])  # stabil: je Status weiter neueste zuerst
+    blatt = Paginator(eintraege, MAIL_JE_SEITE).get_page(request.GET.get("seite"))
+    return seite(request, "kern/einst_mailversand.html", "mailversand", zahlen=mailverlauf.zahlen(), seite=blatt,
+                 filter_status=status, statusliste=[(s.value, s.label) for s in mailverlauf.STATUS],
+                 kein_smtp=not mail_eingerichtet(), mail_aktiv=mail_aktiv(), max_versuche=MAX_VERSUCHE,
+                 tage=settings.TEAMPLANER_AUFBEWAHRUNG_TAGE)
+
+
+@require_POST
+@erfordert(rechte.darf_systemeinstellungen)
+def mailversand_erneut(request, pk):
+    """Aufgegebene Benachrichtigung wieder einreihen. System-Mails nicht: ihr Text mit dem Passwort-Link
+    ist nach dem Aufgeben gelöscht, dort hilft ein neuer Link auf der Seite der Person."""
+    with transaction.atomic():
+        b = mailverlauf.erneut_versuchen(pk)
+        if b is not None:
+            protokollieren(request.user, "benachrichtigung", b.pk, "mail_erneut", {"person": b.empfaenger})
+    if b is None:
+        messages.error(request, _("Diese E-Mail ist nicht mehr aufgegeben."))
+    else:
+        messages.success(request, _("Die E-Mail wird erneut verschickt."))
+    return redirect("einst_mailversand")
 
 
 @login_required

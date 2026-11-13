@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Teamplaner\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 21:37+0100\n"
+"POT-Creation-Date: 2026-11-13 15:50+0100\n"
 "PO-Revision-Date: 2026-10-21 21:10+0200\n"
 "Last-Translator: Teamplaner\n"
 "Language-Team: English\n"
@@ -79,10 +79,12 @@ msgstr "Delivery date"
 #: bestellungen/models.py:37 projekte/models.py:126 projekte/models.py:127
 #: projekte/models.py:173 templates/bestellungen/_liste.html:19
 #: templates/bestellungen/liste.html:12 templates/bestellungen/liste.html:25
+#: templates/kern/einst_mailversand.html:24
+#: templates/kern/einst_mailversand.html:35
 #: templates/projekte/_aufgabe_detail.html:15
 #: templates/projekte/_aufgabe_zeile.html:61
 #: templates/projekte/_detail_feld.html:46 templates/projekte/projekt.html:41
-#: templates/projekte/projekt.html:75 verwaltung/einstellungen.py:267
+#: templates/projekte/projekt.html:75 verwaltung/einstellungen.py:316
 #: verwaltung/templatetags/verwaltung.py:14 zusammenarbeit/verlauf.py:17
 msgid "Status"
 msgstr "Status"
@@ -103,7 +105,7 @@ msgstr "Order"
 
 #: bestellungen/models.py:51 templates/base.html:73
 #: templates/bestellungen/liste.html:3 templates/bestellungen/liste.html:7
-#: templates/bestellungen/liste.html:10 zusammenarbeit/mail.py:44
+#: templates/bestellungen/liste.html:10 zusammenarbeit/mail.py:47
 msgid "Bestellungen"
 msgstr "Orders"
 
@@ -146,23 +148,16 @@ msgid "Das Ende liegt vor dem Beginn."
 msgstr "The end is before the start."
 
 #: gantt/dienste.py:53
-msgid ""
-"Die Aufgabe wurde inzwischen von jemand anderem geändert. Die Ansicht wurde "
-"aktualisiert."
-msgstr ""
-"The task has been changed by someone else in the meantime. The view has been "
-"refreshed."
+msgid "Die Aufgabe wurde inzwischen von jemand anderem geändert. Die Ansicht wurde aktualisiert."
+msgstr "The task has been changed by someone else in the meantime. The view has been refreshed."
 
 #: gantt/dienste.py:91
 msgid "Eine Aufgabe kann nicht von sich selbst abhängen."
 msgstr "A task cannot depend on itself."
 
 #: gantt/dienste.py:93
-msgid ""
-"Eine Hauptaufgabe umfasst ihre Unteraufgaben – zwischen ihnen gibt es keine "
-"Abhängigkeit."
-msgstr ""
-"A parent task spans its subtasks – there is no dependency between them."
+msgid "Eine Hauptaufgabe umfasst ihre Unteraufgaben – zwischen ihnen gibt es keine Abhängigkeit."
+msgstr "A parent task spans its subtasks – there is no dependency between them."
 
 #: gantt/dienste.py:97
 msgid "Diese Abhängigkeit gibt es bereits."
@@ -264,7 +259,7 @@ msgstr "Please set up two-factor authentication first."
 msgid "Bereich"
 msgstr "Unit"
 
-#: kern/models.py:29 planung/models.py:146 verwaltung/einstellungen.py:275
+#: kern/models.py:29 planung/models.py:146 verwaltung/einstellungen.py:324
 msgid "Bereiche"
 msgstr "Units"
 
@@ -278,7 +273,7 @@ msgid "Gewerk"
 msgstr "Trade"
 
 #: kern/models.py:41 kern/models.py:84 templates/kern/einst_profil.html:33
-#: templates/kern/personen.html:42 verwaltung/einstellungen.py:269
+#: templates/kern/personen.html:42 verwaltung/einstellungen.py:318
 msgid "Gewerke"
 msgstr "Trades"
 
@@ -304,10 +299,11 @@ msgid "Person"
 msgstr "Person"
 
 #: kern/models.py:100 templates/kern/person_bearbeiten.html:5
+#: templates/kern/person_eingeladen.html:5
 #: templates/kern/person_einladen.html:5 templates/kern/personen.html:3
 #: templates/kern/personen.html:7 templates/kern/personen.html:13
 #: templates/kern/platzhalter_bearbeiten.html:5
-#: templates/kern/platzhalter_neu.html:5 verwaltung/einstellungen.py:57
+#: templates/kern/platzhalter_neu.html:5 verwaltung/einstellungen.py:66
 msgid "Personen"
 msgstr "People"
 
@@ -399,6 +395,8 @@ msgid "Organisationsname"
 msgstr "Organization name"
 
 #: kern/models.py:283 templates/kern/einst_allgemein.html:12
+#: templates/kern/einst_mailversand.html:3
+#: templates/kern/einst_mailversand.html:6 verwaltung/einstellungen.py:70
 msgid "E-Mail-Versand"
 msgstr "Email sending"
 
@@ -428,12 +426,12 @@ msgstr "Placeholder"
 #: templates/projekte/_suchvorschlaege.html:16
 #: templates/projekte/projekt.html:9 templates/projekte/suche.html:32
 #: templates/teile/personen_optionen.html:2
-#: verwaltung/templatetags/verwaltung.py:21
 #: verwaltung/templatetags/verwaltung.py:22
+#: verwaltung/templatetags/verwaltung.py:23
 msgid "archiviert"
 msgstr "archived"
 
-#: kern/views.py:34 verwaltung/views.py:474
+#: kern/views.py:34 verwaltung/views.py:514
 msgid "Foto entfernt."
 msgstr "Photo removed."
 
@@ -490,7 +488,7 @@ msgstr "Attachments"
 
 #: notizen/views.py:52 templates/notizen/notiz.html:5
 #: templates/notizen/uebersicht.html:3 templates/notizen/uebersicht.html:12
-#: templates/notizen/uebersicht.html:14 verwaltung/views.py:620
+#: templates/notizen/uebersicht.html:14 verwaltung/views.py:657
 msgid "Persönliche Notizen"
 msgstr "Personal notes"
 
@@ -573,12 +571,8 @@ msgid "Der Eintrag wurde inzwischen gelöscht."
 msgstr "This entry has been deleted in the meantime."
 
 #: planung/dienste.py:139
-msgid ""
-"Der Eintrag wurde inzwischen von jemand anderem geändert. Die Ansicht wurde "
-"aktualisiert."
-msgstr ""
-"This entry has been changed by someone else in the meantime. The view has "
-"been refreshed."
+msgid "Der Eintrag wurde inzwischen von jemand anderem geändert. Die Ansicht wurde aktualisiert."
+msgstr "This entry has been changed by someone else in the meantime. The view has been refreshed."
 
 #: planung/dienste.py:250
 msgid "Sie dürfen die Info-Zeile nicht bearbeiten."
@@ -698,7 +692,7 @@ msgstr "Day info"
 msgid "Freigabestufe"
 msgstr "Clearance level"
 
-#: planung/models.py:114 verwaltung/einstellungen.py:278
+#: planung/models.py:114 verwaltung/einstellungen.py:327
 msgid "Freigabestufen"
 msgstr "Clearance levels"
 
@@ -736,7 +730,7 @@ msgid "Freigabe"
 msgstr "Access"
 
 #: planung/models.py:187 templates/kern/einst_ansichten.html:17
-#: templates/kern/person_bearbeiten.html:76 templates/teile/freigaben.html:3
+#: templates/kern/person_bearbeiten.html:68 templates/teile/freigaben.html:3
 msgid "Freigaben"
 msgstr "Access"
 
@@ -927,8 +921,8 @@ msgstr "Task"
 
 #: projekte/models.py:190 templates/projekte/_suchvorschlaege.html:3
 #: templates/projekte/projekt.html:72 templates/projekte/suche.html:17
-#: templates/projekte/suche.html:18 verwaltung/views.py:618
-#: zusammenarbeit/mail.py:28
+#: templates/projekte/suche.html:18 verwaltung/views.py:655
+#: zusammenarbeit/mail.py:31
 msgid "Aufgaben"
 msgstr "Tasks"
 
@@ -941,9 +935,7 @@ msgid "Abhängigkeiten"
 msgstr "Dependencies"
 
 #: projekte/termine.py:134
-msgid ""
-"Die Termine lassen sich wegen widersprüchlicher Abhängigkeiten nicht "
-"nachziehen."
+msgid "Die Termine lassen sich wegen widersprüchlicher Abhängigkeiten nicht nachziehen."
 msgstr "The dates cannot be adjusted because of contradictory dependencies."
 
 #: projekte/views.py:121
@@ -959,8 +951,8 @@ msgstr "Project archived."
 msgid "Projekt wiederhergestellt."
 msgstr "Project restored."
 
-#: projekte/views.py:141 verwaltung/einstellungen.py:548
-#: verwaltung/views.py:403 verwaltung/views.py:515
+#: projekte/views.py:141 verwaltung/einstellungen.py:597
+#: verwaltung/views.py:443 verwaltung/views.py:555
 msgid "Gespeichert."
 msgstr "Saved."
 
@@ -1014,11 +1006,11 @@ msgid "Ohne Termin"
 msgstr "No due date"
 
 #: templates/base.html:7 templates/base.html:18 templates/base.html:75
-#: templates/kern/person_bearbeiten.html:79
+#: templates/kern/person_bearbeiten.html:71
 #: templates/planung/ansicht_bearbeiten.html:6
 #: templates/planung/teamplaner.html:3 templates/projekte/projekt.html:21
 #: templates/registration/einfach.html:6 templates/registration/einfach.html:15
-#: verwaltung/einstellungen.py:434 zusammenarbeit/mail.py:77
+#: verwaltung/einstellungen.py:483 zusammenarbeit/mail.py:80
 msgid "Teamplaner"
 msgstr "Team planner"
 
@@ -1078,13 +1070,13 @@ msgstr "My tasks"
 
 #: templates/base.html:71 templates/kern/einst_kalender.html:3
 #: templates/kern/einst_kalender.html:5 templates/planung/teamplaner.html:3
-#: verwaltung/einstellungen.py:62
+#: verwaltung/einstellungen.py:72
 msgid "Kalender"
 msgstr "Calendar"
 
 #: templates/base.html:76 templates/gantt/ansicht_bearbeiten.html:6
-#: templates/gantt/gantt.html:3 templates/kern/person_bearbeiten.html:79
-#: verwaltung/einstellungen.py:434
+#: templates/gantt/gantt.html:3 templates/kern/person_bearbeiten.html:71
+#: verwaltung/einstellungen.py:483
 msgid "Gantt-Diagramm"
 msgstr "Gantt chart"
 
@@ -1156,6 +1148,7 @@ msgstr "New view"
 
 #: templates/gantt/ansicht_bearbeiten.html:5
 #: templates/kern/person_bearbeiten.html:5
+#: templates/kern/person_eingeladen.html:5
 #: templates/kern/person_einladen.html:5
 #: templates/kern/platzhalter_bearbeiten.html:5
 #: templates/kern/platzhalter_neu.html:5
@@ -1168,7 +1161,7 @@ msgstr "Breadcrumb"
 
 #: templates/gantt/ansicht_bearbeiten.html:5
 #: templates/kern/einst_ansichten.html:3 templates/kern/einst_ansichten.html:7
-#: templates/planung/ansicht_bearbeiten.html:5 verwaltung/einstellungen.py:58
+#: templates/planung/ansicht_bearbeiten.html:5 verwaltung/einstellungen.py:67
 msgid "Ansichten & Freigaben"
 msgstr "Views & sharing"
 
@@ -1244,6 +1237,18 @@ msgstr "Delete %(name)s"
 msgid "Ihr Passwort"
 msgstr "Your password"
 
+#: templates/kern/_passwort_link.html:4
+msgid "Link zum Festlegen des Passworts"
+msgstr "Link for setting the password"
+
+#: templates/kern/_passwort_link.html:5 templates/projekte/_detail_kopf.html:16
+msgid "Link kopieren"
+msgstr "Copy link"
+
+#: templates/kern/_passwort_link.html:7
+msgid "QR-Code"
+msgstr "QR code"
+
 #: templates/kern/_posteingang_feld.html:4 templates/kern/posteingang.html:7
 msgid "Alle als gelesen markieren"
 msgstr "Mark all as read"
@@ -1268,7 +1273,7 @@ msgstr[0] "%(n)s unread"
 msgstr[1] "%(n)s unread"
 
 #: templates/kern/anhaenge.html:3 templates/kern/anhaenge.html:6
-#: verwaltung/einstellungen.py:63
+#: verwaltung/einstellungen.py:73
 msgid "Speicherplatz"
 msgstr "Storage"
 
@@ -1280,8 +1285,8 @@ msgstr "Used"
 msgid "Frei"
 msgstr "Free"
 
-#: templates/kern/anhaenge.html:16 templates/projekte/projekt.html:32
-#: templates/projekte/projekt.html:35
+#: templates/kern/anhaenge.html:16 templates/kern/einst_mailversand.html:23
+#: templates/projekte/projekt.html:32 templates/projekte/projekt.html:35
 msgid "Filter"
 msgstr "Filter"
 
@@ -1305,8 +1310,8 @@ msgstr "Newest first"
 msgid "Nur archivierte Projekte"
 msgstr "Archived projects only"
 
-#: templates/kern/anhaenge.html:25 templates/kern/personen.html:38
-#: templates/kern/protokoll.html:11
+#: templates/kern/anhaenge.html:25 templates/kern/einst_mailversand.html:30
+#: templates/kern/personen.html:38 templates/kern/protokoll.html:11
 msgid "Anzeigen"
 msgstr "Show"
 
@@ -1332,21 +1337,22 @@ msgstr "Permanently delete “%(name)s”?"
 msgid "Keine Anhänge."
 msgstr "No attachments."
 
-#: templates/kern/anhaenge.html:46
+#: templates/kern/anhaenge.html:46 templates/kern/einst_mailversand.html:58
 msgid "Zurück"
 msgstr "Back"
 
-#: templates/kern/anhaenge.html:47 templates/kern/protokoll.html:62
+#: templates/kern/anhaenge.html:47 templates/kern/einst_mailversand.html:59
+#: templates/kern/protokoll.html:62
 #, python-format
 msgid "Seite %(n)s von %(gesamt)s"
 msgstr "Page %(n)s of %(gesamt)s"
 
-#: templates/kern/anhaenge.html:48
+#: templates/kern/anhaenge.html:48 templates/kern/einst_mailversand.html:60
 msgid "Weiter"
 msgstr "Next"
 
 #: templates/kern/einst_allgemein.html:3 templates/kern/einst_allgemein.html:5
-#: templates/kern/einst_allgemein.html:6 verwaltung/einstellungen.py:60
+#: templates/kern/einst_allgemein.html:6 verwaltung/einstellungen.py:69
 msgid "Allgemein"
 msgstr "General"
 
@@ -1385,13 +1391,13 @@ msgid "%(name)s öffnen"
 msgstr "Open %(name)s"
 
 #: templates/kern/einst_ansichten.html:31
-#: templates/kern/person_bearbeiten.html:85
+#: templates/kern/person_bearbeiten.html:77
 msgid "Noch keine Ansichten."
 msgstr "No views yet."
 
 #: templates/kern/einst_benachrichtigungen.html:3
 #: templates/kern/einst_benachrichtigungen.html:5
-#: verwaltung/einstellungen.py:55 zusammenarbeit/models.py:128
+#: verwaltung/einstellungen.py:64 zusammenarbeit/models.py:128
 msgid "Benachrichtigungen"
 msgstr "Notifications"
 
@@ -1410,7 +1416,7 @@ msgstr "%(titel)s: all"
 
 #: templates/kern/einst_darstellung.html:3
 #: templates/kern/einst_darstellung.html:5
-#: templates/kern/einst_darstellung.html:6 verwaltung/einstellungen.py:56
+#: templates/kern/einst_darstellung.html:6 verwaltung/einstellungen.py:65
 msgid "Darstellung"
 msgstr "Appearance"
 
@@ -1445,7 +1451,7 @@ msgstr[1] "%(g)s public holidays · %(n)s days off"
 msgid "automatisch"
 msgstr "automatic"
 
-#: templates/kern/einst_kalender.html:29 verwaltung/einstellungen.py:280
+#: templates/kern/einst_kalender.html:29 verwaltung/einstellungen.py:329
 #, python-format
 msgid "%(n)s Tag"
 msgid_plural "%(n)s Tage"
@@ -1485,12 +1491,132 @@ msgid "%(datum)s entfernen"
 msgstr "Remove %(datum)s"
 
 #: templates/kern/einst_listen.html:3 templates/kern/einst_listen.html:5
-#: verwaltung/einstellungen.py:61
+#: verwaltung/einstellungen.py:71
 msgid "Listen"
 msgstr "Lists"
 
+#: templates/kern/einst_mailversand.html:8
+msgid "Auf diesem Server ist kein SMTP-Server eingerichtet. Es wird nichts verschickt; Einladungs- und Passwort-Links lassen sich nur kopieren."
+msgstr "No SMTP server is set up on this server. Nothing is sent; invitation and password links can only be copied."
+
+#: templates/kern/einst_mailversand.html:10
+#, python-format
+msgid "Der E-Mail-Versand ist abgeschaltet (<a href=\"%(allgemein)s\">Allgemein</a>). Es wird nichts verschickt."
+msgstr "Email sending is switched off (<a href=\"%(allgemein)s\">General</a>). Nothing is sent."
+
+#: templates/kern/einst_mailversand.html:12
+#, python-format
+msgid "Die älteste offene E-Mail wartet seit %(seit)s. Vermutlich läuft der Versanddienst nicht. Am Server: <code>sudo teamplaner status</code> und <code>sudo teamplaner logs mailer</code>."
+msgstr "The oldest pending email has been waiting since %(seit)s. The mail service is probably not running. On the server: <code>sudo teamplaner status</code> and <code>sudo teamplaner logs mailer</code>."
+
+#: templates/kern/einst_mailversand.html:14
+#| msgid "Über"
+msgid "Überblick"
+msgstr "Overview"
+
+#: templates/kern/einst_mailversand.html:16
+#| msgid "E-Mail-Versand"
+msgid "Versand"
+msgstr "Sending"
+
+#: templates/kern/einst_mailversand.html:16
+#| msgid "Eingerichtet"
+msgid "eingeschaltet"
+msgstr "on"
+
+#: templates/kern/einst_mailversand.html:16
+#| msgid "Status"
+msgid "aus"
+msgstr "off"
+
+#: templates/kern/einst_mailversand.html:17 templates/projekte/projekt.html:42
+msgid "Offen"
+msgstr "Open"
+
+#: templates/kern/einst_mailversand.html:17
+#| msgid "Eingerichtet seit %(seit)s"
+msgid "älteste seit %(seit)s"
+msgstr "oldest since %(seit)s"
+
+#: templates/kern/einst_mailversand.html:18
+#| msgid "Aufgaben"
+msgid "Aufgegeben"
+msgstr "Given up"
+
+#: templates/kern/einst_mailversand.html:18
+#| msgid "%(n)s Person"
+#| msgid_plural "%(n)s Personen"
+msgid "nach %(n)s Versuchen"
+msgstr "after %(n)s attempts"
+
+#: templates/kern/einst_mailversand.html:19
+#: templates/kern/einst_mailversand.html:35
+#| msgid "verschickt"
+msgid "Verschickt"
+msgstr "Sent"
+
+#: templates/kern/einst_mailversand.html:19
+msgid "in den letzten 24 Stunden"
+msgstr "in the last 24 hours"
+
+#: templates/kern/einst_mailversand.html:26
+msgid "Alle, Offene und Aufgegebene zuerst"
+msgstr "All, pending and given up first"
+
+#: templates/kern/einst_mailversand.html:33
+#| msgid "E-Mail"
+msgid "E-Mails"
+msgstr "Emails"
+
+#: templates/kern/einst_mailversand.html:35
+#| msgid "bestellt"
+msgid "Erstellt"
+msgstr "Created"
+
+#: templates/kern/einst_mailversand.html:35 templates/kern/personen.html:27
+msgid "Art"
+msgstr "Type"
+
+#: templates/kern/einst_mailversand.html:35
+msgid "Empfänger"
+msgstr "Recipient"
+
+#: templates/kern/einst_mailversand.html:35
+#| msgid "Person suchen"
+msgid "Versuche"
+msgstr "Attempts"
+
+#: templates/kern/einst_mailversand.html:41
+#| msgid "Nur Freigegebene"
+msgid "aufgegeben"
+msgstr "given up"
+
+#: templates/kern/einst_mailversand.html:46
+#| msgid "Personen suchen"
+msgid "Erneut versuchen"
+msgstr "Try again"
+
+#: templates/kern/einst_mailversand.html:48
+msgid "Der Text mit dem Link wurde nach dem Aufgeben gelöscht. Auf der Seite der Person einen neuen Link erzeugen."
+msgstr "The text with the link was deleted after giving up. Create a new link on the person's page."
+
+#: templates/kern/einst_mailversand.html:48
+#| msgid "Konto anlegen und Link erzeugen"
+msgid "neuen Link erzeugen"
+msgstr "create a new link"
+
+#: templates/kern/einst_mailversand.html:53
+#| msgid "keine E-Mail"
+msgid "Keine E-Mails."
+msgstr "No emails."
+
+#: templates/kern/einst_mailversand.html:64
+#, python-format
+msgid "Betreff und Text werden nicht angezeigt. Der Verlauf reicht %(n)s Tage zurück. Am Server zeigt <code>sudo teamplaner verwalten mail_protokoll</code> dieselben Angaben."
+msgstr "Subject and text are not shown. The history goes back %(n)s days. On the server, <code>sudo teamplaner verwalten mail_protokoll</code> shows the same information."
+
 #: templates/kern/einst_profil.html:3 templates/kern/einst_profil.html:5
-#: templates/kern/einst_profil.html:6 verwaltung/einstellungen.py:53
+#: templates/kern/einst_profil.html:6 verwaltung/einstellungen.py:62
 msgid "Profil"
 msgstr "Profile"
 
@@ -1502,12 +1628,12 @@ msgstr "Change profile picture"
 msgid "Foto wählen"
 msgstr "Choose photo"
 
-#: templates/kern/einst_profil.html:24 templates/kern/person_bearbeiten.html:69
+#: templates/kern/einst_profil.html:24 templates/kern/person_bearbeiten.html:61
 msgid "Entfernen"
 msgstr "Remove"
 
 #: templates/kern/einst_rollen.html:3 templates/kern/einst_rollen.html:6
-#: verwaltung/einstellungen.py:59
+#: verwaltung/einstellungen.py:68
 msgid "Rollen & Rechte"
 msgstr "Roles & permissions"
 
@@ -1541,7 +1667,7 @@ msgstr "no access"
 
 #: templates/kern/einst_sicherheit.html:3
 #: templates/kern/einst_sicherheit.html:5
-#: templates/kern/zwei_faktor_einrichten.html:5 verwaltung/einstellungen.py:54
+#: templates/kern/zwei_faktor_einrichten.html:5 verwaltung/einstellungen.py:63
 msgid "Anmeldung & Sicherheit"
 msgstr "Sign-in & security"
 
@@ -1554,7 +1680,7 @@ msgid "Passwort ändern"
 msgstr "Change password"
 
 #: templates/kern/einst_sicherheit.html:22
-#: templates/kern/person_bearbeiten.html:56
+#: templates/kern/person_bearbeiten.html:48
 #: templates/kern/zwei_faktor_einrichten.html:3
 msgid "Zwei-Faktor-Anmeldung"
 msgstr "Two-factor authentication"
@@ -1564,7 +1690,7 @@ msgid "Eingerichtet"
 msgstr "Set up"
 
 #: templates/kern/einst_sicherheit.html:23
-#: templates/kern/person_bearbeiten.html:64
+#: templates/kern/person_bearbeiten.html:56
 msgid "Nicht eingerichtet"
 msgstr "Not set up"
 
@@ -1620,7 +1746,7 @@ msgid "Ausschalten"
 msgstr "Turn off"
 
 #: templates/kern/einst_ueber.html:3 templates/kern/einst_ueber.html:5
-#: templates/kern/einst_ueber.html:6 verwaltung/einstellungen.py:64
+#: templates/kern/einst_ueber.html:6 verwaltung/einstellungen.py:74
 msgid "Über"
 msgstr "About"
 
@@ -1642,23 +1768,20 @@ msgid "Quellcode"
 msgstr "Source code"
 
 #: templates/kern/einst_ueber.html:11
-msgid ""
-"Konzept und Entwicklung: Valentin Gehmacher. Programmiert mit KI-"
-"Unterstützung (Claude Code von Anthropic)."
-msgstr ""
-"Concept and development: Valentin Gehmacher. Programmed with AI assistance "
-"(Claude Code by Anthropic)."
+msgid "Konzept und Entwicklung: Valentin Gehmacher. Programmiert mit KI-Unterstützung (Claude Code von Anthropic)."
+msgstr "Concept and development: Valentin Gehmacher. Programmed with AI assistance (Claude Code by Anthropic)."
 
 #: templates/kern/einst_ueber.html:12
 msgid "Grafiken der Feieranimation: Fluent Emoji von Microsoft (MIT-Lizenz)."
 msgstr "Celebration graphics: Fluent Emoji by Microsoft (MIT license)."
 
 #: templates/kern/person_bearbeiten.html:8 templates/kern/personen.html:52
-#: verwaltung/templatetags/verwaltung.py:21
+#: verwaltung/templatetags/verwaltung.py:22
 msgid "deaktiviert"
 msgstr "deactivated"
 
-#: templates/kern/person_bearbeiten.html:8 templates/kern/personen.html:50
+#: templates/kern/person_bearbeiten.html:8
+#: templates/kern/person_eingeladen.html:8 templates/kern/personen.html:50
 msgid "Einladung offen"
 msgstr "Invitation pending"
 
@@ -1666,128 +1789,126 @@ msgstr "Invitation pending"
 msgid "Systemkonto"
 msgstr "System account"
 
-#: templates/kern/person_bearbeiten.html:14
-msgid "Link zum Festlegen des Passworts"
-msgstr "Link for setting the password"
-
-#: templates/kern/person_bearbeiten.html:15
-#: templates/projekte/_detail_kopf.html:16
-msgid "Link kopieren"
-msgstr "Copy link"
-
-#: templates/kern/person_bearbeiten.html:17
-msgid "QR-Code"
-msgstr "QR code"
-
-#: templates/kern/person_bearbeiten.html:24
+#: templates/kern/person_bearbeiten.html:16
 #: templates/kern/person_einladen.html:9
 #: templates/kern/platzhalter_bearbeiten.html:14
 #: templates/kern/platzhalter_neu.html:9
 msgid "Stammdaten"
 msgstr "Details"
 
-#: templates/kern/person_bearbeiten.html:42
+#: templates/kern/person_bearbeiten.html:34
 msgid "Anmeldung"
 msgstr "Sign-in"
 
-#: templates/kern/person_bearbeiten.html:43
+#: templates/kern/person_bearbeiten.html:35
 #, python-format
-msgid ""
-"Persönliche Daten am %(datum)s entfernt (Frist nach der Deaktivierung). Zum "
-"Reaktivieren eine neue E-Mail-Adresse eintragen und eine Einladung schicken."
-msgstr ""
-"Personal data removed on %(datum)s (retention period after deactivation). To "
-"reactivate, enter a new email address and send an invitation."
+msgid "Persönliche Daten am %(datum)s entfernt (Frist nach der Deaktivierung). Zum Reaktivieren eine neue E-Mail-Adresse eintragen und eine Einladung schicken."
+msgstr "Personal data removed on %(datum)s (retention period after deactivation). To reactivate, enter a new email address and send an invitation."
 
-#: templates/kern/person_bearbeiten.html:46
+#: templates/kern/person_bearbeiten.html:38
 msgid "Passwort gesetzt"
 msgstr "Password set"
 
-#: templates/kern/person_bearbeiten.html:46
+#: templates/kern/person_bearbeiten.html:38
 msgid "Einladung noch nicht angenommen"
 msgstr "Invitation not accepted yet"
 
-#: templates/kern/person_bearbeiten.html:47
+#: templates/kern/person_bearbeiten.html:39
 msgid "Letzte Anmeldung"
 msgstr "Last sign-in"
 
-#: templates/kern/person_bearbeiten.html:50
-msgid ""
-"Das bisherige Passwort gilt danach nicht mehr, bis die Person über den Link "
-"ein neues festlegt. Fortfahren?"
-msgstr ""
-"The previous password will then no longer be valid until the person sets a "
-"new one via the link. Continue?"
+#: templates/kern/person_bearbeiten.html:42
+msgid "Das bisherige Passwort gilt danach nicht mehr, bis die Person über den Link ein neues festlegt. Fortfahren?"
+msgstr "The previous password will then no longer be valid until the person sets a new one via the link. Continue?"
 
-#: templates/kern/person_bearbeiten.html:51
+#: templates/kern/person_bearbeiten.html:43
 msgid "Neuen Einladungslink erzeugen"
 msgstr "Create new invitation link"
 
-#: templates/kern/person_bearbeiten.html:51
+#: templates/kern/person_bearbeiten.html:43
 msgid "Link zum Zurücksetzen schicken"
 msgstr "Send reset link"
 
-#: templates/kern/person_bearbeiten.html:51
+#: templates/kern/person_bearbeiten.html:43
 msgid "Passwort zurücksetzen und Link erzeugen"
 msgstr "Reset password and create link"
 
-#: templates/kern/person_bearbeiten.html:58
+#: templates/kern/person_bearbeiten.html:50
 #, python-format
 msgid "Eingerichtet seit %(seit)s"
 msgstr "Set up since %(seit)s"
 
-#: templates/kern/person_bearbeiten.html:60
-msgid ""
-"Zwei-Faktor-Anmeldung zurücksetzen, z. B. weil das Telefon verloren ist? Die "
-"Person bekommt eine E-Mail."
-msgstr ""
-"Reset two-factor authentication, e.g. because the phone was lost? The person "
-"will receive an email."
+#: templates/kern/person_bearbeiten.html:52
+msgid "Zwei-Faktor-Anmeldung zurücksetzen, z. B. weil das Telefon verloren ist? Die Person bekommt eine E-Mail."
+msgstr "Reset two-factor authentication, e.g. because the phone was lost? The person will receive an email."
 
-#: templates/kern/person_bearbeiten.html:60
-msgid ""
-"Zwei-Faktor-Anmeldung zurücksetzen, z. B. weil das Telefon verloren ist?"
+#: templates/kern/person_bearbeiten.html:52
+msgid "Zwei-Faktor-Anmeldung zurücksetzen, z. B. weil das Telefon verloren ist?"
 msgstr "Reset two-factor authentication, e.g. because the phone was lost?"
 
-#: templates/kern/person_bearbeiten.html:61
+#: templates/kern/person_bearbeiten.html:53
 msgid "Zurücksetzen"
 msgstr "Reset"
 
-#: templates/kern/person_bearbeiten.html:68
+#: templates/kern/person_bearbeiten.html:60
 msgid "Profilbild"
 msgstr "Profile picture"
 
-#: templates/kern/person_bearbeiten.html:69
+#: templates/kern/person_bearbeiten.html:61
 msgid "Profilbild entfernen?"
 msgstr "Remove profile picture?"
 
-#: templates/kern/person_bearbeiten.html:93
+#: templates/kern/person_bearbeiten.html:85
 msgid "Konto deaktivieren"
 msgstr "Deactivate account"
 
-#: templates/kern/person_bearbeiten.html:93
+#: templates/kern/person_bearbeiten.html:85
 msgid "Deaktivieren"
 msgstr "Deactivate"
 
-#: templates/kern/person_bearbeiten.html:94
+#: templates/kern/person_bearbeiten.html:86
 #, python-format
 msgid "Konto von %(name)s deaktivieren?"
 msgstr "Deactivate the account of %(name)s?"
 
-#: templates/kern/person_bearbeiten.html:95
-msgid ""
-"Die Person kann sich nicht mehr anmelden; Aufgaben und Einteilungen bleiben "
-"erhalten."
+#: templates/kern/person_bearbeiten.html:87
+msgid "Die Person kann sich nicht mehr anmelden; Aufgaben und Einteilungen bleiben erhalten."
 msgstr "The person can no longer sign in; tasks and assignments are kept."
 
-#: templates/kern/person_bearbeiten.html:98
-#: templates/kern/person_bearbeiten.html:99
+#: templates/kern/person_bearbeiten.html:90
+#: templates/kern/person_bearbeiten.html:91
 msgid "Konto reaktivieren"
 msgstr "Reactivate account"
 
-#: templates/kern/person_bearbeiten.html:100
+#: templates/kern/person_bearbeiten.html:92
 msgid "Reaktivieren"
 msgstr "Reactivate"
+
+#: templates/kern/person_eingeladen.html:11 zusammenarbeit/mail.py:205
+#: zusammenarbeit/models.py:144
+msgid "Einladung"
+msgstr "Invitation"
+
+#: templates/kern/person_eingeladen.html:13
+#| msgid "Der Link geht zusätzlich per E-Mail an %(email)s."
+msgid "Der Link wird nur jetzt angezeigt. Er geht zusätzlich per E-Mail an die Person."
+msgstr "The link is shown only now. It is also sent to the person by email."
+
+#: templates/kern/person_eingeladen.html:13
+#| msgid ""
+#| "Das bisherige Passwort gilt nicht mehr. Bitte den Link an die Person "
+#| "weitergeben."
+msgid "Der Link wird nur jetzt angezeigt. Bitte jetzt kopieren und an die Person weitergeben."
+msgstr "The link is shown only now. Please copy it now and pass it on to the person."
+
+#: templates/kern/person_eingeladen.html:14
+msgid "Konten mit gleicher oder höherer Rolle können Sie danach nicht bearbeiten. Einen neuen Link erzeugt eine höhere Rolle, für Admin-Konten die Kommandozeile."
+msgstr "You cannot edit accounts with the same or a higher role afterwards. A higher role creates a new link; for admin accounts, use the command line."
+
+#: templates/kern/person_eingeladen.html:15
+#| msgid "Personentage"
+msgid "Zur Personenliste"
+msgstr "To the list of people"
 
 #: templates/kern/person_einladen.html:3 templates/kern/person_einladen.html:5
 #: templates/kern/person_einladen.html:6 templates/kern/personen.html:10
@@ -1810,10 +1931,6 @@ msgstr "Name or e-mail"
 #: templates/kern/protokoll.html:20 templates/projekte/projekt.html:43
 msgid "Alle"
 msgstr "All"
-
-#: templates/kern/personen.html:27
-msgid "Art"
-msgstr "Type"
 
 #: templates/kern/personen.html:33
 msgid "Zustand"
@@ -1914,11 +2031,11 @@ msgid "Wer"
 msgstr "Who"
 
 #: templates/kern/protokoll.html:36 templates/kern/protokoll.html:51
-#: templates/projekte/_aufgabe_detail.html:111 verwaltung/einstellungen.py:66
+#: templates/projekte/_aufgabe_detail.html:111 verwaltung/einstellungen.py:76
 msgid "System"
 msgstr "System"
 
-#: templates/kern/protokoll.html:37 verwaltung/templatetags/verwaltung.py:20
+#: templates/kern/protokoll.html:37 verwaltung/templatetags/verwaltung.py:21
 msgid "gelöscht"
 msgstr "deleted"
 
@@ -1947,32 +2064,20 @@ msgid "Zwei-Faktor-Anmeldung einrichten"
 msgstr "Set up two-factor authentication"
 
 #: templates/kern/zwei_faktor_einrichten.html:7
-msgid ""
-"Für Ihre Rolle ist die Zwei-Faktor-Anmeldung vorgeschrieben. Bitte richten "
-"Sie sie jetzt ein – danach geht es normal weiter."
-msgstr ""
-"Two-factor authentication is required for your role. Please set it up now – "
-"then you can continue as usual."
+msgid "Für Ihre Rolle ist die Zwei-Faktor-Anmeldung vorgeschrieben. Bitte richten Sie sie jetzt ein – danach geht es normal weiter."
+msgstr "Two-factor authentication is required for your role. Please set it up now – then you can continue as usual."
 
 #: templates/kern/zwei_faktor_einrichten.html:8
-msgid ""
-"Nach dem Speichern gilt nur noch das neue Telefon; die bisherigen "
-"Ersatzcodes werden ersetzt."
-msgstr ""
-"After saving, only the new phone is valid; the previous backup codes are "
-"replaced."
+msgid "Nach dem Speichern gilt nur noch das neue Telefon; die bisherigen Ersatzcodes werden ersetzt."
+msgstr "After saving, only the new phone is valid; the previous backup codes are replaced."
 
 #: templates/kern/zwei_faktor_einrichten.html:10
 msgid "1. App installieren"
 msgstr "1. Install an app"
 
 #: templates/kern/zwei_faktor_einrichten.html:11
-msgid ""
-"Eine Authenticator-App auf dem Telefon, z. B. Microsoft Authenticator, "
-"Google Authenticator, FreeOTP oder die Passwort-App des iPhones."
-msgstr ""
-"An authenticator app on your phone, e.g. Microsoft Authenticator, Google "
-"Authenticator, FreeOTP or the iPhone Passwords app."
+msgid "Eine Authenticator-App auf dem Telefon, z. B. Microsoft Authenticator, Google Authenticator, FreeOTP oder die Passwort-App des iPhones."
+msgstr "An authenticator app on your phone, e.g. Microsoft Authenticator, Google Authenticator, FreeOTP or the iPhone Passwords app."
 
 #: templates/kern/zwei_faktor_einrichten.html:12
 msgid "2. QR-Code scannen"
@@ -1992,20 +2097,12 @@ msgid "Ersatzcodes"
 msgstr "Backup codes"
 
 #: templates/kern/zwei_faktor_ersatzcodes.html:7
-msgid ""
-"Diese Codes werden nur jetzt angezeigt. Bitte ausdrucken oder an einem "
-"sicheren Ort aufbewahren – nicht auf dem Telefon mit der App."
-msgstr ""
-"These codes are shown only now. Please print them or keep them in a safe "
-"place – not on the phone with the app."
+msgid "Diese Codes werden nur jetzt angezeigt. Bitte ausdrucken oder an einem sicheren Ort aufbewahren – nicht auf dem Telefon mit der App."
+msgstr "These codes are shown only now. Please print them or keep them in a safe place – not on the phone with the app."
 
 #: templates/kern/zwei_faktor_ersatzcodes.html:8
-msgid ""
-"Mit einem Ersatzcode melden Sie sich an, wenn das Telefon fehlt. Jeder Code "
-"gilt einmal."
-msgstr ""
-"Use a backup code to sign in when you do not have your phone. Each code "
-"works once."
+msgid "Mit einem Ersatzcode melden Sie sich an, wenn das Telefon fehlt. Jeder Code gilt einmal."
+msgstr "Use a backup code to sign in when you do not have your phone. Each code works once."
 
 #: templates/kern/zwei_faktor_ersatzcodes.html:11
 msgid "Drucken"
@@ -2032,11 +2129,8 @@ msgstr "New note"
 
 #: templates/notizen/_konflikt.html:2
 #, python-format
-msgid ""
-"Die Notiz wurde inzwischen von %(name)s geändert. Ihr Text ist nicht "
-"gespeichert."
-msgstr ""
-"%(name)s has changed the note in the meantime. Your text has not been saved."
+msgid "Die Notiz wurde inzwischen von %(name)s geändert. Ihr Text ist nicht gespeichert."
+msgstr "%(name)s has changed the note in the meantime. Your text has not been saved."
 
 #: templates/notizen/_konflikt.html:3 templates/projekte/_detail_feld.html:92
 msgid "Aktuelle Fassung"
@@ -2137,7 +2231,7 @@ msgid_plural "%(n)s Tage eingeteilt"
 msgstr[0] "%(n)s day scheduled"
 msgstr[1] "%(n)s days scheduled"
 
-#: templates/projekte/_aufgabe_detail.html:25 verwaltung/einstellungen.py:272
+#: templates/projekte/_aufgabe_detail.html:25 verwaltung/einstellungen.py:321
 msgid "Projekt-Tags"
 msgstr "Project tags"
 
@@ -2381,10 +2475,6 @@ msgstr "Edit project"
 msgid "Filter zurücksetzen"
 msgstr "Reset filters"
 
-#: templates/projekte/projekt.html:42
-msgid "Offen"
-msgstr "Open"
-
 #: templates/projekte/projekt.html:48
 msgid "Alle Verantwortlichen"
 msgstr "All assignees"
@@ -2437,7 +2527,7 @@ msgstr "Section name"
 msgid "Umbenennen"
 msgstr "Rename"
 
-#: templates/projekte/projekt.html:106 verwaltung/einstellungen.py:268
+#: templates/projekte/projekt.html:106 verwaltung/einstellungen.py:317
 #, python-format
 msgid "%(n)s Aufgabe"
 msgid_plural "%(n)s Aufgaben"
@@ -2537,12 +2627,8 @@ msgid "Code eingeben"
 msgstr "Enter code"
 
 #: templates/registration/anmelden_code.html:6
-msgid ""
-"Öffnen Sie Ihre Authenticator-App und geben Sie den sechsstelligen Code für "
-"den Teamplaner ein. Ohne Telefon geht auch einer Ihrer Ersatzcodes."
-msgstr ""
-"Open your authenticator app and enter the six-digit code for Teamplaner. "
-"Without your phone, one of your backup codes also works."
+msgid "Öffnen Sie Ihre Authenticator-App und geben Sie den sechsstelligen Code für den Teamplaner ein. Ohne Telefon geht auch einer Ihrer Ersatzcodes."
+msgstr "Open your authenticator app and enter the six-digit code for Teamplaner. Without your phone, one of your backup codes also works."
 
 #: templates/registration/gesperrt.html:3
 msgid "Gesperrt"
@@ -2553,12 +2639,8 @@ msgid "Vorübergehend gesperrt"
 msgstr "Temporarily locked"
 
 #: templates/registration/gesperrt.html:6
-msgid ""
-"Zu viele fehlgeschlagene Anmeldeversuche. Bitte in einigen Minuten erneut "
-"versuchen oder die Administration kontaktieren."
-msgstr ""
-"Too many failed sign-in attempts. Please try again in a few minutes or "
-"contact the administrators."
+msgid "Zu viele fehlgeschlagene Anmeldeversuche. Bitte in einigen Minuten erneut versuchen oder die Administration kontaktieren."
+msgstr "Too many failed sign-in attempts. Please try again in a few minutes or contact the administrators."
 
 #: templates/registration/gesperrt.html:7
 #: templates/registration/passwort_setzen.html:17
@@ -2572,12 +2654,8 @@ msgid "Passwort vergessen?"
 msgstr "Forgot your password?"
 
 #: templates/registration/login.html:20
-msgid ""
-"Passwort vergessen? Bitte bei der Bereichsleitung oder Administration einen "
-"neuen Link anfordern."
-msgstr ""
-"Forgot your password? Please ask your unit lead or the administrators for a "
-"new link."
+msgid "Passwort vergessen? Bitte bei der Bereichsleitung oder Administration einen neuen Link anfordern."
+msgstr "Forgot your password? Please ask your unit lead or the administrators for a new link."
 
 #: templates/registration/passwort_setzen.html:3
 #: templates/registration/passwort_setzen.html:6
@@ -2598,11 +2676,8 @@ msgid "Link ungültig"
 msgstr "Invalid link"
 
 #: templates/registration/passwort_setzen.html:16
-msgid ""
-"Dieser Link ist abgelaufen oder wurde bereits verwendet. Bitte einen neuen "
-"Link anfordern."
-msgstr ""
-"This link has expired or has already been used. Please request a new link."
+msgid "Dieser Link ist abgelaufen oder wurde bereits verwendet. Bitte einen neuen Link anfordern."
+msgstr "This link has expired or has already been used. Please request a new link."
 
 #: templates/registration/passwort_vergessen.html:3
 #: templates/registration/passwort_vergessen.html:5
@@ -2610,40 +2685,31 @@ msgid "Passwort vergessen"
 msgstr "Forgot password"
 
 #: templates/registration/passwort_vergessen.html:7
-msgid ""
-"Wenn es zu dieser Adresse ein aktives Konto gibt, ist eine E-Mail mit einem "
-"Link zum Festlegen eines neuen Passworts unterwegs."
-msgstr ""
-"If there is an active account for this address, an email with a link to set "
-"a new password is on its way."
+msgid "Wenn es zu dieser Adresse ein aktives Konto gibt, ist eine E-Mail mit einem Link zum Festlegen eines neuen Passworts unterwegs."
+msgstr "If there is an active account for this address, an email with a link to set a new password is on its way."
 
 #: templates/registration/passwort_vergessen.html:10
-msgid ""
-"Zu viele Anfragen von diesem Anschluss. Bitte in einer Stunde erneut "
-"versuchen."
+msgid "Zu viele Anfragen von diesem Anschluss. Bitte in einer Stunde erneut versuchen."
 msgstr "Too many requests from this connection. Please try again in an hour."
 
 #: templates/registration/passwort_vergessen.html:11
-msgid ""
-"Geben Sie Ihre E-Mail-Adresse ein. Sie bekommen einen Link, mit dem Sie ein "
-"neues Passwort festlegen."
-msgstr ""
-"Enter your email address. You will receive a link to set a new password."
+msgid "Geben Sie Ihre E-Mail-Adresse ein. Sie bekommen einen Link, mit dem Sie ein neues Passwort festlegen."
+msgstr "Enter your email address. You will receive a link to set a new password."
 
 #: templates/registration/passwort_vergessen.html:15
 msgid "Link anfordern"
 msgstr "Request link"
 
-#: templates/teile/anhaenge.html:7
+#: templates/teile/anhaenge.html:9
 #, python-format
 msgid "%(name)s in neuem Tab öffnen"
 msgstr "Open %(name)s in a new tab"
 
-#: templates/teile/anhaenge.html:19
+#: templates/teile/anhaenge.html:21
 msgid "Anhang löschen?"
 msgstr "Delete attachment?"
 
-#: templates/teile/anhaenge.html:19
+#: templates/teile/anhaenge.html:21
 msgid "Anhang löschen"
 msgstr "Delete attachment"
 
@@ -2687,194 +2753,200 @@ msgstr "not shared"
 msgid "Sehen"
 msgstr "View"
 
-#: verwaltung/einstellungen.py:66
+#: verwaltung/einstellungen.py:76
 msgid "Persönlich"
 msgstr "Personal"
 
-#: verwaltung/einstellungen.py:66
+#: verwaltung/einstellungen.py:76
 msgid "Team"
 msgstr "Team"
 
-#: verwaltung/einstellungen.py:99 verwaltung/einstellungen.py:185
+#: verwaltung/einstellungen.py:109 verwaltung/einstellungen.py:195
 msgid "Gespeichert"
 msgstr "Saved"
 
-#: verwaltung/einstellungen.py:235
+#: verwaltung/einstellungen.py:270
+#| msgid "Diese Ansicht ist für Sie nicht freigegeben."
+msgid "Diese E-Mail ist nicht mehr aufgegeben."
+msgstr "This email is no longer given up."
+
+#: verwaltung/einstellungen.py:272
+#| msgid "wird verschickt"
+msgid "Die E-Mail wird erneut verschickt."
+msgstr "The email will be sent again."
+
+#: verwaltung/einstellungen.py:284
 msgid "Feiertage, Status, Systemeinstellungen"
 msgstr "Holidays, statuses, system settings"
 
-#: verwaltung/einstellungen.py:236
+#: verwaltung/einstellungen.py:285
 msgid "Benutzerkonten anlegen und deaktivieren"
 msgstr "Create and deactivate user accounts"
 
-#: verwaltung/einstellungen.py:237
-msgid ""
-"Bestehende Konten nur mit niedrigerer Rolle als der eigenen; Admin-Konten "
-"über die Kommandozeile"
-msgstr ""
-"Existing accounts only with a lower role than your own; admin accounts via "
-"the command line"
+#: verwaltung/einstellungen.py:286
+msgid "Bestehende Konten nur mit niedrigerer Rolle als der eigenen; Admin-Konten über die Kommandozeile"
+msgstr "Existing accounts only with a lower role than your own; admin accounts via the command line"
 
-#: verwaltung/einstellungen.py:238
+#: verwaltung/einstellungen.py:287
 msgid "Rollen vergeben"
 msgstr "Assign roles"
 
-#: verwaltung/einstellungen.py:238
+#: verwaltung/einstellungen.py:287
 msgid "Bereichsleitung bis maximal zur eigenen Rolle"
 msgstr "Unit leads up to their own role"
 
-#: verwaltung/einstellungen.py:239
+#: verwaltung/einstellungen.py:288
 msgid "Projekte anlegen, Tags vergeben, archivieren"
 msgstr "Create projects, assign tags, archive"
 
-#: verwaltung/einstellungen.py:240
+#: verwaltung/einstellungen.py:289
 msgid "Aufgaben anlegen und bearbeiten"
 msgstr "Create and edit tasks"
 
-#: verwaltung/einstellungen.py:240
+#: verwaltung/einstellungen.py:289
 msgid "Mitarbeiter:innen: in Projekten, in denen sie Mitglied sind"
 msgstr "Staff: in projects they are a member of"
 
-#: verwaltung/einstellungen.py:241
+#: verwaltung/einstellungen.py:290
 msgid "Aufgaben abschließen, kommentieren"
 msgstr "Complete tasks, comment"
 
-#: verwaltung/einstellungen.py:242
+#: verwaltung/einstellungen.py:291
 msgid "Teamplaner-Ansichten anlegen und freigeben"
 msgstr "Create and share team planner views"
 
-#: verwaltung/einstellungen.py:243
+#: verwaltung/einstellungen.py:292
 msgid "Teamplaner: einteilen, Abwesenheiten"
 msgstr "Team planner: schedule, absences"
 
-#: verwaltung/einstellungen.py:243
+#: verwaltung/einstellungen.py:292
 msgid "Planer:innen: in Ansichten mit Freigabe „bearbeiten“"
 msgstr "Planners: in views with “edit” access"
 
-#: verwaltung/einstellungen.py:244
+#: verwaltung/einstellungen.py:293
 msgid "Platzhalter anlegen, bearbeiten, archivieren"
 msgstr "Create, edit, archive placeholders"
 
-#: verwaltung/einstellungen.py:245
+#: verwaltung/einstellungen.py:294
 msgid "Lesekalender"
 msgstr "Read-only calendar"
 
-#: verwaltung/einstellungen.py:245
+#: verwaltung/einstellungen.py:294
 msgid "freigegebene Ansichten; die eigene Einteilung immer"
 msgstr "shared views; always their own schedule"
 
-#: verwaltung/einstellungen.py:246
+#: verwaltung/einstellungen.py:295
 msgid "Änderungsprotokoll einsehen"
 msgstr "View audit log"
 
-#: verwaltung/einstellungen.py:247
+#: verwaltung/einstellungen.py:296
 msgid "Protokoll: erledigte Aufgaben einsehen"
 msgstr "Log: view completed tasks"
 
-#: verwaltung/einstellungen.py:248
+#: verwaltung/einstellungen.py:297
 msgid "Tagesfreigabe einrichten"
 msgstr "Set up daily clearance"
 
-#: verwaltung/einstellungen.py:249
+#: verwaltung/einstellungen.py:298
 msgid "Bestellungen eintragen und ändern"
 msgstr "Enter and change orders"
 
-#: verwaltung/einstellungen.py:249
+#: verwaltung/einstellungen.py:298
 msgid "Löschen: eigene Zeilen, ab Planer:in alle"
 msgstr "Delete: own rows, all rows from planner upwards"
 
-#: verwaltung/einstellungen.py:271 verwaltung/einstellungen.py:277
+#: verwaltung/einstellungen.py:320 verwaltung/einstellungen.py:326
 #, python-format
 msgid "%(n)s Person"
 msgid_plural "%(n)s Personen"
 msgstr[0] "%(n)s person"
 msgstr[1] "%(n)s people"
 
-#: verwaltung/einstellungen.py:274
+#: verwaltung/einstellungen.py:323
 #, python-format
 msgid "%(n)s Projekt"
 msgid_plural "%(n)s Projekte"
 msgstr[0] "%(n)s project"
 msgstr[1] "%(n)s projects"
 
-#: verwaltung/einstellungen.py:286
+#: verwaltung/einstellungen.py:335
 #, python-format
 msgid "Status „%(name)s“ löschen?"
 msgstr "Delete status “%(name)s”?"
 
-#: verwaltung/einstellungen.py:286
+#: verwaltung/einstellungen.py:335
 #, python-format
 msgid "Gewerk „%(name)s“ löschen?"
 msgstr "Delete trade “%(name)s”?"
 
-#: verwaltung/einstellungen.py:287
+#: verwaltung/einstellungen.py:336
 #, python-format
 msgid "Tag „%(name)s“ löschen?"
 msgstr "Delete tag “%(name)s”?"
 
-#: verwaltung/einstellungen.py:287
+#: verwaltung/einstellungen.py:336
 #, python-format
 msgid "Bereich „%(name)s“ löschen?"
 msgstr "Delete unit “%(name)s”?"
 
-#: verwaltung/einstellungen.py:288
+#: verwaltung/einstellungen.py:337
 #, python-format
 msgid "Freigabestufe „%(name)s“ löschen?"
 msgstr "Delete clearance level “%(name)s”?"
 
-#: verwaltung/einstellungen.py:291
+#: verwaltung/einstellungen.py:340
 #, python-format
 msgid "Es ist %(n)s Person zugeordnet."
 msgid_plural "Es ist %(n)s Personen zugeordnet."
 msgstr[0] "It is assigned to %(n)s person."
 msgstr[1] "It is assigned to %(n)s people."
 
-#: verwaltung/einstellungen.py:293
+#: verwaltung/einstellungen.py:342
 #, python-format
 msgid "Er hängt an %(n)s Projekt."
 msgid_plural "Er hängt an %(n)s Projekten."
 msgstr[0] "It is attached to %(n)s project."
 msgstr[1] "It is attached to %(n)s projects."
 
-#: verwaltung/einstellungen.py:387 verwaltung/einstellungen.py:395
+#: verwaltung/einstellungen.py:436 verwaltung/einstellungen.py:444
 #, python-format
 msgid "„%(name)s“ wird noch verwendet und kann nicht gelöscht werden."
 msgstr "“%(name)s” is still in use and cannot be deleted."
 
-#: verwaltung/einstellungen.py:393 verwaltung/einstellungen.py:559
-#: verwaltung/views.py:634
+#: verwaltung/einstellungen.py:442 verwaltung/einstellungen.py:608
+#: verwaltung/views.py:671
 #, python-format
 msgid "„%(name)s“ gelöscht."
 msgstr "“%(name)s” deleted."
 
-#: verwaltung/einstellungen.py:500
+#: verwaltung/einstellungen.py:549
 msgid "Bitte ein gültiges Datum eingeben."
 msgstr "Please enter a valid date."
 
-#: verwaltung/einstellungen.py:502
+#: verwaltung/einstellungen.py:551
 msgid "„Bis“ liegt vor „Von“."
 msgstr "“To” is before “From”."
 
-#: verwaltung/einstellungen.py:504
+#: verwaltung/einstellungen.py:553
 msgid "Höchstens ein Jahr auf einmal."
 msgstr "At most one year at a time."
 
-#: verwaltung/einstellungen.py:506 verwaltung/einstellungen.py:543
+#: verwaltung/einstellungen.py:555 verwaltung/einstellungen.py:592
 msgid "Bitte eine Bezeichnung eingeben."
 msgstr "Please enter a label."
 
-#: verwaltung/einstellungen.py:514
+#: verwaltung/einstellungen.py:563
 #, python-format
 msgid "%(n)s freier Tag eingetragen."
 msgid_plural "%(n)s freie Tage eingetragen."
 msgstr[0] "%(n)s day off added."
 msgstr[1] "%(n)s days off added."
 
-#: verwaltung/einstellungen.py:517
+#: verwaltung/einstellungen.py:566
 msgid "Keine neuen Tage – im Zeitraum ist schon alles frei."
 msgstr "No new days – the whole period is already off."
 
-#: verwaltung/einstellungen.py:539
+#: verwaltung/einstellungen.py:588
 #, python-format
 msgid "%(n)s freier Tag gelöscht."
 msgid_plural "%(n)s freie Tage gelöscht."
@@ -2921,81 +2993,89 @@ msgstr "Code"
 msgid "Code aus der App"
 msgstr "Code from the app"
 
-#: verwaltung/templatetags/verwaltung.py:20
+#: verwaltung/templatetags/verwaltung.py:18 zusammenarbeit/models.py:127
+msgid "Benachrichtigung"
+msgstr "Notification"
+
+#: verwaltung/templatetags/verwaltung.py:21
 msgid "angelegt"
 msgstr "created"
 
-#: verwaltung/templatetags/verwaltung.py:20
+#: verwaltung/templatetags/verwaltung.py:21
 msgid "geändert"
 msgstr "changed"
 
-#: verwaltung/templatetags/verwaltung.py:21
+#: verwaltung/templatetags/verwaltung.py:22
 msgid "reaktiviert"
 msgstr "reactivated"
 
-#: verwaltung/templatetags/verwaltung.py:22
+#: verwaltung/templatetags/verwaltung.py:23
 msgid "wiederhergestellt"
 msgstr "restored"
 
-#: verwaltung/templatetags/verwaltung.py:23
+#: verwaltung/templatetags/verwaltung.py:24
 msgid "Passwort-Link erzeugt"
 msgstr "password link created"
 
-#: verwaltung/templatetags/verwaltung.py:23
+#: verwaltung/templatetags/verwaltung.py:24
 msgid "Passwort festgelegt"
 msgstr "password set"
 
-#: verwaltung/templatetags/verwaltung.py:24
+#: verwaltung/templatetags/verwaltung.py:25
 msgid "Passwort-Link per E-Mail an die Person geschickt"
 msgstr "Password link sent to the person by email"
 
-#: verwaltung/templatetags/verwaltung.py:25
+#: verwaltung/templatetags/verwaltung.py:26
 msgid "Passwort zurückgesetzt"
 msgstr "Password reset"
 
-#: verwaltung/templatetags/verwaltung.py:26
+#: verwaltung/templatetags/verwaltung.py:27
 msgid "Passwort geändert"
 msgstr "Password changed"
 
-#: verwaltung/templatetags/verwaltung.py:27
+#: verwaltung/templatetags/verwaltung.py:28
 msgid "aus Platzhalter angelegt"
 msgstr "created from placeholder"
 
-#: verwaltung/templatetags/verwaltung.py:28
+#: verwaltung/templatetags/verwaltung.py:29
 msgid "Foto entfernt"
 msgstr "photo removed"
 
-#: verwaltung/templatetags/verwaltung.py:29
+#: verwaltung/templatetags/verwaltung.py:30
 msgid "Zwei-Faktor-Anmeldung eingerichtet"
 msgstr "Two-factor authentication set up"
 
-#: verwaltung/templatetags/verwaltung.py:30
+#: verwaltung/templatetags/verwaltung.py:31
 msgid "Zwei-Faktor-Anmeldung ausgeschaltet"
 msgstr "Two-factor authentication turned off"
 
-#: verwaltung/templatetags/verwaltung.py:31
+#: verwaltung/templatetags/verwaltung.py:32
 msgid "Zwei-Faktor-Anmeldung zurückgesetzt"
 msgstr "Two-factor authentication reset"
 
-#: verwaltung/templatetags/verwaltung.py:32
+#: verwaltung/templatetags/verwaltung.py:33
 msgid "Ersatzcodes erneuert"
 msgstr "Backup codes renewed"
 
-#: verwaltung/templatetags/verwaltung.py:33
+#: verwaltung/templatetags/verwaltung.py:34
 msgid "persönliche Daten nach der Frist entfernt"
 msgstr "personal data removed after the retention period"
 
-#: verwaltung/templatetags/verwaltung.py:34
+#: verwaltung/templatetags/verwaltung.py:35
 msgid "Passwort-Link per E-Mail angefordert"
 msgstr "password link requested by email"
 
-#: verwaltung/templatetags/verwaltung.py:35
+#: verwaltung/templatetags/verwaltung.py:36
 msgid "Projekt hinzugefügt"
 msgstr "project added"
 
-#: verwaltung/templatetags/verwaltung.py:36
+#: verwaltung/templatetags/verwaltung.py:37
 msgid "Projekt entfernt"
 msgstr "project removed"
+
+#: verwaltung/templatetags/verwaltung.py:38
+msgid "E-Mail erneut eingereiht"
+msgstr "email queued again"
 
 #: verwaltung/views.py:117
 msgid "Die Zeit für die Eingabe ist abgelaufen. Bitte erneut anmelden."
@@ -3003,12 +3083,8 @@ msgstr "The time for entering the code has run out. Please sign in again."
 
 #: verwaltung/views.py:131
 #, python-format
-msgid ""
-"Sie haben einen Ersatzcode verwendet, noch %(n)s übrig. Neue Codes oder ein "
-"neues Telefon richten Sie unter „Mein Konto“ ein."
-msgstr ""
-"You used a backup code, %(n)s left. Set up new codes or a new phone under "
-"“My account”."
+msgid "Sie haben einen Ersatzcode verwendet, noch %(n)s übrig. Neue Codes oder ein neues Telefon richten Sie unter „Mein Konto“ ein."
+msgstr "You used a backup code, %(n)s left. Set up new codes or a new phone under “My account”."
 
 #: verwaltung/views.py:139
 msgid "Zu viele falsche Codes. Bitte erneut anmelden."
@@ -3023,12 +3099,8 @@ msgid "Das Passwort stimmt nicht."
 msgstr "The password is not correct."
 
 #: verwaltung/views.py:162
-msgid ""
-"Der Code passt nicht. Bitte den aktuellen Code aus der App eingeben; die "
-"Uhrzeit am Telefon muss stimmen."
-msgstr ""
-"The code does not match. Please enter the current code from the app; the "
-"time on the phone must be correct."
+msgid "Der Code passt nicht. Bitte den aktuellen Code aus der App eingeben; die Uhrzeit am Telefon muss stimmen."
+msgstr "The code does not match. Please enter the current code from the app; the time on the phone must be correct."
 
 #: verwaltung/views.py:208
 msgid "Die Zwei-Faktor-Anmeldung ist ausgeschaltet."
@@ -3042,70 +3114,66 @@ msgstr "Password saved. You can sign in now."
 msgid "Passwort geändert."
 msgstr "Password changed."
 
-#: verwaltung/views.py:338
+#: verwaltung/views.py:336
 #, python-format
 msgid "Konto für %(name)s angelegt."
 msgstr "Account created for %(name)s."
 
-#: verwaltung/views.py:347
+#: verwaltung/views.py:387
 #, python-format
 msgid "Der Link geht zusätzlich per E-Mail an %(email)s."
 msgstr "The link is also being sent by email to %(email)s."
 
-#: verwaltung/views.py:447
+#: verwaltung/views.py:487
 #, python-format
 msgid "Ein Link zum Zurücksetzen geht per E-Mail an %(email)s."
 msgstr "A reset link is being sent by email to %(email)s."
 
-#: verwaltung/views.py:452
-msgid ""
-"Das bisherige Passwort gilt nicht mehr. Bitte den Link an die Person "
-"weitergeben."
-msgstr ""
-"The previous password is no longer valid. Please pass the link on to the "
-"person."
+#: verwaltung/views.py:492
+msgid "Das bisherige Passwort gilt nicht mehr. Bitte den Link an die Person weitergeben."
+msgstr "The previous password is no longer valid. Please pass the link on to the person."
 
-#: verwaltung/views.py:459
+#: verwaltung/views.py:499
 msgid "Sie können Ihr eigenes Konto nicht deaktivieren."
 msgstr "You cannot deactivate your own account."
 
-#: verwaltung/views.py:463
+#: verwaltung/views.py:503
 msgid "Konto deaktiviert. Aufgaben und Einteilungen bleiben erhalten."
 msgstr "Account deactivated. Tasks and assignments are kept."
 
-#: verwaltung/views.py:470
+#: verwaltung/views.py:510
 msgid "Konto reaktiviert."
 msgstr "Account reactivated."
 
-#: verwaltung/views.py:479
+#: verwaltung/views.py:519
 msgid "Zwei-Faktor-Anmeldung zurückgesetzt."
 msgstr "Two-factor authentication reset."
 
-#: verwaltung/views.py:480
+#: verwaltung/views.py:520
 msgid "Bei der nächsten Anmeldung wird sie neu eingerichtet."
 msgstr "It will be set up again at the next sign-in."
 
-#: verwaltung/views.py:498
+#: verwaltung/views.py:538
 #, python-format
 msgid "Platzhalter „%(name)s“ angelegt."
 msgstr "Placeholder “%(name)s” created."
 
-#: verwaltung/views.py:528
+#: verwaltung/views.py:568
 #, python-format
 msgid "„%(name)s“ archiviert."
 msgstr "“%(name)s” archived."
 
-#: verwaltung/views.py:531
+#: verwaltung/views.py:571
 #, python-format
 msgid "„%(name)s“ wiederhergestellt."
 msgstr "“%(name)s” restored."
 
-#: verwaltung/views.py:551
+#: verwaltung/views.py:589
 #, python-format
 msgid "„%(name)s“ hat jetzt ein Konto."
 msgstr "“%(name)s” now has an account."
 
-#: verwaltung/views.py:619
+#: verwaltung/views.py:656
 msgid "Notizen in Gruppenordnern"
 msgstr "Notes in group folders"
 
@@ -3126,8 +3194,7 @@ msgstr "%(akteur)s removed your schedule for “%(titel)s” (%(zeitraum)s)."
 
 #: zusammenarbeit/dienste.py:65
 #, python-format
-msgid ""
-"%(akteur)s hat Ihre Einteilung für „%(titel)s“ an jemand anderen übergeben."
+msgid "%(akteur)s hat Ihre Einteilung für „%(titel)s“ an jemand anderen übergeben."
 msgstr "%(akteur)s handed your schedule for “%(titel)s” over to someone else."
 
 #: zusammenarbeit/dienste.py:73
@@ -3147,8 +3214,7 @@ msgstr "%(akteur)s changed “%(titel)s” (%(felder)s)."
 
 #: zusammenarbeit/dienste.py:99
 #, python-format
-msgid ""
-"%(akteur)s hat im Projekt „%(projekt)s“ die Aufgabe „%(titel)s“ angelegt."
+msgid "%(akteur)s hat im Projekt „%(projekt)s“ die Aufgabe „%(titel)s“ angelegt."
 msgstr "%(akteur)s created the task “%(titel)s” in project “%(projekt)s”."
 
 #: zusammenarbeit/dienste.py:113
@@ -3166,166 +3232,140 @@ msgstr "%(akteur)s mentioned you on “%(titel)s”."
 msgid "%(akteur)s hat „%(titel)s“ kommentiert."
 msgstr "%(akteur)s commented on “%(titel)s”."
 
-#: zusammenarbeit/mail.py:29
+#: zusammenarbeit/mail.py:32
 msgid "Mir wird eine Aufgabe zugewiesen"
 msgstr "A task is assigned to me"
 
-#: zusammenarbeit/mail.py:30
+#: zusammenarbeit/mail.py:33
 msgid "Jemand ändert eine Aufgabe, für die ich verantwortlich bin"
 msgstr "Someone changes a task I am responsible for"
 
-#: zusammenarbeit/mail.py:31
+#: zusammenarbeit/mail.py:34
 msgid "Eine Aufgabe, die ich verantworte oder angelegt habe, wird erledigt"
 msgstr "A task I am responsible for or created is completed"
 
-#: zusammenarbeit/mail.py:32
+#: zusammenarbeit/mail.py:35
 msgid "Neue Aufgabe in einem Projekt, das ich leite"
 msgstr "New task in a project I lead"
 
-#: zusammenarbeit/mail.py:34
+#: zusammenarbeit/mail.py:37
 msgid "Kommentare & Erwähnungen"
 msgstr "Comments & mentions"
 
-#: zusammenarbeit/mail.py:35
+#: zusammenarbeit/mail.py:38
 msgid "Ich werde in einem Kommentar erwähnt"
 msgstr "I am mentioned in a comment"
 
-#: zusammenarbeit/mail.py:36
+#: zusammenarbeit/mail.py:39
 msgid "Ein von mir angelegter Platzhalter wird erwähnt"
 msgstr "A placeholder I created is mentioned"
 
-#: zusammenarbeit/mail.py:37
+#: zusammenarbeit/mail.py:40
 msgid "Neuer Kommentar zu einer Aufgabe, für die ich verantwortlich bin"
 msgstr "New comment on a task I am responsible for"
 
-#: zusammenarbeit/mail.py:39
+#: zusammenarbeit/mail.py:42
 msgid "Einteilung im Teamplaner"
 msgstr "Team planner schedule"
 
-#: zusammenarbeit/mail.py:40
+#: zusammenarbeit/mail.py:43
 msgid "Ich werde eingeteilt"
 msgstr "I am scheduled"
 
-#: zusammenarbeit/mail.py:41
+#: zusammenarbeit/mail.py:44
 msgid "Meine Einteilung wird geändert"
 msgstr "My schedule is changed"
 
-#: zusammenarbeit/mail.py:42
+#: zusammenarbeit/mail.py:45
 msgid "Meine Einteilung wird entfernt"
 msgstr "My schedule is removed"
 
-#: zusammenarbeit/mail.py:45
-msgid ""
-"Der Liefertermin einer Bestellung, die ich bestellt habe, ist überschritten"
+#: zusammenarbeit/mail.py:48
+msgid "Der Liefertermin einer Bestellung, die ich bestellt habe, ist überschritten"
 msgstr "The delivery date of an order I placed has passed"
 
-#: zusammenarbeit/mail.py:77
+#: zusammenarbeit/mail.py:80
 #, python-format
 msgid "Teamplaner · %(org)s"
 msgstr "Team planner · %(org)s"
 
-#: zusammenarbeit/mail.py:79
+#: zusammenarbeit/mail.py:82
 #, python-format
 msgid "E-Mail-Einstellungen ändern: %(link)s"
 msgstr "Change email settings: %(link)s"
 
-#: zusammenarbeit/mail.py:95
+#: zusammenarbeit/mail.py:123
 #, python-format
 msgid "Zur Aufgabe: %(link)s"
 msgstr "Open task: %(link)s"
 
-#: zusammenarbeit/mail.py:98
+#: zusammenarbeit/mail.py:126
 #, python-format
 msgid "Zur Bestellliste: %(link)s"
 msgstr "Open orders: %(link)s"
 
-#: zusammenarbeit/mail.py:168 zusammenarbeit/mail.py:185
-#: zusammenarbeit/mail.py:217
+#: zusammenarbeit/mail.py:198 zusammenarbeit/mail.py:215
+#: zusammenarbeit/mail.py:247
 #, python-format
 msgid "Guten Tag %(name)s,"
 msgstr "Hello %(name)s,"
 
-#: zusammenarbeit/mail.py:170
-msgid ""
-"für Sie wurde ein Konto im Teamplaner angelegt. Bitte legen Sie über diesen "
-"Link Ihr Passwort fest:"
-msgstr ""
-"an account has been created for you in the team planner. Please set your "
-"password using this link:"
+#: zusammenarbeit/mail.py:200
+msgid "für Sie wurde ein Konto im Teamplaner angelegt. Bitte legen Sie über diesen Link Ihr Passwort fest:"
+msgstr "an account has been created for you in the team planner. Please set your password using this link:"
 
-#: zusammenarbeit/mail.py:173
+#: zusammenarbeit/mail.py:203
 #, python-format
-msgid ""
-"Der Link gilt einige Tage und nur einmal. Ihre Anmeldung ist Ihre E-Mail-"
-"Adresse: %(email)s"
-msgstr ""
-"The link is valid for a few days and only once. You sign in with your email "
-"address: %(email)s"
+msgid "Der Link gilt einige Tage und nur einmal. Ihre Anmeldung ist Ihre E-Mail-Adresse: %(email)s"
+msgstr "The link is valid for a few days and only once. You sign in with your email address: %(email)s"
 
-#: zusammenarbeit/mail.py:175 zusammenarbeit/models.py:144
-msgid "Einladung"
-msgstr "Invitation"
-
-#: zusammenarbeit/mail.py:187
+#: zusammenarbeit/mail.py:217
 msgid "über diesen Link legen Sie ein neues Passwort fest:"
 msgstr "use this link to set a new password:"
 
-#: zusammenarbeit/mail.py:190
+#: zusammenarbeit/mail.py:220
 #, python-format
 msgid "Der Link gilt %(n)s Stunden und nur einmal."
 msgstr "The link is valid for %(n)s hours and only once."
 
-#: zusammenarbeit/mail.py:191
-msgid ""
-"Wenn Sie das nicht angefordert haben, können Sie diese E-Mail ignorieren."
+#: zusammenarbeit/mail.py:221
+msgid "Wenn Sie das nicht angefordert haben, können Sie diese E-Mail ignorieren."
 msgstr "If you did not request this, you can ignore this email."
 
-#: zusammenarbeit/mail.py:193 zusammenarbeit/models.py:145
+#: zusammenarbeit/mail.py:223 zusammenarbeit/models.py:145
 msgid "Passwort zurücksetzen"
 msgstr "Reset password"
 
-#: zusammenarbeit/mail.py:199
+#: zusammenarbeit/mail.py:229
 msgid "das Passwort Ihres Teamplaner-Kontos wurde geändert."
 msgstr "the password of your Teamplaner account has been changed."
 
-#: zusammenarbeit/mail.py:200
-msgid ""
-"das Passwort Ihres Teamplaner-Kontos wurde über einen Link neu festgelegt."
+#: zusammenarbeit/mail.py:230
+msgid "das Passwort Ihres Teamplaner-Kontos wurde über einen Link neu festgelegt."
 msgstr "the password of your Teamplaner account has been set anew via a link."
 
-#: zusammenarbeit/mail.py:201
+#: zusammenarbeit/mail.py:231
 #, python-format
 msgid "die Anmelde-E-Mail Ihres Teamplaner-Kontos wurde auf %(neu)s geändert."
-msgstr ""
-"the sign-in email of your Teamplaner account has been changed to %(neu)s."
+msgstr "the sign-in email of your Teamplaner account has been changed to %(neu)s."
 
-#: zusammenarbeit/mail.py:202
-msgid ""
-"für Ihr Teamplaner-Konto wurde die Zwei-Faktor-Anmeldung eingerichtet (bzw. "
-"ein neues Telefon verbunden)."
-msgstr ""
-"two-factor authentication has been set up for your Teamplaner account (or a "
-"new phone has been connected)."
+#: zusammenarbeit/mail.py:232
+msgid "für Ihr Teamplaner-Konto wurde die Zwei-Faktor-Anmeldung eingerichtet (bzw. ein neues Telefon verbunden)."
+msgstr "two-factor authentication has been set up for your Teamplaner account (or a new phone has been connected)."
 
-#: zusammenarbeit/mail.py:204
+#: zusammenarbeit/mail.py:234
 msgid "die Zwei-Faktor-Anmeldung Ihres Teamplaner-Kontos wurde ausgeschaltet."
-msgstr ""
-"two-factor authentication for your Teamplaner account has been turned off."
+msgstr "two-factor authentication for your Teamplaner account has been turned off."
 
-#: zusammenarbeit/mail.py:205
-msgid ""
-"die Zwei-Faktor-Anmeldung Ihres Teamplaner-Kontos wurde von der Verwaltung "
-"zurückgesetzt."
-msgstr ""
-"two-factor authentication for your Teamplaner account has been reset by an "
-"administrator."
+#: zusammenarbeit/mail.py:235
+msgid "die Zwei-Faktor-Anmeldung Ihres Teamplaner-Kontos wurde von der Verwaltung zurückgesetzt."
+msgstr "two-factor authentication for your Teamplaner account has been reset by an administrator."
 
-#: zusammenarbeit/mail.py:221
-msgid ""
-"Waren Sie das nicht, wenden Sie sich bitte sofort an die Administration."
+#: zusammenarbeit/mail.py:251
+msgid "Waren Sie das nicht, wenden Sie sich bitte sofort an die Administration."
 msgstr "If this was not you, please contact the administration immediately."
 
-#: zusammenarbeit/mail.py:224
+#: zusammenarbeit/mail.py:254
 msgid "Sicherheitshinweis zu Ihrem Konto"
 msgstr "Security notice about your account"
 
@@ -3380,10 +3420,6 @@ msgstr "sent"
 #: zusammenarbeit/models.py:98
 msgid "Fehler"
 msgstr "Error"
-
-#: zusammenarbeit/models.py:127
-msgid "Benachrichtigung"
-msgstr "Notification"
 
 #: zusammenarbeit/models.py:146
 msgid "Sicherheitshinweis"

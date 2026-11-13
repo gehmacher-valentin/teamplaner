@@ -333,12 +333,52 @@ def person_einladen(request):
             neu.save(update_fields=["sprache"])
             protokollieren(konto, "konto", neu.pk, "angelegt",
                            {"person": neu.person, "email": neu.email, "rolle": neu.rolle, "bereich": d["bereich"]})
-        link = passwort_link(neu)
-        request.session["passwort_link"] = link
         messages.success(request, _("Konto für %(name)s angelegt.") % {"name": neu.person.anzeigename})
-        _einladung_mitteilen(request, neu, link)
-        return redirect("einst_person", pk=neu.pk)
+        return _nach_einladung(request, neu)
     return seite(request, "kern/person_einladen.html", "personen", form=form)
+
+
+PASSWORT_LINK = "passwort_link"  # Sitzung: {"pk": Konto, "link": Adresse}, wird einmal angezeigt
+
+
+def _link_merken(request, konto, link):
+    """Der Link wird auf der nächsten Seite dieses Kontos einmal angezeigt – und nur dort."""
+    request.session[PASSWORT_LINK] = {"pk": konto.pk, "link": link}
+
+
+def _link_abholen(request, konto):
+    gemerkt = request.session.get(PASSWORT_LINK)
+    if not isinstance(gemerkt, dict) or gemerkt.get("pk") != konto.pk:
+        return None
+    del request.session[PASSWORT_LINK]
+    return gemerkt.get("link")
+
+
+def _nach_einladung(request, neu):
+    """Link erzeugen und zur Seite, die ihn zeigt: die Seite der Person, wenn das Konto bearbeitet
+    werden darf – sonst (gleiche Rolle) eine Bestätigungsseite, die kein Bearbeitungsrecht braucht."""
+    link = passwort_link(neu)
+    _link_merken(request, neu, link)
+    _einladung_mitteilen(request, neu, link)
+    if rechte.darf_konto_bearbeiten(request.user, neu):
+        return redirect("einst_person", pk=neu.pk)
+    return redirect("einst_person_eingeladen", pk=neu.pk)
+
+
+@erfordert(rechte.darf_konten_verwalten)
+def person_eingeladen(request, pk):
+    """Bestätigung nach dem Einladen eines Kontos, das die einladende Person nicht bearbeiten darf
+    (gleiche Rolle): zeigt einmal den Link, sonst nichts vom Konto."""
+    ziel = get_object_or_404(Konto.objects.select_related("person__bereich"), pk=pk)
+    link = _link_abholen(request, ziel)
+    if rechte.darf_konto_bearbeiten(request.user, ziel):
+        if link:
+            _link_merken(request, ziel, link)
+        return redirect("einst_person", pk=pk)
+    if not link:
+        return redirect("einst_personen")
+    return seite(request, "kern/person_eingeladen.html", "personen",
+                 ziel=ziel, link=link, link_qr=link_qr_svg(link), mail_aktiv=mail_aktiv())
 
 
 def _einladung_mitteilen(request, konto, link):
@@ -403,7 +443,7 @@ def person_bearbeiten(request, pk):
         messages.success(request, _("Gespeichert."))
         return redirect("einst_person", pk=pk)
     darf_freigaben = {art: recht(konto) for art, (_a, _f, _t, recht, _u) in arten().items()}
-    link = request.session.pop("passwort_link", None)
+    link = _link_abholen(request, ziel)
     return seite(request, "kern/person_bearbeiten.html", "personen",
                  ziel=ziel, form=form, link=link, link_qr=link_qr_svg(link) if link else None, mail_aktiv=mail_aktiv(),
                  zwei_faktor_aktiv=zwei_faktor.aktiv(ziel),
@@ -451,7 +491,7 @@ def person_aktion(request, pk, aktion):
             protokollieren(konto, "konto", ziel.pk, "passwort_zurueckgesetzt", {"person": ziel.person})
             messages.warning(request, _("Das bisherige Passwort gilt nicht mehr. Bitte den Link an die Person weitergeben."))
         link = passwort_link(ziel)
-        request.session["passwort_link"] = link
+        _link_merken(request, ziel, link)
         protokollieren(konto, "konto", ziel.pk, "link_erzeugt", {"person": ziel.person})
         _einladung_mitteilen(request, ziel, link)
     elif aktion == "deaktivieren":
@@ -546,11 +586,8 @@ def platzhalter_umwandeln(request, pk):
     neu = Konto.objects.anlegen(form.cleaned_data["email"], anzeigename=person.anzeigename,
                                 bereich=person.bereich, rolle=form.cleaned_data["rolle"], person=person)
     protokollieren(request.user, "konto", neu.pk, "aus_platzhalter", {"person": person, "rolle": neu.rolle})
-    link = passwort_link(neu)
-    request.session["passwort_link"] = link
     messages.success(request, _("„%(name)s“ hat jetzt ein Konto.") % {"name": person.anzeigename})
-    _einladung_mitteilen(request, neu, link)
-    return redirect("einst_person", pk=neu.pk)
+    return _nach_einladung(request, neu)
 
 
 # ---------- Protokoll ----------

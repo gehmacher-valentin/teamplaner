@@ -39,6 +39,14 @@ def ohne_zwei_faktor_pflicht(settings):
 
 
 @pytest.fixture(autouse=True)
+def schneller_passwort_hasher(request, settings):
+    """Argon2 kostet je Testkonto rund 0,1 s und damit den Großteil der Laufzeit. Tests, die das
+    Verfahren selbst prüfen, tragen ``@pytest.mark.argon2`` und laufen mit der Betriebseinstellung."""
+    if "argon2" not in request.keywords:
+        settings.PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
+
+
+@pytest.fixture(autouse=True)
 def sprache_zuruecksetzen():
     """Jeder Test beginnt auf Deutsch, auch wenn ein vorheriger Englisch aktiviert hat."""
     from django.utils import translation

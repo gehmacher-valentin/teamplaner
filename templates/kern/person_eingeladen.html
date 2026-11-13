@@ -1,0 +1,17 @@
+{% extends "kern/einstellungen_basis.html" %}
+{% load i18n teamplaner %}
+{% block titel %}{{ ziel.person.anzeigename }}{% endblock %}
+{% block einstellungen %}
+<nav class="pfad" aria-label="{% translate 'Pfad' %}"><a href="{% url 'einst_personen' %}">{% translate "Personen" %}</a><span aria-hidden="true">/</span><span>{{ ziel.person.anzeigename }}</span></nav>
+<div class="einst-kopf einst-kopf--person">
+  {% avatar ziel.person "gross" %}<h1>{{ ziel.person.anzeigename }}</h1>
+  <span class="badge badge--warn">{% translate "Einladung offen" %}</span>
+</div>
+{% include "kern/_passwort_link.html" %}
+<section class="karte karte--innen stapel" aria-label="{% translate 'Einladung' %}">
+  <div class="klein gedaempft">{{ ziel.email }} · {{ ziel.get_rolle_display }} · {{ ziel.person.bereich.name }}</div>
+  <p class="ohne-rand">{% if mail_aktiv %}{% translate "Der Link wird nur jetzt angezeigt. Er geht zusätzlich per E-Mail an die Person." %}{% else %}{% translate "Der Link wird nur jetzt angezeigt. Bitte jetzt kopieren und an die Person weitergeben." %}{% endif %}</p>
+  <p class="klein gedaempft ohne-rand">{% translate "Konten mit gleicher oder höherer Rolle können Sie danach nicht bearbeiten. Einen neuen Link erzeugt eine höhere Rolle, für Admin-Konten die Kommandozeile." %}</p>
+  <div><a class="knopf" href="{% url 'einst_personen' %}">{% translate "Zur Personenliste" %}</a></div>
+</section>
+{% endblock %}

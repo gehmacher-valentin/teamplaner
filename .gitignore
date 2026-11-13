@@ -21,6 +21,7 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .ruff_cache/
+.venv/
 /staticfiles/
 
 # Frontend
@@ -33,3 +34,8 @@ node_modules/
 # Installationsarchive und Probeläufe (betrieb/linux, pruefung/linux)
 /dist/
 /pruefung/linux/arbeit/
+
+# Browser-Tests (frontend/e2e)
+/frontend/e2e/.zustand/
+/frontend/test-results/
+/frontend/playwright-report/

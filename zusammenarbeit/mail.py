@@ -5,6 +5,9 @@
   ``python manage.py mails_versenden --dauerhaft`` sofort (alle paar Sekunden).
 * Ohne konfigurierten SMTP-Server (``EMAIL_HOST`` leer) oder mit abgeschaltetem Versand
   (``Systemeinstellungen.mail_versand``) wird nichts verschickt.
+* Jede verschickte oder fehlgeschlagene E-Mail ergibt eine Protokollzeile (Art, Empfänger, Eintrag),
+  nie Betreff oder Text: der Betreff enthält Aufgabentitel, der Text Passwort-Links. Den Verlauf
+  aus der Datenbank liefert ``zusammenarbeit.mailverlauf``.
 """
 
 import logging
@@ -79,6 +82,31 @@ def _fusszeile():
         _("E-Mail-Einstellungen ändern: %(link)s") % {"link": absolute_url(reverse("einst_benachrichtigungen"))}
 
 
+def protokoll_adresse(email):
+    """Empfängeradresse für das Protokoll: vollständig oder, wenn so eingestellt, gekürzt."""
+    if settings.TEAMPLANER_PROTOKOLL_EMPFAENGER:
+        return email
+    name, _at, domain = email.partition("@")
+    return f"{name[:1]}***@{domain}"
+
+
+def _protokoll_verschickt(art, empfaenger, eintrag):
+    log.info("E-Mail verschickt: %s an %s (%s)", art, protokoll_adresse(empfaenger), eintrag)
+
+
+def _protokoll_fehler(art, empfaenger, eintrag, versuch, fehler):
+    """Eine Zeile je Fehlversuch, ohne Traceback: bei einem Ausfall des SMTP-Servers wiederholt sich
+    der Fehler alle paar Sekunden. Der vollständige Fehler steht mit TEAMPLANER_LOGLEVEL=DEBUG im Protokoll."""
+    grund = " ".join(f"{type(fehler).__name__}: {fehler}".split())
+    if versuch >= MAX_VERSUCHE:
+        log.error("E-Mail aufgegeben nach %s Versuchen: %s an %s (%s): %s",
+                  versuch, art, protokoll_adresse(empfaenger), eintrag, grund)
+    else:
+        log.warning("E-Mail fehlgeschlagen, Versuch %s von %s: %s an %s (%s): %s",
+                    versuch, MAX_VERSUCHE, art, protokoll_adresse(empfaenger), eintrag, grund)
+    log.debug("Fehler beim Versand (%s)", eintrag, exc_info=fehler)
+
+
 def _senden(empfaenger_email, betreff, text):
     betreff = " ".join(betreff.split())  # Zeilenumbrüche (z. B. im Aufgabentitel) sind im Betreff ungültig
     EmailMessage(subject=betreff[:200], body=text, to=[empfaenger_email]).send(fail_silently=False)
@@ -112,9 +140,9 @@ def _postausgang_versenden(limit):
         for m in Postausgang.objects.select_for_update(skip_locked=True).filter(status=MailStatus.OFFEN)[:limit]:
             try:
                 _senden(m.empfaenger, m.betreff, m.text)
-            except Exception:  # noqa: BLE001 – SMTP-Fehler protokollieren, später erneut versuchen
-                log.exception("System-Mail %s fehlgeschlagen", m.pk)
+            except Exception as fehler:  # noqa: BLE001 – SMTP-Fehler protokollieren, später erneut versuchen
                 m.versuche += 1
+                _protokoll_fehler(m.art, m.empfaenger, f"System-Mail {m.pk}", m.versuche, fehler)
                 if m.versuche >= MAX_VERSUCHE:
                     m.status, m.text = MailStatus.FEHLER, ""
                 m.save(update_fields=["versuche", "status", "text"])
@@ -122,6 +150,7 @@ def _postausgang_versenden(limit):
             # Text enthält ggf. einen Passwort-Link – nach dem Versand nicht aufheben
             m.status, m.text, m.gesendet_am = MailStatus.GESENDET, "", timezone.now()
             m.save(update_fields=["status", "text", "gesendet_am"])
+            _protokoll_verschickt(m.art, m.empfaenger, f"System-Mail {m.pk}")
             gesendet += 1
     return gesendet
 
@@ -141,9 +170,9 @@ def _benachrichtigungen_versenden(limit):
                 continue
             try:
                 benachrichtigung_senden(b)
-            except Exception:  # noqa: BLE001 – SMTP-Fehler protokollieren, später erneut versuchen
-                log.exception("E-Mail an %s fehlgeschlagen", b.empfaenger_id)
+            except Exception as fehler:  # noqa: BLE001 – SMTP-Fehler protokollieren, später erneut versuchen
                 b.mail_versuche += 1
+                _protokoll_fehler(b.art, b.empfaenger.konto.email, f"Benachrichtigung {b.pk}", b.mail_versuche, fehler)
                 if b.mail_versuche >= MAX_VERSUCHE:
                     b.mail_status = MailStatus.FEHLER
                 b.save(update_fields=["mail_versuche", "mail_status"])
@@ -151,6 +180,7 @@ def _benachrichtigungen_versenden(limit):
             b.mail_status = MailStatus.GESENDET
             b.gesendet_am = timezone.now()
             b.save(update_fields=["mail_status", "gesendet_am"])
+            _protokoll_verschickt(b.art, b.empfaenger.konto.email, f"Benachrichtigung {b.pk}")
             gesendet += 1
     return gesendet
 

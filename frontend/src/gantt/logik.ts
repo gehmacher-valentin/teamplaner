@@ -1,6 +1,6 @@
 /** Reine Rechenfunktionen des Gantt-Diagramms (mit vitest getestet). */
 import { parse, plusTage } from "../teamplaner/logik";
-import type { GAbhaengigkeit, GAufgabe, GDaten, Zeile } from "./typen";
+import type { GAbhaengigkeit, GAufgabe, GDaten, GWarnung, Zeile } from "./typen";
 
 export const ZEILE = 34;
 export const MASSSTAB = { woche: 30, monat: 12, quartal: 4 } as const;
@@ -85,17 +85,16 @@ export function enden(a: GAufgabe): { anfang: string | null; ende: string | null
 }
 
 /**
- * Pfeile für Abhängigkeiten. Eingeklappte Unteraufgaben zeigen auf ihre Hauptaufgabe, eingeklappte
- * Projekte auf die Projektzeile (zusammengefasst); innerhalb derselben Zeile entfallen sie.
+ * Wo eine Aufgabe in der Liste zu sehen ist: in ihrer eigenen Zeile, bei eingeklappten Unteraufgaben
+ * in der Zeile der Hauptaufgabe, bei eingeklappten Projekten in der Projektzeile.
  */
-export function pfeile(daten: GDaten, liste: Zeile[], start: string, px: number): Pfeil[] {
+function zeilenSuche(daten: GDaten, liste: Zeile[]) {
   const zeileAufgabe = new Map<number, number>();
   const zeileProjekt = new Map<number, number>();
   liste.forEach((z, i) => {
     if (z.art === "aufgabe") zeileAufgabe.set(z.aufgabe.id, i);
     if (z.art === "projekt") zeileProjekt.set(z.projekt.id, i);
   });
-  const projektVon = (a: GAufgabe) => daten.projekte.find((p) => p.id === a.projekt_id);
   /** Die sichtbare Aufgabe für ``a``: sie selbst oder ihre (aufgeklappte) Hauptaufgabe. */
   const sichtbar = (a: GAufgabe): GAufgabe | undefined => {
     if (zeileAufgabe.has(a.id)) return a;
@@ -106,6 +105,35 @@ export function pfeile(daten: GDaten, liste: Zeile[], start: string, px: number)
     const s = sichtbar(a);
     return s ? zeileAufgabe.get(s.id) : zeileProjekt.get(a.projekt_id);
   };
+  return { sichtbar, ziel };
+}
+
+/**
+ * Warnungen „Einteilung verletzt Abhängigkeit“ je Zeilenindex. Sie stehen in der Zeile des
+ * Nachfolgers und wandern wie die Pfeile nach oben, wenn diese Zeile eingeklappt ist; mehrere
+ * Warnungen derselben Zeile werden zu einem Warnzeichen zusammengefasst.
+ */
+export function warnungenJeZeile(daten: GDaten, liste: Zeile[]): Map<number, GWarnung[]> {
+  const { ziel } = zeilenSuche(daten, liste);
+  const ergebnis = new Map<number, GWarnung[]>();
+  for (const w of daten.warnungen ?? []) {
+    const aufgabe = daten.aufgaben[w.aufgabe];
+    const zeile = aufgabe ? ziel(aufgabe) : undefined;
+    if (zeile === undefined) continue;
+    ergebnis.set(zeile, [...(ergebnis.get(zeile) ?? []), w]);
+  }
+  return ergebnis;
+}
+
+/**
+ * Pfeile für Abhängigkeiten. Eingeklappte Unteraufgaben zeigen auf ihre Hauptaufgabe, eingeklappte
+ * Projekte auf die Projektzeile (zusammengefasst); innerhalb derselben Zeile entfallen sie.
+ * Rot (``verletzt``) nur, wenn sich die geplanten Termine überschneiden: das ist im Diagramm zu
+ * sehen und dort zu beheben. Verletzungen aus Einteilungen stehen als Warnzeichen in der Namensspalte.
+ */
+export function pfeile(daten: GDaten, liste: Zeile[], start: string, px: number): Pfeil[] {
+  const { sichtbar, ziel } = zeilenSuche(daten, liste);
+  const projektVon = (a: GAufgabe) => daten.projekte.find((p) => p.id === a.projekt_id);
 
   const gruppen = new Map<string, Pfeil>();
   for (const abh of daten.abhaengigkeiten) {
@@ -124,14 +152,14 @@ export function pfeile(daten: GDaten, liste: Zeile[], start: string, px: number)
     const vorhanden = gruppen.get(schluessel);
     if (vorhanden) {
       vorhanden.abhaengigkeiten.push(abh);
-      vorhanden.verletzt ||= abh.verletzt;
+      vorhanden.verletzt ||= abh.verletzt_plan;
       continue;
     }
     gruppen.set(schluessel, {
       schluessel, von, nach,
       sx: x(endeA, start, px) + px,
       tx: x(anfangB, start, px),
-      verletzt: abh.verletzt,
+      verletzt: abh.verletzt_plan,
       abhaengigkeiten: [abh],
     });
   }

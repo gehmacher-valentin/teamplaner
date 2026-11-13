@@ -63,3 +63,56 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+
+  e2e:
+    # Browser-Tests der wichtigsten Abläufe (frontend/e2e) gegen frische Demodaten
+    runs-on: ubuntu-24.04
+    name: e2e (Browser-Tests, Chromium)
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: teamplaner
+          POSTGRES_USER: teamplaner
+          POSTGRES_PASSWORD: teamplaner-ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U teamplaner"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      # werkzeuge/e2e-server.sh legt daneben die Datenbank teamplaner_e2e an
+      POSTGRES_HOST: localhost
+      POSTGRES_USER: teamplaner
+      POSTGRES_PASSWORD: teamplaner-ci
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+      - run: pip install -r requirements.txt
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - run: npm run build
+        working-directory: frontend
+      - name: Chromium für Playwright
+        run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - name: Browser-Tests
+        run: npm run e2e
+        working-directory: frontend
+      - name: Bericht bei Fehlschlag (Trace, Bildschirmfoto)
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-bericht
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+          retention-days: 7

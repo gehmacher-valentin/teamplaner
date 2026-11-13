@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { abgebrochen, Neueste } from "../lib/neueste";
 import { toast } from "../lib/toast";
 import { Modal, useBestaetigung } from "../teamplaner/Dialoge";
 import { useGespeichert } from "../teamplaner/hooks";
@@ -13,6 +14,7 @@ import {
   projektZeitraum,
   tageZwischen,
   verschieben,
+  warnungenJeZeile,
   x,
   ZEILE,
   zeilen,
@@ -20,7 +22,7 @@ import {
 } from "./logik";
 import { t } from "./texte";
 import { VorgaengerWahl } from "./VorgaengerWahl";
-import type { GAufgabe, GDaten, GOptionen, GProjekt } from "./typen";
+import type { GAufgabe, GDaten, GOptionen, GProjekt, GWarnung } from "./typen";
 
 const LINKS = 320;
 
@@ -80,16 +82,23 @@ export function Gantt() {
     });
   };
 
+  // Nach zwei schnellen Änderungen oder einem Wechsel der Ansicht kann eine ältere Antwort nach der
+  // neueren eintreffen: nur die jüngste Anfrage zählt, die vorige wird abgebrochen.
+  const anfragen = useRef(new Neueste());
   const laden = useCallback(async () => {
     if (!ansichtId) return;
+    const { signal, aktuell } = anfragen.current.starten();
     try {
-      setDaten(await api.daten(ansichtId));
+      const neu = await api.daten(ansichtId, signal);
+      if (aktuell()) setDaten(neu);
     } catch (f) {
-      zeige(f instanceof Error ? f.message : t("speichern_fehler"));
+      if (aktuell() && !abgebrochen(f)) zeige(f instanceof Error ? f.message : t("speichern_fehler"));
     }
   }, [ansichtId]);
   useEffect(() => {
+    const laufend = anfragen.current;
     laden();
+    return () => laufend.abbrechen();
   }, [laden]);
 
   const liste = useMemo(
@@ -104,6 +113,7 @@ export function Gantt() {
     });
   const start = daten?.von ?? "";
   const breite = daten ? (tageZwischen(daten.von, daten.bis) + 1) * px : 0;
+  const warnungen = useMemo(() => (daten ? warnungenJeZeile(daten, liste) : new Map<number, GWarnung[]>()), [daten, liste]);
   const pfeilListe = useMemo(() => (daten && e.pfeile ? pfeile(daten, liste, start, px) : []), [daten, liste, start, px, e.pfeile]);
 
   // Beim ersten Anzeigen und bei Maßstabswechsel zu „heute“ scrollen
@@ -390,6 +400,7 @@ export function Gantt() {
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" aria-hidden="true" style={{ transform: z.zu ? "rotate(-90deg)" : undefined }}><path d="M6 9l6 6 6-6" /></svg>
                         </button>
                         <span className="farbpunkt" />
+                        <Warnzeichen warnungen={warnungen.get(i)} />
                         <a href={p.url} className="gt-name">{p.name}</a>
                         {p.archiviert && <span className="badge">{t("archiviert")}</span>}
                         <span className={`gt-daten mono${ueberzug ? " gt-daten--ueberzug" : ""}`} title={ueberzug || undefined}>
@@ -440,6 +451,7 @@ export function Gantt() {
                           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" aria-hidden="true" style={{ transform: z.zu ? "rotate(-90deg)" : undefined }}><path d="M6 9l6 6 6-6" /></svg>
                         </button>
                       )}
+                      <Warnzeichen warnungen={warnungen.get(i)} zeile={a.id} />
                       <a href={a.url} className="gt-name" title={a.titel}>{a.erledigt ? "✓ " : ""}{a.titel}</a>
                       {z.zu && <span className="gedaempft klein gt-anzahl">{a.kinder.length}</span>}
                       {a.extern && <span className="gedaempft klein">{daten.externe_projekte[a.projekt_id]?.name}</span>}
@@ -515,6 +527,7 @@ export function Gantt() {
         <span><i className="gt-legende-meilenstein" />{t("legende_meilenstein")}</span>
         <span><i className="gt-legende-ueberzug" />{t("legende_ueberzug")}</span>
         <span><i className="gt-legende-verletzt" />{t("legende_verletzt")}</span>
+        <span><WarnSymbol />{t("legende_warnung")}</span>
         <span><i style={{ background: "var(--feiertag)" }} />{t("legende_frei")}</span>
       </div>
 
@@ -535,6 +548,39 @@ export function Gantt() {
       )}
       {bestaetigung.dialog}
     </div>
+  );
+}
+
+function WarnSymbol() {
+  return (
+    <svg className="gt-warn__symbol" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"
+      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 3l9.5 17h-19z" /><path d="M12 10v4M12 17h.01" /></svg>
+  );
+}
+
+/** Hinweistext einer Warnung; ``zeile``: Aufgabe der Zeile, in der sie steht (sonst wird die betroffene genannt). */
+export function warnText(w: GWarnung, zeile?: number): string {
+  const text = t(w.nachher_art === "plan" ? "warn_plan_ist" : w.vorher_art === "plan" ? "warn_ist_plan" : "warn_ist_ist", {
+    von: kurzDatum(w.nachher_von), bis: kurzDatum(w.vorher_bis), a: w.vorher.titel, projekt: w.vorher.projekt,
+  });
+  return w.nachher.id === zeile ? text : t("warn_fuer", { b: w.nachher.titel, text });
+}
+
+/**
+ * Warnzeichen in der Namensspalte: Einteilungen aus dem Teamplaner verletzen eine Abhängigkeit.
+ * Ein Zeichen je Zeile, alle Fälle im Hinweis; erreichbar per Maus und Tastatur.
+ */
+function Warnzeichen({ warnungen, zeile }: { warnungen?: GWarnung[]; zeile?: number }) {
+  if (!warnungen?.length) return null;
+  const texte = warnungen.map((w) => warnText(w, zeile));
+  return (
+    <span className="gt-warn" tabIndex={0} role="img" aria-label={`${t("legende_warnung")}: ${texte.join(" ")}`}>
+      <WarnSymbol />
+      <span className="gt-warn__hinweis" role="tooltip">
+        <strong>{t("legende_warnung")}</strong>
+        {texte.map((text, i) => <span key={i}>{text}</span>)}
+      </span>
+    </span>
   );
 }
 

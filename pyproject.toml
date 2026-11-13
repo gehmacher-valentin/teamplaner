@@ -9,6 +9,7 @@ requires-python = ">=3.12"
 DJANGO_SETTINGS_MODULE = "teamplaner.settings"
 testpaths = ["tests"]
 addopts = "-q --strict-markers"
+markers = ["argon2: läuft mit dem Passwort-Hasher des Betriebs (Argon2) statt mit dem schnellen der Tests"]
 filterwarnings = ["ignore::DeprecationWarning:axes.*", "ignore:No directory at:UserWarning"]
 
 [tool.ruff]

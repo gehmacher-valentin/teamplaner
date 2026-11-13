@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { balken, monate, pfad, pfeile, projektZeitraum, tageZwischen, x, ZEILE, zeilen } from "./logik";
-import type { GDaten } from "./typen";
+import { balken, monate, pfad, pfeile, projektZeitraum, tageZwischen, warnungenJeZeile, x, ZEILE, zeilen } from "./logik";
+import type { GDaten, GWarnung } from "./typen";
 
 const aufgabe = (id: number, projekt_id: number, beginn: string | null, ende: string | null, extern = false,
   eltern: number | null = null, kinder: number[] = []) => ({
@@ -26,10 +26,11 @@ const daten: GDaten = {
     20: aufgabe(20, 2, "2026-11-02", "2026-11-06"),
   },
   abhaengigkeiten: [
-    { id: 1, vorher: 10, nachher: 20, verletzt: false },
-    { id: 2, vorher: 11, nachher: 20, verletzt: true },
-    { id: 3, vorher: 10, nachher: 11, verletzt: false },
+    { id: 1, vorher: 10, nachher: 20, verletzt_plan: false, verletzt_ist: false },
+    { id: 2, vorher: 11, nachher: 20, verletzt_plan: true, verletzt_ist: false },
+    { id: 3, vorher: 10, nachher: 11, verletzt_plan: false, verletzt_ist: true },
   ],
+  warnungen: [],
 };
 
 describe("Zeitachse", () => {
@@ -72,7 +73,7 @@ describe("Unteraufgaben", () => {
       13: aufgabe(13, 1, "2026-10-12", "2026-10-16", false, 10),
       20: aufgabe(20, 2, "2026-11-02", "2026-11-06"),
     },
-    abhaengigkeiten: [{ id: 1, vorher: 13, nachher: 20, verletzt: false }],
+    abhaengigkeiten: [{ id: 1, vorher: 13, nachher: 20, verletzt_plan: false, verletzt_ist: false }],
   };
   it("sind eingeklappt, bis die Hauptaufgabe aufgeklappt wird", () => {
     const zu = zeilen(mitUnter, new Set(), true, () => false);
@@ -102,5 +103,67 @@ describe("Projektzeitraum", () => {
       .toMatchObject({ von: "2026-10-05", bis: "2026-10-30", vorne: null, hinten: null });
     expect(projektZeitraum({ beginn: null, ende: null, plan_von: "2026-10-06", plan_bis: "2026-10-20" }))
       .toMatchObject({ von: "2026-10-06", bis: "2026-10-20", vorne: null, hinten: null });
+  });
+});
+
+describe("Verletzte Abhängigkeiten", () => {
+  const warnung = (aufgabe: number, vorher: number, nachher = aufgabe): GWarnung => ({
+    aufgabe, nachher: { id: nachher, titel: `A${nachher}` }, vorher: { id: vorher, titel: `A${vorher}`, projekt: "P1" },
+    nachher_von: "2026-11-09", nachher_art: "ist", vorher_bis: "2026-11-10", vorher_art: "ist",
+  });
+
+  it("färbt den Pfeil nur bei verletzten geplanten Terminen rot", () => {
+    const offen = pfeile(daten, zeilen(daten, new Set(), true), daten.von, 10);
+    const rot = (vorher: number, nachher: number) =>
+      offen.find((p) => p.abhaengigkeiten[0].vorher === vorher && p.abhaengigkeiten[0].nachher === nachher)!.verletzt;
+    expect(rot(11, 20)).toBe(true); // Plan verletzt
+    expect(rot(10, 11)).toBe(false); // nur die Einteilung verletzt: Pfeil bleibt grau
+    expect(rot(10, 20)).toBe(false);
+  });
+
+  it("setzt das Warnzeichen in die Zeile des Nachfolgers und fasst je Zeile zusammen", () => {
+    const d: GDaten = { ...daten, warnungen: [warnung(20, 10), warnung(20, 11), warnung(11, 10)] };
+    const liste = zeilen(d, new Set(), true); // P1, 10, 11, P2, 20
+    const je = warnungenJeZeile(d, liste);
+    expect([...je.keys()].sort()).toEqual([2, 4]);
+    expect(je.get(4)!.map((w) => w.vorher.id)).toEqual([10, 11]);
+    expect(je.get(2)).toHaveLength(1);
+  });
+
+  it("zieht das Warnzeichen bei eingeklapptem Projekt an die Projektzeile", () => {
+    const d: GDaten = { ...daten, warnungen: [warnung(20, 10), warnung(11, 10)] };
+    const liste = zeilen(d, new Set([1, 2]), true); // nur die beiden Projektzeilen
+    const je = warnungenJeZeile(d, liste);
+    expect(je.get(0)).toHaveLength(1); // Aufgabe 11 → Projekt 1
+    expect(je.get(1)).toHaveLength(1); // Aufgabe 20 → Projekt 2
+  });
+
+  it("zieht das Warnzeichen bei eingeklappten Unteraufgaben an die Hauptaufgabe", () => {
+    const d: GDaten = {
+      ...daten,
+      projekte: [projekt(1, "2026-10-05", "2026-10-30", [10, 12, 11]), projekt(2, "2026-11-02", "2026-11-20", [20])],
+      aufgaben: {
+        ...daten.aufgaben,
+        10: aufgabe(10, 1, "2026-10-05", "2026-10-09", false, null, [12]),
+        12: aufgabe(12, 1, "2026-10-05", "2026-10-07", false, 10),
+      },
+      // Warnung einer tieferen Ebene: steht an der sichtbaren Unteraufgabe 12, betroffen ist Aufgabe 99
+      warnungen: [warnung(12, 20, 99)],
+    };
+    const auf = warnungenJeZeile(d, zeilen(d, new Set(), true, () => true));
+    expect([...auf.keys()]).toEqual([2]); // P1, 10, 12 …
+    const zu = warnungenJeZeile(d, zeilen(d, new Set(), true, () => false));
+    expect([...zu.keys()]).toEqual([1]); // Hauptaufgabe 10
+    expect(zu.get(1)![0].nachher.id).toBe(99);
+  });
+
+  it("zeigt Warnungen externer Aufgaben in deren Zeile unter „Extern“", () => {
+    const d: GDaten = {
+      ...daten,
+      aufgaben: { ...daten.aufgaben, 30: aufgabe(30, 9, "2026-11-02", "2026-11-06", true) },
+      warnungen: [warnung(30, 10)],
+    };
+    const liste = zeilen(d, new Set(), true); // P1, 10, 11, P2, 20, Extern, 30
+    expect([...warnungenJeZeile(d, liste).keys()]).toEqual([6]);
   });
 });

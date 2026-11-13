@@ -12,6 +12,8 @@ User=teamplaner
 Group=teamplaner
 EnvironmentFile=@KONFIG@
 Environment=TEAMPLANER_MEDIA_ROOT=@DATEN@/medien
+# Meldungen sofort ins Journal: ohne Terminal puffert Python stdout sonst blockweise
+Environment=PYTHONUNBUFFERED=1
 WorkingDirectory=@PROGRAMM@/aktuell
 ExecStart=@PROGRAMM@/aktuell/venv/bin/python manage.py mails_versenden --dauerhaft
 Restart=on-failure

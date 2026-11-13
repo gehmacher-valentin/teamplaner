@@ -147,11 +147,11 @@ def test_abhaengigkeit_projektuebergreifend_schiebt_nach(konten, ansicht, aufgab
     assert antwort.status_code == 201
     gehaeuse.refresh_from_db()
     assert gehaeuse.beginn_am == FR  # rückt hinter den Hallenboden (endet Do), statt nur markiert zu werden
-    assert c.get(f"/api/gantt/{ansicht.pk}").json()["abhaengigkeiten"][0]["verletzt"] is False
+    assert c.get(f"/api/gantt/{ansicht.pk}").json()["abhaengigkeiten"][0]["verletzt_plan"] is False
     # Erledigte Nachfolger bleiben stehen – dann wird die Abhängigkeit als verletzt markiert
     gehaeuse.status, gehaeuse.beginn_am = Status.standard_erledigt(), MI
     gehaeuse.save()
-    assert c.get(f"/api/gantt/{ansicht.pk}").json()["abhaengigkeiten"][0]["verletzt"] is True
+    assert c.get(f"/api/gantt/{ansicht.pk}").json()["abhaengigkeiten"][0]["verletzt_plan"] is True
     # im Verlauf beider Aufgaben
     assert Protokolleintrag.objects.filter(objekt_typ="abhaengigkeit", aufgabe_id=gehaeuse.pk).exists()
     assert Protokolleintrag.objects.filter(objekt_typ="abhaengigkeit", aufgabe_id=aufgabe.pk).exists()

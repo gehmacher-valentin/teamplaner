@@ -38,6 +38,7 @@ GET_SEITEN = [
     ("/einstellungen/ansichten/gantt/neu/", {A, BL}),
     ("/einstellungen/rollen/", {A, BL}),
     ("/einstellungen/allgemein/", {A}),
+    ("/einstellungen/mailversand/", {A}),
     ("/einstellungen/listen/", {A}),
     ("/einstellungen/kalender/", {A}),
     ("/einstellungen/speicherplatz/", {A}),
@@ -75,7 +76,7 @@ def test_einstellungen_starten_beim_profil(konten):
 
 PERSOENLICH = {"Profil", "Anmeldung &amp; Sicherheit", "Benachrichtigungen", "Darstellung", "Über"}
 TEAM = {"Personen", "Ansichten &amp; Freigaben", "Rollen &amp; Rechte"}
-SYSTEM = {"Allgemein", "Listen", "Kalender", "Speicherplatz"}
+SYSTEM = {"Allgemein", "E-Mail-Versand", "Listen", "Kalender", "Speicherplatz"}
 
 
 @pytest.mark.parametrize("rolle, sichtbar", [

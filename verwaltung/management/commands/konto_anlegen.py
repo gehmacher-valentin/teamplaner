@@ -5,7 +5,10 @@
 
 --systemkonto: Konto steht in keiner Personenauswahl (z. B. ein technisches Admin-Konto).
 
-Ohne --passwort wird ein Einladungslink ausgegeben, mit dem die Person ihr Passwort setzt.
+Ohne --passwort wird ein Einladungslink ausgegeben, mit dem die Person ihr Passwort setzt. Ist der
+E-Mail-Versand eingerichtet und eingeschaltet, geht die Einladung zusätzlich per E-Mail an die
+Person (wie bei „+ Person einladen“ in der Oberfläche); --keine-mail unterdrückt das. Der Link
+steht immer auch auf der Konsole, weil beim ersten Konto der Versand oft noch nicht geprüft ist.
 """
 
 from django.conf import settings
@@ -17,6 +20,7 @@ from django.utils.http import urlsafe_base64_encode
 from kern.hilfen import passwort_links
 from kern.models import Bereich, Konto, Rolle
 from kern.protokoll import protokollieren
+from zusammenarbeit.mail import einladung_senden, mail_aktiv
 
 
 class Command(BaseCommand):
@@ -32,6 +36,8 @@ class Command(BaseCommand):
                             help="Nicht als Person auswählbar (Teamplaner, Verantwortlich, Mitglieder …)")
         parser.add_argument("--adresse", default=None,
                             help="Basisadresse für den ausgegebenen Link (Standard: TEAMPLANER_ADRESSE)")
+        parser.add_argument("--keine-mail", action="store_true",
+                            help="Einladung nicht per E-Mail verschicken, nur den Link ausgeben")
 
     def handle(self, *args, **o):
         if Konto.objects.filter(email__iexact=o["email"]).exists():
@@ -52,4 +58,13 @@ class Command(BaseCommand):
             uid = urlsafe_base64_encode(force_bytes(konto.pk))
             pfad = reverse("passwort_setzen", args=[uid, passwort_links.make_token(konto)])
             adresse = o["adresse"] or settings.TEAMPLANER_ADRESSE
-            self.stdout.write(f"Link zum Setzen des Passworts:\n{adresse.rstrip('/')}{pfad}")
+            link = f"{adresse.rstrip('/')}{pfad}"
+            self.stdout.write(f"Link zum Setzen des Passworts:\n{link}")
+            if o["keine_mail"]:
+                self.stdout.write("Es wird keine E-Mail verschickt (--keine-mail).")
+            elif einladung_senden(konto, link):
+                self.stdout.write(f"Der Link geht zusätzlich per E-Mail an {konto.email} "
+                                  "(verschickt der Dienst teamplaner-mailer; Verlauf: mail_protokoll).")
+            elif not mail_aktiv():
+                self.stdout.write("Es wird keine E-Mail verschickt: Versand abgeschaltet oder kein SMTP-Server "
+                                  "eingerichtet (EMAIL_HOST). Bitte den Link weitergeben.")
