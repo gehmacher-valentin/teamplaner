@@ -25,6 +25,7 @@ urlpatterns = [
     path("einstellungen/personen/einladen/", views.person_einladen, name="einst_person_einladen"),
     path("einstellungen/personen/platzhalter/", views.platzhalter_neu, name="einst_platzhalter_neu"),
     path("einstellungen/personen/<int:pk>/", views.person_seite, name="einst_person"),
+    path("einstellungen/personen/<int:pk>/eingeladen/", views.person_eingeladen, name="einst_person_eingeladen"),
     path("einstellungen/personen/<int:pk>/freigabe/", views.person_freigabe, name="einst_person_freigabe"),
     path("einstellungen/ansichten/", einst.ansichten, name="einst_ansichten"),
     path("einstellungen/ansichten/<str:art>/reihenfolge/", einst.ansichten_sortieren, name="einst_ansichten_sortieren"),

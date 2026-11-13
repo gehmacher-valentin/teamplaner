@@ -8,15 +8,7 @@
   {% if not ziel.is_active %}<span class="badge">{% translate "deaktiviert" %}</span>{% elif not ziel.has_usable_password %}<span class="badge badge--warn">{% translate "Einladung offen" %}</span>{% endif %}
   {% if ziel.systemkonto %}<span class="badge">{% translate "Systemkonto" %}</span>{% endif %}
 </div>
-{% if link %}
-  <div class="meldung meldung--success passwort-link" role="status">
-    <div class="stapel passwort-link__text">
-      <strong>{% translate "Link zum Festlegen des Passworts" %}</strong>
-      <div class="zeile"><code class="umbruch">{{ link }}</code><button type="button" class="knopf knopf--klein" data-kopieren="{{ link }}">{% translate "Link kopieren" %}</button></div>
-    </div>
-    <div class="passwort-link__qr" role="img" aria-label="{% translate 'QR-Code' %}">{{ link_qr }}</div>
-  </div>
-{% endif %}
+{% include "kern/_passwort_link.html" %}
 
 <form method="post" action="{% url 'einst_person' ziel.pk %}" novalidate class="stapel">
   {% csrf_token %}
