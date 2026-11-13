@@ -53,7 +53,32 @@ pytest                                         # Backend
 ruff check .                                   # Code-Stil
 shellcheck --severity=warning werkzeuge/*.sh betrieb/linux/teamplaner betrieb/linux/*.sh pruefung/linux/*.sh
 cd frontend && npm test && npm run typecheck   # Frontend
+cd frontend && npm run e2e                     # Browser-Tests (Playwright), siehe unten
 ```
+
+`pytest` läuft mit einem schnellen Passwort-Hasher (`tests/conftest.py`), sonst kostet Argon2 je
+Testkonto rund 0,1 s. Tests, die das Verfahren selbst prüfen, tragen `@pytest.mark.argon2`.
+
+### Browser-Tests
+
+Die Abläufe, die erst in der Oberfläche auffallen (Weiterleitungen, gerenderte Vorlagen,
+Drag-and-drop, Live-Aktualisierung), prüft Playwright im Chromium:
+
+```bash
+cd frontend && npm run build
+npx playwright install chromium    # einmalig
+npm run e2e                        # alle Abläufe, etwa eine Minute
+npx playwright test 04 --headed    # ein Ablauf, sichtbar
+```
+
+`npm run e2e` startet die Anwendung selbst (`werkzeuge/e2e-server.sh`): eigene Datenbank
+`teamplaner_e2e` mit frischen Demodaten, eigener Ordner für Anhänge, Port 8010. Die
+Entwicklungsdatenbank bleibt unberührt. Die Python-Umgebung muss aktiv sein.
+
+Jeder Test scheitert bei Konsolenfehlern, nicht abgefangenen Ausnahmen und Antworten mit Status
+ab 400 (`e2e/hilfen.ts`, `Waechter`); erwartete Fehler erlaubt ein Test ausdrücklich mit
+`waechter.erlauben(...)`. Die Tests ändern Daten und laufen deshalb nacheinander. Rechte werden
+weiterhin in `pytest` geprüft, nicht im Browser.
 
 GitHub Actions führt alles bei jedem Pull Request und jedem Push auf `main` aus
 (`.github/workflows/tests.yml`), und zwar wie auf dem
@@ -86,8 +111,17 @@ Für Rechteprüfung und Einteilungslogik sind automatische Tests Pflicht.
 | `tests/test_termine.py` | Termine nachziehen: Hauptaufgaben, Nachfolger, Sammelaufgaben; Gantt-Daten mit zwei Ebenen |
 | `tests/test_tagesinfo.py`, `tests/test_personen.py` | Info-Zeile im Teamplaner; Systemkonto, Personenauswahl mit Tippsuche |
 | `tests/test_einstellungen.py` | Einstellungsbereich: Schalter, Listen-Editor, Kalender mit Zeiträumen, Personen, Freigaben, Ansichten |
+| `tests/test_vorlagen.py` | Vorlagen ohne mehrzeilige `{# #}`-Kommentare (erscheinen sonst als Text) |
 | `frontend/src/teamplaner/*.test.ts` | Rasterlogik und Übersetzung im Browser |
-| `frontend/src/editor/*.test.ts`, `frontend/src/lib/*.test.ts` | Markdown beim Einfügen, Editor-Rundlauf, Spaltenbreiten, Personenauswahl, Vorschläge, Restzeit der Admin-Sitzung |
+| `frontend/src/editor/*.test.ts`, `frontend/src/lib/*.test.ts` | Markdown beim Einfügen, Editor-Rundlauf, Spaltenbreiten, Personenauswahl, Vorschläge, Restzeit der Admin-Sitzung, nur die jüngste Ladeanfrage zählt (`neueste.ts`) |
+| `frontend/src/gantt/logik.test.ts` | Zeitachse, Zeilen, Pfeile (rot nur bei verletzten geplanten Terminen), Warnzeichen je Zeile |
+
+| `frontend/e2e/01-rundgang.spec.ts` | alle Seiten der Navigation am Desktop und am Handy, Einstellungen, keine Vorlagenreste |
+| `frontend/e2e/02-einladen.spec.ts` | Konto einladen, auch in der eigenen Rolle: Link erscheint einmal und funktioniert |
+| `frontend/e2e/03-einteilen.spec.ts` | Teamplaner: aus der Palette ziehen, verschieben, verlängern, rückgängig, live bei einer zweiten Person |
+| `frontend/e2e/04-gantt.spec.ts` | Gantt: Warnzeichen bei Verletzung durch Einteilungen, Balken ziehen und Nachziehen, schnelle Änderungen, Abhängigkeit anlegen und entfernen |
+| `frontend/e2e/05-aufgabe.spec.ts` | Aufgabe anlegen, Seitenleiste, direkt bearbeiten, Erwähnung, Anhang, Posteingang |
+| `frontend/e2e/06-notizen-bestellungen.spec.ts` | Notiz und Bestellung anlegen, bearbeiten, wiederfinden |
 
 Dazu prüft `shellcheck` die Betriebs- und Bauskripte.
 
@@ -104,11 +138,11 @@ Dazu prüft `shellcheck` die Betriebs- und Bauskripte.
 | `bestellungen/` | Bestellungsverfolgung (eine Liste für alle); `warnungen.py` (überschrittene Liefertermine) |
 | `verwaltung/` | Oberste Schicht ohne eigene Modelle: Anmeldung, Passwort und Zwei-Faktor-Oberfläche, Personenverwaltung, Einstellungsseiten (`einstellungen.py`), Protokollseite, Speicherplatz, Navigation (`context_processors.py`), Aufräumen nach Fristen (`aufraeumen.py`); Befehle `mails_versenden`, `aufraeumen`, `demodaten`, `lasttest` |
 | `templates/` | Django-Templates (HTMX); die Seiten von `verwaltung` liegen unter `templates/kern/` |
-| `frontend/` | Vite-Projekt: `src/main.ts` (alle Seiten), `src/teamplaner/` und `src/gantt/` (React), `src/editor/` (Tiptap) |
+| `frontend/` | Vite-Projekt: `src/main.ts` (alle Seiten), `src/teamplaner/` und `src/gantt/` (React), `src/editor/` (Tiptap); `e2e/` (Browser-Tests) |
 | `locale/en/` | englische Übersetzung |
 | `betrieb/linux/` | Linux-Server: Verwaltungsbefehl `teamplaner`, `installieren.sh`, Sicherung, systemd-Dienste, nginx-/Apache-Vorlagen, Konfigurationsvorlage |
 | `pruefung/linux/` | Probeserver (Ubuntu 24.04) und Ablauf für die lokale Prüfung der Linux-Installation |
-| `werkzeuge/` | Entwicklung: Installationsarchiv bauen (`paket-bauen.sh`), Abhängigkeiten sperren, Übersetzungswerkzeug, Entwicklungseinstellungen |
+| `werkzeuge/` | Entwicklung: Installationsarchiv bauen (`paket-bauen.sh`), Abhängigkeiten sperren, Übersetzungswerkzeug, Entwicklungseinstellungen, Server für die Browser-Tests (`e2e-server.sh`) |
 
 Abhängigkeitsrichtung (geprüft von `tests/test_schichten.py`):
 
@@ -208,7 +242,8 @@ rollt danach alles zurück. Ziele: Laden unter 2 s, Speichern unter 0,5 s.
 
 Die Bilder in `docs/bilder/` (README) entstehen aus der laufenden Entwicklungsumgebung mit
 Demodaten, per Skript im installierten Chrome (`BROWSER=msedge` für Edge). Das Skript richtet die
-Zwei-Faktor-Anmeldung der Bereichsleitung selbst ein und braucht deshalb frische Demodaten:
+Zwei-Faktor-Anmeldung der Bereichsleitung selbst ein (`frontend/werkzeuge/anmeldung.mjs`, auch von
+den Browser-Tests genutzt) und braucht deshalb frische Demodaten:
 
 ```bash
 python manage.py demodaten --neu
