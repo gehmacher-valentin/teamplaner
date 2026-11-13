@@ -33,8 +33,10 @@ def verletzung(vorher, nachher, ist):
       nach, das bleibt also nur bei erledigten Nachfolgern stehen. Im Gantt-Diagramm zu sehen und
       dort zu beheben (roter Pfeil).
     - ``ist``: nach den tatsächlichen Einteilungen aus dem Teamplaner, die nie automatisch
-      verschoben werden. Hat nur eine Seite eine Einteilung, zählt für die andere ihr geplanter
-      Termin. Bei erledigten Nachfolgern entfällt die Warnung. Ergebnis: ``None`` oder die beiden
+      verschoben werden: beide Aufgaben sind eingeteilt und die Einteilungen überschneiden sich.
+      Dazu der Mischfall: eine Aufgabe hat keine geplanten Termine, nur eine Einteilung, dann zählt
+      für die andere ihr geplanter Termin. Sind beide geplant und nur eine eingeteilt, gibt es
+      keine Warnung. Bei erledigten Nachfolgern entfällt sie. Ergebnis: ``None`` oder die beiden
       Tage mit ihrer Herkunft (``"ist"`` bzw. ``"plan"``), für den Hinweistext.
     """
     plan_ende_a = vorher.faellig_am
@@ -42,11 +44,18 @@ def verletzung(vorher, nachher, ist):
     plan = plan_ende_a is not None and plan_beginn_b is not None and plan_beginn_b <= plan_ende_a
 
     ist_a, ist_b = ist.get(vorher.pk), ist.get(nachher.pk)
-    ende_a, art_a = (ist_a[1], "ist") if ist_a else (plan_ende_a, "plan")
-    beginn_b, art_b = (ist_b[0], "ist") if ist_b else (plan_beginn_b, "plan")
+    ohne_plan_a = vorher.beginn_am is None and vorher.faellig_am is None
+    ohne_plan_b = nachher.beginn_am is None and nachher.faellig_am is None
+    if ist_a and ist_b:
+        ende_a, art_a, beginn_b, art_b = ist_a[1], "ist", ist_b[0], "ist"
+    elif ist_a and ohne_plan_a:  # Mischfall: Vorgänger nur eingeteilt, Nachfolger nur geplant
+        ende_a, art_a, beginn_b, art_b = ist_a[1], "ist", plan_beginn_b, "plan"
+    elif ist_b and ohne_plan_b:  # Mischfall: Nachfolger nur eingeteilt, Vorgänger nur geplant
+        ende_a, art_a, beginn_b, art_b = plan_ende_a, "plan", ist_b[0], "ist"
+    else:
+        ende_a = beginn_b = art_a = art_b = None
     warnung = None
-    if ("ist" in (art_a, art_b) and ende_a is not None and beginn_b is not None and beginn_b <= ende_a
-            and not nachher.status.ist_erledigt):
+    if ende_a is not None and beginn_b is not None and beginn_b <= ende_a and not nachher.status.ist_erledigt:
         warnung = {"vorher_bis": ende_a, "vorher_art": art_a, "nachher_von": beginn_b, "nachher_art": art_b}
     return {"plan": plan, "ist": warnung}
 

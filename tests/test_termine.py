@@ -284,6 +284,19 @@ def test_mischfall_vorgaenger_ohne_plan_aber_eingeteilt(konten, projekt, person_
     assert (w["nachher_von"], w["nachher_art"], w["vorher_bis"], w["vorher_art"]) == (MI.isoformat(), "plan", DO.isoformat(), "ist")
 
 
+def test_keine_warnung_wenn_beide_geplant_und_nur_eine_eingeteilt(konten, projekt, person_a):
+    """Kein Mischfall: beide haben geplante Termine. Eine einzelne Einteilung wird nicht mit dem
+    geplanten Termin der anderen Aufgabe verglichen."""
+    a, b = neu(projekt, "A", MO, DI), neu(projekt, "B", DO, FR)
+    Abhaengigkeit.objects.create(vorher=a, nachher=b)
+    spaet = Einteilung.objects.create(aufgabe=a, person=person_a, von=MO, bis=FR)  # A läuft länger als geplant
+    daten = gantt_fuer(konten, projekt)
+    assert daten["warnungen"] == [] and not daten["abhaengigkeiten"][0]["verletzt_ist"]
+    spaet.delete()
+    Einteilung.objects.create(aufgabe=b, person=person_a, von=MO, bis=MO)  # B früher eingeteilt als A geplant endet
+    assert gantt_fuer(konten, projekt)["warnungen"] == []
+
+
 def test_warnung_tieferer_ebene_steht_an_der_sichtbaren_unteraufgabe(konten, projekt, person_a):
     haupt = neu(projekt, "Halle")
     eins = neu(projekt, "Boden", eltern=haupt)

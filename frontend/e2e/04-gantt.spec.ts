@@ -73,8 +73,8 @@ test("Gantt: Einteilung verletzt Abhängigkeit, Warnzeichen statt rotem Pfeil, A
   }
   await seite.reload();
   await expect(seite.locator(".gt-zeile--projekt").first()).toBeVisible();
-  await expect(seite.locator(".gt-warn").first()).toBeVisible(); // die andere Warnung der Demodaten bleibt
   await expect(zeile(seite, "Ausrüstung vorbereiten").locator(".gt-warn")).toHaveCount(0);
+  await expect(seite.locator(".gt-warn")).toHaveCount(0);
   expect((await serverdaten(seite)).warnungen.map((w) => w.nachher.titel)).not.toContain("Servicewagen ausrüsten");
 });
 
