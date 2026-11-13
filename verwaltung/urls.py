@@ -32,6 +32,8 @@ urlpatterns = [
     path("einstellungen/rollen/", einst.rollen, name="einst_rollen"),
     # System
     path("einstellungen/allgemein/", einst.allgemein, name="einst_allgemein"),
+    path("einstellungen/mailversand/", einst.mailversand, name="einst_mailversand"),
+    path("einstellungen/mailversand/<int:pk>/erneut/", einst.mailversand_erneut, name="einst_mailversand_erneut"),
     path("einstellungen/listen/", einst.listen, name="einst_listen"),
     path("einstellungen/listen/<str:art>/neu/", einst.liste_neu, name="einst_liste_neu"),
     path("einstellungen/listen/<str:art>/reihenfolge/", einst.liste_sortieren, name="einst_liste_sortieren"),

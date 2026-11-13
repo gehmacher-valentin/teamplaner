@@ -210,6 +210,9 @@ EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", EMAIL_PORT == 587)
 EMAIL_USE_SSL = env_bool("EMAIL_USE_SSL", EMAIL_PORT == 465)
 EMAIL_TIMEOUT = 20
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "Teamplaner <teamplaner@localhost>")
+# Empfängeradressen im Protokoll des Versanddienstes (Journal). Das Journal hat eine eigene
+# Aufbewahrung, unabhängig von TEAMPLANER_AUFBEWAHRUNG_TAGE; mit 0 stehen Adressen dort gekürzt.
+TEAMPLANER_PROTOKOLL_EMPFAENGER = env_bool("TEAMPLANER_PROTOKOLL_EMPFAENGER", True)
 # Öffentliche Adresse für Links in E-Mails
 TEAMPLANER_ADRESSE = env("TEAMPLANER_ADRESSE", "http://localhost:8000")
 
@@ -223,7 +226,9 @@ TEAMPLANER_QUELLCODE = env("TEAMPLANER_QUELLCODE", "https://github.com/gehmacher
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
-    "handlers": {"console": {"class": "logging.StreamHandler"}},
+    # Stufe voran: im Journal (teamplaner logs) sind Warnungen und Fehler sonst nicht zu erkennen
+    "formatters": {"stufe": {"format": "{levelname} {message}", "style": "{"}},
+    "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "stufe"}},
     "root": {"handlers": ["console"], "level": env("TEAMPLANER_LOGLEVEL", "INFO")},
 }
 

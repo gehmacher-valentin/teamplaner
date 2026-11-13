@@ -15,6 +15,7 @@ OBJEKTE = {
     "gewerk": gettext_lazy("Gewerk"), "bereich": gettext_lazy("Bereich"), "freiertag": gettext_lazy("Freier Tag"), "tag": gettext_lazy("Tag"),
     "notizordner": gettext_lazy("Notizordner"), "tagesfreigabe": gettext_lazy("Tagesfreigabe"), "freigabestufe": gettext_lazy("Freigabestufe"),
     "einstellungen": gettext_lazy("Einstellungen"), "bestellung": gettext_lazy("Bestellung"),
+    "benachrichtigung": gettext_lazy("Benachrichtigung"),
 }
 AKTIONEN = {
     "angelegt": gettext_lazy("angelegt"), "geaendert": gettext_lazy("geändert"), "geloescht": gettext_lazy("gelöscht"),
@@ -34,6 +35,7 @@ AKTIONEN = {
     "reset_angefordert": gettext_lazy("Passwort-Link per E-Mail angefordert"),
     "projekt_hinzugefuegt": gettext_lazy("Projekt hinzugefügt"),
     "projekt_entfernt": gettext_lazy("Projekt entfernt"),
+    "mail_erneut": gettext_lazy("E-Mail erneut eingereiht"),
 }
 
 

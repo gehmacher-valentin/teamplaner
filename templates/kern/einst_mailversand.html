@@ -1,0 +1,65 @@
+{% extends "kern/einstellungen_basis.html" %}
+{% load i18n %}
+{% block titel %}{% translate "E-Mail-Versand" %}{% endblock %}
+{% block einst_breit %} einst__inhalt--breit{% endblock %}
+{% block einstellungen %}
+<h1>{% translate "E-Mail-Versand" %}</h1>
+{% if kein_smtp %}
+  <div class="meldung meldung--warning" role="status">{% translate "Auf diesem Server ist kein SMTP-Server eingerichtet. Es wird nichts verschickt; Einladungs- und Passwort-Links lassen sich nur kopieren." %}</div>
+{% elif not mail_aktiv %}
+  <div class="meldung meldung--warning" role="status">{% url 'einst_allgemein' as allgemein %}{% blocktranslate %}Der E-Mail-Versand ist abgeschaltet (<a href="{{ allgemein }}">Allgemein</a>). Es wird nichts verschickt.{% endblocktranslate %}</div>
+{% elif zahlen.haengt %}
+  <div class="meldung meldung--warning" role="alert">{% blocktranslate with seit=zahlen.aelteste_offene|date:"d.m.Y H:i" %}Die älteste offene E-Mail wartet seit {{ seit }}. Vermutlich läuft der Versanddienst nicht. Am Server: <code>sudo teamplaner status</code> und <code>sudo teamplaner logs mailer</code>.{% endblocktranslate %}</div>
+{% endif %}
+<section class="karte" aria-label="{% translate 'Überblick' %}">
+  <dl class="einst-daten">
+    <dt>{% translate "Versand" %}</dt><dd>{% if mail_aktiv %}<span class="badge badge--ok">{% translate "eingeschaltet" %}</span>{% else %}<span class="badge badge--warn">{% translate "aus" %}</span>{% endif %}</dd>
+    <dt>{% translate "Offen" %}</dt><dd id="mail-offen">{{ zahlen.offen }}{% if zahlen.aelteste_offene %} <span class="gedaempft klein">{% blocktranslate with seit=zahlen.aelteste_offene|date:"d.m.Y H:i" %}älteste seit {{ seit }}{% endblocktranslate %}</span>{% endif %}</dd>
+    <dt>{% translate "Aufgegeben" %}</dt><dd id="mail-fehler">{% if zahlen.fehler %}<span class="badge badge--warn">{{ zahlen.fehler }}</span>{% else %}0{% endif %} <span class="gedaempft klein">{% blocktranslate with n=max_versuche %}nach {{ n }} Versuchen{% endblocktranslate %}</span></dd>
+    <dt>{% translate "Verschickt" %}</dt><dd id="mail-gesendet">{{ zahlen.gesendet_24h }} <span class="gedaempft klein">{% translate "in den letzten 24 Stunden" %}</span></dd>
+  </dl>
+</section>
+
+<form method="get" class="zeile" aria-label="{% translate 'Filter' %}">
+  <label class="feld"><span class="sr-only">{% translate "Status" %}</span>
+    <select name="status" data-auto-absenden>
+      <option value="">{% translate "Alle, Offene und Aufgegebene zuerst" %}</option>
+      {% for wert, text in statusliste %}<option value="{{ wert }}" {% if filter_status == wert %}selected{% endif %}>{{ text }}</option>{% endfor %}
+    </select>
+  </label>
+  <noscript><button type="submit" class="knopf">{% translate "Anzeigen" %}</button></noscript>
+</form>
+
+<section class="karte liste liste--mobil" aria-label="{% translate 'E-Mails' %}" style="--spalten: 124px minmax(0,1fr) minmax(0,2.2fr) 124px 70px 124px 140px; --liste-min: 900px">
+  <div class="liste__inner">
+    <div class="liste__kopf"><div>{% translate "Erstellt" %}</div><div>{% translate "Art" %}</div><div>{% translate "Empfänger" %}</div><div>{% translate "Status" %}</div><div>{% translate "Versuche" %}</div><div>{% translate "Verschickt" %}</div><div></div></div>
+    {% for e in seite %}
+      <div class="liste__zeile" data-mail="{{ e.quelle }}-{{ e.id }}">
+        <div class="mono klein">{{ e.erstellt_am|date:"d.m.Y H:i" }}</div>
+        <div class="zelle-text" title="{{ e.kennung }}">{{ e.art }}</div>
+        <div class="zelle-text" title="{{ e.empfaenger }}">{{ e.empfaenger|default:"–" }}</div>
+        <div><span class="badge{% if e.status == 'fehler' %} badge--warn{% elif e.status == 'gesendet' %} badge--ok{% endif %}">{% if e.status == "fehler" %}{% translate "aufgegeben" %}{% else %}{{ e.status_text }}{% endif %}</span></div>
+        <div class="mono klein">{% if e.versuche %}{{ e.versuche }} / {{ max_versuche }}{% else %}–{% endif %}</div>
+        <div class="mono klein">{% if e.gesendet_am %}{{ e.gesendet_am|date:"d.m.Y H:i" }}{% else %}–{% endif %}</div>
+        <div>
+          {% if e.wiederholbar %}
+            <form method="post" action="{% url 'einst_mailversand_erneut' e.id %}">{% csrf_token %}<button type="submit" class="knopf knopf--klein">{% translate "Erneut versuchen" %}</button></form>
+          {% elif e.status == "fehler" %}
+            <span class="gedaempft klein" title="{% translate 'Der Text mit dem Link wurde nach dem Aufgeben gelöscht. Auf der Seite der Person einen neuen Link erzeugen.' %}">{% translate "neuen Link erzeugen" %}</span>
+          {% endif %}
+        </div>
+      </div>
+    {% empty %}
+      <div class="leer">{% translate "Keine E-Mails." %}</div>
+    {% endfor %}
+  </div>
+  {% if seite.has_other_pages %}
+  <div class="karte__fuss zeile">
+    {% if seite.has_previous %}<a class="knopf knopf--klein" href="?status={{ filter_status }}&seite={{ seite.previous_page_number }}">{% translate "Zurück" %}</a>{% endif %}
+    <span class="gedaempft klein">{% blocktranslate with n=seite.number gesamt=seite.paginator.num_pages %}Seite {{ n }} von {{ gesamt }}{% endblocktranslate %}</span>
+    {% if seite.has_next %}<a class="knopf knopf--klein" href="?status={{ filter_status }}&seite={{ seite.next_page_number }}">{% translate "Weiter" %}</a>{% endif %}
+  </div>
+  {% endif %}
+</section>
+<p class="klein gedaempft">{% blocktranslate with n=tage %}Betreff und Text werden nicht angezeigt. Der Verlauf reicht {{ n }} Tage zurück. Am Server zeigt <code>sudo teamplaner verwalten mail_protokoll</code> dieselben Angaben.{% endblocktranslate %}</p>
+{% endblock %}

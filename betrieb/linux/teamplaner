@@ -24,7 +24,8 @@ HILFE="Aufruf: sudo teamplaner <befehl> [-j|--ja]
   wiederherstellen DUMP [ANHAENGE]
                               Sicherung einspielen (überschreibt die Daten)
   konto-anlegen OPTIONEN      Konto anlegen, z. B. das erste Admin-Konto (siehe INSTALLATION.md)
-  verwalten BEFEHL …          Django-Verwaltungsbefehl als Dienstbenutzer, z. B. axes_reset_username
+  verwalten BEFEHL …          Django-Verwaltungsbefehl als Dienstbenutzer, z. B. mail_protokoll (was wann
+                              an wen verschickt wurde) oder axes_reset_username
 
   -j, --ja                    Rückfragen bestätigen (außer solchen, bei denen Daten verloren gehen)
 
