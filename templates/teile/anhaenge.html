@@ -1,5 +1,7 @@
-{% load i18n teamplaner %}{# Anhänge als Kacheln: Fotos mit Vorschau, alles öffnet in einem neuen Tab.
-   Erwartet: anhaenge, url_name, loeschen_name, alle_loeschbar (sonst nur eigene); seitenleiste: per HTMX #}
+{% load i18n teamplaner %}{% comment %}
+  Anhänge als Kacheln: Fotos mit Vorschau, alles öffnet in einem neuen Tab.
+  Erwartet: anhaenge, url_name, loeschen_name, alle_loeschbar (sonst nur eigene); seitenleiste: per HTMX
+{% endcomment %}
 <div class="anhaenge">
   {% for d in anhaenge %}
     {% url url_name d.pk as adresse %}
