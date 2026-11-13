@@ -100,8 +100,15 @@ def test_sperre_je_ip_adresse_ueber_alle_konten(konten, settings):
     assert andere.session["_auth_user_id"] == str(konten[M].pk)
 
 
-def test_passwort_wird_mit_argon2_gespeichert(konten):
+@pytest.mark.argon2
+def test_passwort_wird_mit_argon2_gespeichert(konten, settings):
+    assert settings.PASSWORD_HASHERS[0].endswith("Argon2PasswordHasher")
     assert konten[M].password.startswith("argon2")
+
+
+def test_tests_laufen_mit_schnellem_hasher(konten):
+    """Gegenprobe zur Fixture ``schneller_passwort_hasher``."""
+    assert konten[M].password.startswith("md5$")
 
 
 # --- Erwähnungen und Benachrichtigungen ---
