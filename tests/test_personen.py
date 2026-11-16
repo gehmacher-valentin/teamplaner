@@ -91,7 +91,8 @@ def test_teamplaner_zeigt_systemkonto_nur_mit_bestehenden_eintraegen(client_fuer
 
 def test_systemkonto_setzen_nur_fuer_niedrigere_rollen(konten):
     ziel = konten[P]
-    daten = {"anzeigename": "Person 05", "email": ziel.email, "rolle": ziel.rolle, "systemkonto": "on"}
+    daten = {"anzeigename": "Person 05", "email": ziel.email, "rolle": ziel.rolle, "bereich": ziel.person.bereich_id,
+             "systemkonto": "on"}
     assert client_fuer(konten[BL]).post(f"/einstellungen/personen/{ziel.pk}/", daten).status_code == 302
     ziel.refresh_from_db()
     assert ziel.systemkonto

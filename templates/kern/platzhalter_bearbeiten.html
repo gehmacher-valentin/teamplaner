@@ -15,7 +15,7 @@
     <div class="karte--innen formular">
       <div class="formular__zeile">
         {% include "teile/feld.html" with feld=form.anzeigename %}
-        {% include "kern/_bereich_fest.html" with bereich=person.bereich %}
+        {% include "teile/feld.html" with feld=form.bereich %}
       </div>
       {% include "teile/feld.html" with feld=form.notiz %}
       {% include "teile/chips.html" with feld=form.gewerke %}

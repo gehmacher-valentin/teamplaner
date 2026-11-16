@@ -21,7 +21,7 @@
       </div>
       <div class="formular__zeile">
         {% include "teile/feld.html" with feld=form.rolle %}
-        {% include "kern/_bereich_fest.html" with bereich=ziel.person.bereich %}
+        {% include "teile/feld.html" with feld=form.bereich %}
       </div>
       {% include "teile/chips.html" with feld=form.gewerke %}
       {% include "teile/feld.html" with feld=form.systemkonto zeile=True %}

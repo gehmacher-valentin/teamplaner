@@ -269,7 +269,8 @@ def test_rolle_unter_planer_stuft_bearbeiten_herab(client_fuer, konten, ansicht_
     freigeben(ansicht_a, konten[P], Recht.BEARBEITEN)
     ziel = konten[P]
     client_fuer(konten[BL]).post(f"/einstellungen/personen/{ziel.pk}/", {
-        "anzeigename": ziel.person.anzeigename, "email": ziel.email, "rolle": Rolle.MITARBEITER})
+        "anzeigename": ziel.person.anzeigename, "email": ziel.email, "rolle": Rolle.MITARBEITER,
+        "bereich": ziel.person.bereich_id})
     assert AnsichtFreigabe.objects.get(konto=ziel).recht == Recht.SEHEN
 
 
