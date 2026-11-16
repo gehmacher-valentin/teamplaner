@@ -6,7 +6,7 @@ import pytest
 from axes.models import AccessAttempt
 from django.test import Client
 
-from kern.models import Konto, Person, Rolle
+from kern.models import Konto, Person, Protokolleintrag, Rolle
 from planung.models import AnsichtFreigabe, Einteilung, Recht
 from projekte import dienste
 from projekte.models import Aufgabe, Status
@@ -251,10 +251,37 @@ def test_platzhalter_archivieren_blendet_aus_vorschlaegen_aus(konten, platzhalte
     assert platzhalter.anzeigename in namen
 
 
-def test_platzhalter_bereich_nicht_aenderbar(konten, platzhalter, bereich_b):
+def test_platzhalter_bereich_aenderbar(konten, platzhalter, bereich_b, ansicht_a, ansicht_b):
+    """Bereichswechsel: Protokoll, und die Person wandert in die Ansichten des neuen Bereichs."""
+    seite = angemeldet(konten[P]).get(f"/einstellungen/personen/{platzhalter.pk}/").content.decode()
+    assert 'name="bereich"' in seite
     angemeldet(konten[P]).post(f"/einstellungen/personen/{platzhalter.pk}/", {"anzeigename": "Neu", "bereich": bereich_b.pk, "notiz": ""})
     platzhalter.refresh_from_db()
-    assert platzhalter.bereich.name == "Bereich A" and platzhalter.anzeigename == "Neu"
+    assert platzhalter.bereich == bereich_b and platzhalter.anzeigename == "Neu"
+    eintrag = Protokolleintrag.objects.get(objekt_typ="platzhalter", objekt_id=platzhalter.pk, aktion="geaendert")
+    assert eintrag.daten["bereich"] == [{"id": konten[P].person.bereich_id, "name": "Bereich A"},
+                                        {"id": bereich_b.pk, "name": "Bereich B"}]
+    assert platzhalter not in ansicht_a.personen_queryset() and platzhalter in ansicht_b.personen_queryset()
+
+
+def test_konto_bereich_aenderbar(konten, bereich_a, bereich_b, ansicht_a, ansicht_b):
+    ziel = konten[M]
+    seite = angemeldet(konten[BL]).get(f"/einstellungen/personen/{ziel.pk}/").content.decode()
+    assert 'name="bereich"' in seite
+    antwort = angemeldet(konten[BL]).post(f"/einstellungen/personen/{ziel.pk}/", {
+        "anzeigename": ziel.person.anzeigename, "email": ziel.email, "rolle": ziel.rolle, "bereich": bereich_b.pk})
+    assert antwort.status_code == 302
+    ziel.person.refresh_from_db()
+    assert ziel.person.bereich == bereich_b
+    eintrag = Protokolleintrag.objects.get(objekt_typ="konto", objekt_id=ziel.pk, aktion="geaendert")
+    assert eintrag.daten["bereich"] == [{"id": bereich_a.pk, "name": "Bereich A"}, {"id": bereich_b.pk, "name": "Bereich B"}]
+    assert ziel.person not in ansicht_a.personen_queryset() and ziel.person in ansicht_b.personen_queryset()
+    # Ohne Bereich speichert das Formular nicht
+    antwort = angemeldet(konten[BL]).post(f"/einstellungen/personen/{ziel.pk}/", {
+        "anzeigename": ziel.person.anzeigename, "email": ziel.email, "rolle": ziel.rolle})
+    assert antwort.status_code == 200
+    ziel.person.refresh_from_db()
+    assert ziel.person.bereich == bereich_b
 
 
 def test_platzhalter_in_konto_umwandeln_behaelt_einteilungen(konten, platzhalter, aufgabe):

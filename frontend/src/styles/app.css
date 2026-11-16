@@ -964,10 +964,6 @@ dialog::backdrop { background: rgba(26, 29, 27, 0.35); }
   border-radius: var(--radius-gross); background: var(--flaeche);
 }
 .gefahrenabschnitt h2 { flex: 1; font-size: 15px; }
-.feld-fest {
-  display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 10px; border: 1px dashed var(--rand-stark);
-  border-radius: var(--radius); color: var(--text-2); font-weight: 400; background: var(--flaeche-3);
-}
 /* Mehrfachauswahl als Chips (Gewerke, Bereiche, Projekte) */
 .chips { border: 0; padding: 0; }
 .chips legend { padding: 0 0 6px; }

@@ -270,6 +270,7 @@ def test_aenderung_der_email_meldet_die_bisherige_adresse(konten, smtp):
     alt = konten[M].email
     angemeldet(konten[BL]).post(f"/einstellungen/personen/{konten[M].pk}/", {
         "anzeigename": konten[M].person.anzeigename, "email": "neu@example.test", "rolle": M,
+        "bereich": konten[M].person.bereich_id,
     })
     hinweis = Postausgang.objects.get(art=Postausgang.Art.SICHERHEIT)
     assert hinweis.empfaenger == alt and "neu@example.test" in hinweis.text

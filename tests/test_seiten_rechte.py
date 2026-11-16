@@ -131,6 +131,7 @@ def test_rollenaenderung_wird_protokolliert(konten):
     ziel = konten[M]
     client_fuer(konten[BL]).post(f"/einstellungen/personen/{ziel.pk}/", {
         "anzeigename": ziel.person.anzeigename, "email": ziel.email, "rolle": Rolle.PLANER,
+        "bereich": ziel.person.bereich_id,
     })
     eintrag = Protokolleintrag.objects.get(objekt_typ="konto", objekt_id=ziel.pk, aktion="geaendert")
     assert eintrag.daten["rolle"] == [Rolle.MITARBEITER, Rolle.PLANER]

@@ -49,6 +49,7 @@ class KontoBearbeitenForm(forms.Form):
     anzeigename = forms.CharField(label=_("Name"), max_length=150)
     email = forms.EmailField(label=_("E-Mail"))
     rolle = forms.ChoiceField(label=_("Rolle"))
+    bereich = forms.ModelChoiceField(Bereich.objects.all(), label=_("Bereich"))
     gewerke = GewerkeFeld()
     systemkonto = forms.BooleanField(label=Konto._meta.get_field("systemkonto").verbose_name, required=False)
 

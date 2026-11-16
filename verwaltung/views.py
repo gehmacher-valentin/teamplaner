@@ -415,7 +415,7 @@ def person_bearbeiten(request, pk):
     person = ziel.person
     form = KontoBearbeitenForm(
         request.POST or None, konto=konto, ziel=ziel,
-        initial={"anzeigename": person.anzeigename, "email": ziel.email, "rolle": ziel.rolle,
+        initial={"anzeigename": person.anzeigename, "email": ziel.email, "rolle": ziel.rolle, "bereich": person.bereich,
                  "gewerke": person.gewerke.all(), "systemkonto": ziel.systemkonto},
     )
     if ziel.pk == konto.pk:
@@ -424,15 +424,16 @@ def person_bearbeiten(request, pk):
         d = form.cleaned_data
         if not rechte.darf_rolle_vergeben(konto, ziel, d["rolle"]):
             raise PermissionDenied
-        alt = {"anzeigename": person.anzeigename, "email": ziel.email, "rolle": ziel.rolle, "systemkonto": ziel.systemkonto}
+        alt = {"anzeigename": person.anzeigename, "bereich": person.bereich, "email": ziel.email, "rolle": ziel.rolle,
+               "systemkonto": ziel.systemkonto}
         with transaction.atomic():
-            person.anzeigename = d["anzeigename"]
-            person.save(update_fields=["anzeigename"])
+            person.anzeigename, person.bereich = d["anzeigename"], d["bereich"]
+            person.save(update_fields=["anzeigename", "bereich"])
             person.gewerke.set(d["gewerke"])
             ziel.email, ziel.rolle, ziel.systemkonto = d["email"], d["rolle"], d["systemkonto"]
             ziel.save(update_fields=["email", "rolle", "systemkonto"])
-            diff = aenderungen(alt, {"anzeigename": person.anzeigename, "email": ziel.email, "rolle": ziel.rolle,
-                                     "systemkonto": ziel.systemkonto})
+            diff = aenderungen(alt, {"anzeigename": person.anzeigename, "bereich": person.bereich, "email": ziel.email,
+                                     "rolle": ziel.rolle, "systemkonto": ziel.systemkonto})
             if diff:
                 protokollieren(konto, "konto", ziel.pk, "geaendert", {"person": person, **diff})
             if "rolle" in diff:
@@ -543,15 +544,14 @@ def platzhalter_neu(request):
 @erfordert(rechte.darf_platzhalter_verwalten)
 def platzhalter_bearbeiten(request, pk, umwandeln=None):
     person = get_object_or_404(Person.objects.platzhalter().select_related("bereich"), pk=pk)
-    alt = {"anzeigename": person.anzeigename, "notiz": person.notiz}
+    alt = {"anzeigename": person.anzeigename, "bereich": person.bereich, "notiz": person.notiz}
     form = PlatzhalterForm(request.POST or None if umwandeln is None else None, instance=person)
-    form.fields["bereich"].disabled = True  # Bereich ändert sich nicht
     if umwandeln is None and rechte.darf_konten_verwalten(request.user):
         umwandeln = UmwandelnForm(konto=request.user)
     if request.method == "POST" and form.is_bound and form.is_valid():
         form.save()
         protokollieren(request.user, "platzhalter", person.pk, "geaendert",
-                       aenderungen(alt, {"anzeigename": person.anzeigename, "notiz": person.notiz}))
+                       aenderungen(alt, {"anzeigename": person.anzeigename, "bereich": person.bereich, "notiz": person.notiz}))
         messages.success(request, _("Gespeichert."))
         return redirect("einst_person", pk=pk)
     eingeteilt_bis = person.einteilungen.aggregate(m=Max("bis"))["m"]
