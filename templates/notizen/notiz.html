@@ -9,22 +9,28 @@
     {% if darf_schreiben %}{% include "notizen/_zustand.html" %}{% endif %}
     <div class="karte__kopf notiz-kopf">
       {% include "notizen/_titel.html" %}
+      <div id="notiz-anwesend" class="notiz-anwesend"></div>
       {% include "notizen/_aktionen.html" %}
     </div>
     {% if darf_schreiben %}
       <div class="karte--innen stapel">
-        <form hx-post="{% url 'notiz_speichern' %}" hx-trigger="change" hx-swap="none" hx-include="#notiz-zustand, #notiz-titel-eingabe" hx-sync="#notiz-felder:queue all" class="detailfeld__form">
-          <textarea id="notiz-text" name="text" hidden aria-label="{% translate 'Text' %}" placeholder="{% translate 'Text' %}">{{ notiz.text }}</textarea>
-          <div data-editor="notiz-text" data-format="markdown"></div>
-        </form>
+        {# Gespeichert wird gemeinsam (notizen.live, editor/gemeinsam.ts); eine neue Notiz legt der Titel an #}
+        <textarea id="notiz-text" name="text" hidden aria-label="{% translate 'Text' %}" placeholder="{% translate 'Text' %}">{{ notiz.text }}</textarea>
+        <div data-editor="notiz-text" data-format="markdown" data-gemeinsam="notiz-gemeinsam"></div>
         <div id="notiz-konflikt"></div>
       </div>
     {% else %}
-      <div class="karte--innen markdown">{% if html %}{{ html|safe }}{% else %}<p class="gedaempft">{% translate "Noch kein Text." %}</p>{% endif %}</div>
+      <div class="karte--innen markdown" id="notiz-html">{% if html %}{{ html|safe }}{% else %}<p class="gedaempft">{% translate "Noch kein Text." %}</p>{% endif %}</div>
+      {# Nur lesen, aber live: derselbe Editor ohne Bearbeiten ersetzt die Anzeige darüber #}
+      <div class="karte--innen" hidden>
+        <textarea id="notiz-text" hidden readonly aria-label="{% translate 'Text' %}">{{ notiz.text }}</textarea>
+        <div data-editor="notiz-text" data-format="markdown" data-gemeinsam="notiz-gemeinsam"></div>
+      </div>
     {% endif %}
+    {{ gemeinsam|json_script:"notiz-gemeinsam" }}
     {% include "notizen/_anhaenge.html" %}
     {% include "notizen/_fuss.html" %}
   </article>
 </div>
 {% endblock %}
-{% block skripte %}{% if darf_schreiben %}<script type="module" src="{% static 'dist/editor.js' %}"></script>{% endif %}{% endblock %}
+{% block skripte %}<script type="module" src="{% static 'dist/editor.js' %}"></script>{% endblock %}

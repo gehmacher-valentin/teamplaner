@@ -34,7 +34,7 @@
     {% if darf_bearbeiten %}
       <form hx-post="{% url 'aufgabe_feld' a.pk %}" hx-trigger="change" hx-target="closest .aufgabe-zeile" hx-swap="outerHTML">
         <input type="hidden" name="feld" value="gewerk"><input type="hidden" name="version" value="{{ a.version }}">
-        <select name="wert" class="inline-eingabe" aria-label="{% translate 'Gewerk' %}">
+        <select name="wert" class="inline-eingabe" aria-label="{% translate 'Gruppe' %}">
           <option value="">–</option>
           {% for g in gewerke %}<option value="{{ g.pk }}" {% if g.pk == a.gewerk_id %}selected{% endif %}>{{ g.name }}</option>{% endfor %}
         </select>

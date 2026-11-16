@@ -110,6 +110,53 @@ export function BearbeitenDialog({ eintrag, aufgabe, personen, vorgabePerson, vo
   );
 }
 
+/** Tagesfreigabe für einen Zeitraum setzen (alle Kalendertage, auch Wochenenden und Feiertage). */
+export function FreigabeDialog({ name, stufen, vorgabeDatum, onSpeichern, onSchliessen }: {
+  name: string; stufen: { wert: string; name: string }[]; vorgabeDatum: string;
+  onSpeichern: (werte: { von: string; bis: string; stufe: string }) => void; onSchliessen: () => void;
+}) {
+  const [von, setVon] = useState(vorgabeDatum);
+  const [bis, setBis] = useState(vorgabeDatum);
+  const [stufe, setStufe] = useState(stufen[0]?.wert ?? "");
+  const [fehler, setFehler] = useState("");
+
+  const absenden = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!von || !bis) return setFehler(t("fehler_daten"));
+    if (bis < von) return setFehler(t("fehler_reihenfolge"));
+    onSpeichern({ von, bis, stufe });
+  };
+
+  return (
+    <Modal titel={name} onSchliessen={onSchliessen}>
+      <form className="formular" onSubmit={absenden}>
+        <div className="formular__zeile">
+          <label className="feld">
+            {t("von")}
+            <input type="date" value={von} onChange={(e) => { setVon(e.target.value); if (e.target.value > bis) setBis(e.target.value); }} required />
+          </label>
+          <label className="feld">
+            {t("bis")}
+            <input type="date" value={bis} min={von} onChange={(e) => setBis(e.target.value)} required />
+          </label>
+        </div>
+        <label className="feld">
+          {name}
+          <select value={stufe} onChange={(e) => setStufe(e.target.value)}>
+            {stufen.map((s) => <option key={s.wert} value={s.wert}>{s.name}</option>)}
+            <option value="">{t("freigabe_keine")}</option>
+          </select>
+        </label>
+        {fehler && <div className="fehlerliste" role="alert">{fehler}</div>}
+        <div className="formular__aktionen">
+          <button type="submit" className="knopf knopf--primaer">{t("speichern")}</button>
+          <button type="button" className="knopf" onClick={onSchliessen}>{t("abbrechen")}</button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
 /**
  * Person wählen mit Tippsuche – dasselbe Bauteil wie in den Formularen (lib/personenwahl.ts). React
  * rendert nur die leere Hülle; Select und Textfeld darin legt das Bauteil selbst an.

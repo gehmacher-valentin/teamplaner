@@ -44,6 +44,10 @@ class Notiz(models.Model):
     titel = models.CharField(_("Titel"), max_length=200)
     text = models.TextField(_("Text"), blank=True)  # Markdown, im Editor als formatierter Text
     version = models.PositiveIntegerField(default=1)  # gleichzeitiges Bearbeiten in Gruppenordnern
+    # Gemeinsames Bearbeiten (notizen.live): zusammengefasster Yjs-Zustand bis einschließlich der Änderung
+    # ``yjs_bis``; spätere Änderungen stehen in NotizAenderung. ``text`` bleibt das Markdown dazu.
+    yjs = models.BinaryField(default=b"", blank=True, editable=False)
+    yjs_bis = models.BigIntegerField(default=0, editable=False)
     erstellt_von = models.ForeignKey(Person, on_delete=models.PROTECT, null=True, blank=True, related_name="+")
     erstellt_am = models.DateTimeField(auto_now_add=True)
     geaendert_von = models.ForeignKey(Person, on_delete=models.PROTECT, null=True, blank=True, related_name="+")
@@ -66,6 +70,19 @@ class Notiz(models.Model):
     @property
     def auszug(self):
         return als_text(self.text)
+
+
+class NotizAenderung(models.Model):
+    """Eine Yjs-Änderung einer Notiz; der Server speichert und verteilt sie nur, ausgewertet wird im Browser."""
+
+    notiz = models.ForeignKey(Notiz, on_delete=models.CASCADE, related_name="aenderungen")
+    daten = models.BinaryField()
+
+    class Meta:
+        ordering = ["id"]
+
+    def __str__(self):
+        return f"{self.notiz_id}/{self.pk}"
 
 
 def anhang_pfad(instanz, dateiname):

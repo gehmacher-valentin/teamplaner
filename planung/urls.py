@@ -17,6 +17,7 @@ urlpatterns = [
     path("api/planung/abwesenheiten", api.abwesenheit_anlegen, name="api-abwesenheit-anlegen"),
     path("api/planung/abwesenheiten/<int:pk>", api.abwesenheit, name="api-abwesenheit"),
     path("api/planung/tagesinfo/<str:datum>", api.tagesinfo, name="api-tagesinfo"),
+    path("api/planung/tagesfreigabe", api.tagesfreigabe_zeitraum, name="api-tagesfreigabe-zeitraum"),
     path("api/planung/tagesfreigabe/<str:datum>", api.tagesfreigabe, name="api-tagesfreigabe"),
     path("api/planung/stream", live.stream, name="api-stream"),
 ]

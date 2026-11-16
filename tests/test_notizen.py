@@ -64,9 +64,10 @@ def test_schreiben_ab_mitarbeiter(konten, ordner):
     notiz = ordner.notizen.get()
     antwort = speichern(client_fuer(konten[L]), notiz=notiz.pk, version=notiz.version, titel="A", text="geändert")
     assert antwort.status_code == 403
-    # Lesend sieht nur die Anzeige, ohne Eingabefelder und Editor
+    # Lesend sieht nur die Anzeige, ohne Eingabefelder; der Editor dient nur der Live-Anzeige
     seite = client_fuer(konten[L]).get(f"/notizen/{notiz.pk}/").content.decode()
-    assert 'id="notiz-titel-eingabe"' not in seite and "data-editor" not in seite
+    assert 'id="notiz-titel-eingabe"' not in seite and 'id="notiz-html"' in seite
+    assert '<textarea id="notiz-text" hidden readonly' in seite
     assert client_fuer(konten[L]).get(f"/notizen/neu/?ordner={ordner.pk}").status_code == 403
 
 

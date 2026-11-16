@@ -37,8 +37,8 @@ class Gewerk(models.Model):
 
     class Meta:
         ordering = ["name"]
-        verbose_name = _("Gewerk")
-        verbose_name_plural = _("Gewerke")
+        verbose_name = _("Gruppe")
+        verbose_name_plural = _("Gruppe")
 
     def __str__(self):
         return self.name
@@ -81,7 +81,7 @@ class Person(models.Model):
         Bereich, on_delete=models.PROTECT, related_name="personen", verbose_name=_("Bereich")
     )
     gewerke = models.ManyToManyField(
-        Gewerk, blank=True, related_name="personen", verbose_name=_("Gewerke")
+        Gewerk, blank=True, related_name="personen", verbose_name=_("Gruppe")
     )
     notiz = models.CharField(_("Notiz"), max_length=500, blank=True)
     # Profilfoto (nur Personen mit Konto; Platzhalter nur mit Anzeigename)

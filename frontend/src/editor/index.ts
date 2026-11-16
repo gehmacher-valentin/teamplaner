@@ -9,7 +9,9 @@
  */
 import { Editor } from "@tiptap/core";
 import { t } from "../lib/texte";
+import Collaboration from "@tiptap/extension-collaboration";
 import { erweiterungen } from "./erweiterungen";
+import { gemeinsamVorbereiten } from "./gemeinsam";
 import { hatFormatierung, siehtNachMarkdownAus } from "./markdown";
 
 // Nach so langer Tipp-Pause wird gespeichert, damit bei langen Texten nichts verloren geht
@@ -72,11 +74,16 @@ function einrichten(halter: HTMLElement) {
     feld.dispatchEvent(new Event("change", { bubbles: true }));
   };
 
+  // Notizen: gemeinsam bearbeiten (gemeinsam.ts), der Inhalt kommt dann aus dem Yjs-Dokument
+  const gemeinsam = halter.dataset.gemeinsam ? gemeinsamVorbereiten(halter.dataset.gemeinsam, feld) : null;
   const editor: Editor = new Editor({
     element: flaeche,
-    content: feld.value,
+    content: gemeinsam ? undefined : feld.value,
     contentType: markdown ? "markdown" : "html",
-    extensions: erweiterungen(markdown, feld.placeholder || t("beschreibung")),
+    extensions: [
+      ...erweiterungen(markdown, feld.placeholder || t("beschreibung"), Boolean(gemeinsam)),
+      ...(gemeinsam ? [Collaboration.configure({ document: gemeinsam.doc, field: "inhalt" })] : []),
+    ],
     editable: !feld.disabled && !feld.readOnly,
     editorProps: {
       attributes: { "aria-label": name, role: "textbox", "aria-multiline": "true" },
@@ -90,16 +97,18 @@ function einrichten(halter: HTMLElement) {
     },
     onUpdate: ({ editor: e }) => {
       feld.value = e.isEmpty ? "" : markdown ? e.getMarkdown() : e.getHTML();
+      if (gemeinsam) return; // speichert selbst
       feld.dispatchEvent(new Event("input", { bubbles: true }));
       window.clearTimeout(pause);
       pause = window.setTimeout(speichern, PAUSE_MS);
     },
-    onBlur: speichern,
+    onBlur: () => { if (!gemeinsam) speichern(); },
   });
   // Fenster wird geschlossen oder gewechselt: noch schnell speichern
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "hidden" && halter.isConnected) speichern();
+    if (!gemeinsam && document.visibilityState === "hidden" && halter.isConnected) speichern();
   });
+  if (!editor.isEditable) leiste.hidden = true;
 
   const liste = knoepfe(markdown ? 2 : 3).map((k) => {
     const b = document.createElement("button");
@@ -114,6 +123,7 @@ function einrichten(halter: HTMLElement) {
   editor.on("selectionUpdate", aktualisieren);
   editor.on("transaction", aktualisieren);
   if (halter.dataset.fokus !== undefined) editor.commands.focus("end");
+  gemeinsam?.starten(editor);
 }
 
 function init(wurzel: ParentNode) {

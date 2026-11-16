@@ -52,7 +52,8 @@ def _conninfo():
 class Verteiler:
     """Eine LISTEN-Verbindung je Prozess; jede offene Seite hat eine eigene Warteschlange."""
 
-    def __init__(self):
+    def __init__(self, kanal=KANAL):
+        self.kanal = kanal
         self.warteschlangen = set()
         self.aufgabe = None
         self.schleife = None
@@ -87,7 +88,7 @@ class Verteiler:
         while self.warteschlangen:
             try:
                 async with await psycopg.AsyncConnection.connect(_conninfo(), autocommit=True) as verbindung:
-                    await verbindung.execute(f"LISTEN {KANAL}")
+                    await verbindung.execute(f"LISTEN {self.kanal}")
                     if nach_fehler:
                         self.verteilen(NEU_LADEN)
                         nach_fehler = False

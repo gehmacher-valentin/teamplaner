@@ -38,9 +38,10 @@ interface RasterProps extends Gemeinsam {
   freigabeName: string;
   freigabeStufen: { wert: string; name: string }[];
   onFreigabe: (datum: string, stufe: string) => void;
+  onFreigabeZeitraum: () => void;
 }
 
-export function RasterAnsicht({ infos, infoBearbeitbar, onInfo, tagesfreigaben, freigabeName, freigabeStufen, onFreigabe, ...props }: RasterProps) {
+export function RasterAnsicht({ infos, infoBearbeitbar, onInfo, tagesfreigaben, freigabeName, freigabeStufen, onFreigabe, onFreigabeZeitraum, ...props }: RasterProps) {
   const { spalten, frei, heute, gruppen } = props;
   const [zugeklappt, setZugeklappt] = useState<Set<number>>(new Set());
   const n = spalten.length;
@@ -78,7 +79,17 @@ export function RasterAnsicht({ infos, infoBearbeitbar, onInfo, tagesfreigaben, 
       </div>
       {tagesfreigaben && (
         <div className="tp-infozeile tp-freigabezeile">
-          <div className="tp-person tp-person--kopf tp-person--info">{freigabeName}</div>
+          <div className="tp-person tp-person--kopf tp-person--info">
+            <span className="tp-freigabe__titel">{freigabeName}</span>
+            {infoBearbeitbar && (
+              <button type="button" className="tp-freigabe__zeitraum" onClick={onFreigabeZeitraum}
+                title={`${freigabeName}: ${t("zeitraum")}`} aria-label={`${freigabeName}: ${t("zeitraum")}`}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M8 3v4M16 3v4M7 15h10" />
+                </svg>
+              </button>
+            )}
+          </div>
           <div className="tp-tage">
             {spalten.map((d, i) => (
               <FreigabeZelle key={d} datum={d} stufe={tagesfreigaben.get(d)?.stufe ?? ""} von={tagesfreigaben.get(d)?.von ?? ""} stufen={freigabeStufen} name={freigabeName}

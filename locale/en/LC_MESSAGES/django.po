@@ -269,13 +269,8 @@ msgstr "Units"
 #: templates/projekte/_detail_feld.html:74 templates/projekte/projekt.html:53
 #: templates/projekte/projekt.html:75 verwaltung/templatetags/verwaltung.py:15
 #: zusammenarbeit/verlauf.py:16
-msgid "Gewerk"
-msgstr "Trade"
-
-#: kern/models.py:41 kern/models.py:84 templates/kern/einst_profil.html:33
-#: templates/kern/personen.html:42 verwaltung/einstellungen.py:318
-msgid "Gewerke"
-msgstr "Trades"
+msgid "Gruppe"
+msgstr "Group"
 
 #: kern/models.py:79
 msgid "Anzeigename"
@@ -759,8 +754,8 @@ msgid "4 Wochen"
 msgstr "4 weeks"
 
 #: planung/views.py:38 templates/projekte/projekt.html:55
-msgid "Alle Gewerke"
-msgstr "All trades"
+msgid "Alle Gruppen"
+msgstr "All groups"
 
 #: planung/views.py:39
 msgid "Projekt-Tag"
@@ -2387,8 +2382,8 @@ msgid "%(n)s Personentage"
 msgstr "%(n)s person-days"
 
 #: templates/projekte/_detail_feld.html:75
-msgid "– kein Gewerk –"
-msgstr "– no trade –"
+msgid "– keine Gruppe –"
+msgstr "– no group –"
 
 #: templates/projekte/_detail_feld.html:93
 #: templates/projekte/_detail_feld.html:102
@@ -2858,8 +2853,8 @@ msgstr "Delete status “%(name)s”?"
 
 #: verwaltung/einstellungen.py:335
 #, python-format
-msgid "Gewerk „%(name)s“ löschen?"
-msgstr "Delete trade “%(name)s”?"
+msgid "Gruppe „%(name)s“ löschen?"
+msgstr "Delete group “%(name)s”?"
 
 #: verwaltung/einstellungen.py:336
 #, python-format
@@ -2944,8 +2939,8 @@ msgid "Dieses Konto ist deaktiviert."
 msgstr "This account is deactivated."
 
 #: verwaltung/forms.py:25
-msgid "Gewerke / Funktion"
-msgstr "Trades / function"
+msgid "Gruppe / Funktion"
+msgstr "Group / function"
 
 #: verwaltung/forms.py:44 verwaltung/forms.py:63
 msgid "Für diese E-Mail gibt es bereits ein Konto."

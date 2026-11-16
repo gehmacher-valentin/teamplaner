@@ -22,7 +22,7 @@ class GewerkeFeld(forms.ModelMultipleChoiceField):
     widget = forms.CheckboxSelectMultiple
 
     def __init__(self, **kwargs):
-        super().__init__(queryset=Gewerk.objects.all(), required=False, label=_("Gewerke / Funktion"), **kwargs)
+        super().__init__(queryset=Gewerk.objects.all(), required=False, label=_("Gruppe / Funktion"), **kwargs)
 
 
 class EinladenForm(forms.Form):

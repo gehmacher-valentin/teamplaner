@@ -261,7 +261,7 @@ Anmeldung richtet das Konto die Zwei-Faktor-Anmeldung ein; die Ersatzcodes siche
 Danach in der Anwendung unter **Einstellungen**:
 
 1. **Allgemein:** Organisationsname, Tagesfreigabe nach Bedarf
-2. **Listen:** Bereiche, Gewerke und Status an die eigene Organisation anpassen
+2. **Listen:** Bereiche, Gruppe und Status an die eigene Organisation anpassen
 3. **Kalender:** zusätzliche freie Tage
 4. **Personen:** weitere Personen einladen. Die Einladung testet zugleich den E-Mail-Versand.
 

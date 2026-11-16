@@ -130,7 +130,7 @@ Dazu prüft `shellcheck` die Betriebs- und Bauskripte.
 
 | Ordner | Inhalt |
 | --- | --- |
-| `kern/` | Basis für alle anderen Apps: Person, Konto, Rolle, Bereich, Gewerk, Protokoll; `rechte.py` = zentrale Rechteprüfung, `middleware.py` (Sitzung, Zwei-Faktor, CSP, Abweisen von NUL-Zeichen), `hilfen.py` (`als_zahl`, `TEXT_MAX_ZEICHEN`, `einstellungsseite`), `freigaben.py` (Freigaben je Ansicht), `zwei_faktor.py`, Profilfotos |
+| `kern/` | Basis für alle anderen Apps: Person, Konto, Rolle, Bereich, Gewerk (angezeigt als „Gruppe“), Protokoll; `rechte.py` = zentrale Rechteprüfung, `middleware.py` (Sitzung, Zwei-Faktor, CSP, Abweisen von NUL-Zeichen), `hilfen.py` (`als_zahl`, `TEXT_MAX_ZEICHEN`, `einstellungsseite`), `freigaben.py` (Freigaben je Ansicht), `zwei_faktor.py`, Profilfotos |
 | `projekte/` | Projekte, Tags, Abschnitte, Status, Aufgaben (Unteraufgaben = Aufgaben mit `eltern`); `dienste.py` (Schreiben mit Verlauf), `ansicht.py` (Aufgaben für Liste und Detail laden und aufbereiten), `seitenleiste.py` (Aufgabendetail neben der Liste) |
 | `planung/` | Einteilung, Abwesenheit, freie Tage, Ansichten; `kalender.py` (Feiertage, Regeln), `dienste.py` (Schreiben mit Prüfungen), `api.py`, `live.py` (SSE) |
 | `zusammenarbeit/` | Kommentare, Erwähnungen, Anhänge, Benachrichtigungen mit Posteingang; `mail.py` (E-Mail-Kategorien und Versand, je E-Mail eine Protokollzeile), `mailverlauf.py` (Versandverlauf für Befehl und Einstellungsseite), `verlauf.py` (Kommentare und Änderungen als lesbare Einträge), `anhaenge.py` (Inhaltstyp, Anzeige im Browser) |

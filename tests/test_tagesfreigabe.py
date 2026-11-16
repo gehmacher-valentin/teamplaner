@@ -108,7 +108,56 @@ def test_benutzte_stufe_bleibt_erhalten(client_fuer, konten, stufen):
     assert list(FreigabeStufe.objects.values_list("name", flat=True)) == ["Komplett"]
 
 
-def test_stufen_stehen_bei_der_einstellung_nicht_bei_den_listen(client_fuer, konten, stufen):
+def test_stufen_stehen_bei_den_listen_nicht_bei_der_einstellung(client_fuer, konten, stufen):
     c = client_fuer(konten[A])
-    assert 'id="liste-freigabestufe"' in c.get(URL).content.decode()
-    assert 'id="liste-freigabestufe"' not in c.get("/einstellungen/listen/").content.decode()
+    assert 'id="liste-freigabestufe"' not in c.get(URL).content.decode()
+    listen = c.get("/einstellungen/listen/").content.decode()
+    assert 'id="liste-freigabestufe"' in listen
+    assert listen.index('id="liste-bereich"') < listen.index('id="liste-freigabestufe"')
+
+
+# --- Zeitraum auf einmal setzen ---
+
+def zeitraum(client, von, bis, stufe):
+    wert = str(stufe.pk) if isinstance(stufe, FreigabeStufe) else stufe
+    return client.put("/api/planung/tagesfreigabe", {"von": von.isoformat(), "bis": bis.isoformat(), "stufe": wert},
+                      format="json")
+
+
+@pytest.mark.parametrize("rolle, status", [(A, 200), (BL, 200), (P, 403), (M, 403), (L, 403)])
+def test_zeitraum_rechte(client_fuer, konten, stufen, rolle, status):
+    assert zeitraum(client_fuer(konten[rolle]), MO, DI, stufen[0]).status_code == status
+
+
+def test_zeitraum_setzen_mit_wochenende_und_wieder_entfernen(client_fuer, konten, stufen):
+    from datetime import timedelta
+
+    komplett, halle = stufen
+    c = client_fuer(konten[BL])
+    setzen(c, MO, halle)
+    so = SA + timedelta(days=1)
+    antwort = zeitraum(c, MO, so, komplett)
+    assert antwort.status_code == 200 and antwort.json()["geaendert"] == 7
+    tage = dict(Tagesfreigabe.objects.values_list("datum", "stufe"))
+    assert tage == {MO + timedelta(days=i): komplett.pk for i in range(7)}  # Wochenende inbegriffen
+    assert zeitraum(c, MO, so, komplett).json()["geaendert"] == 0  # unverändert: nichts protokolliert
+    assert Protokolleintrag.objects.filter(objekt_typ="tagesfreigabe", aktion="geaendert").count() == 1
+    assert zeitraum(c, DI, SA, "").json()["geaendert"] == 5
+    assert sorted(Tagesfreigabe.objects.values_list("datum", flat=True)) == [MO, so]
+
+
+@pytest.mark.parametrize("daten", [
+    {"von": "2026-03-10", "bis": "2026-03-09"},
+    {"von": "2026-01-01", "bis": "2027-06-01"},
+    {"von": "kein Datum", "bis": "2026-03-09"},
+    {"bis": "2026-03-09"},
+])
+def test_zeitraum_ungueltig(client_fuer, konten, stufen, daten):
+    antwort = client_fuer(konten[A]).put("/api/planung/tagesfreigabe", {**daten, "stufe": str(stufen[0].pk)}, format="json")
+    assert antwort.status_code == 400
+    assert not Tagesfreigabe.objects.exists()
+
+
+def test_zeitraum_unbekannte_stufe(client_fuer, konten, stufen):
+    assert zeitraum(client_fuer(konten[A]), MO, DI, "999999").json()["code"] == "ungueltig"
+    assert not Tagesfreigabe.objects.exists()

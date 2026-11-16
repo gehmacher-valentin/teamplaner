@@ -30,7 +30,7 @@
     <dt>{% translate "E-Mail" %}</dt><dd>{{ user.email }}</dd>
     <dt>{% translate "Rolle" %}</dt><dd>{{ user.get_rolle_display }}</dd>
     <dt>{% translate "Bereich" %}</dt><dd>{{ user.person.bereich }}</dd>
-    <dt>{% translate "Gewerke" %}</dt><dd class="tags">{% for g in user.person.gewerke.all %}<span class="tag">{{ g.name }}</span>{% empty %}–{% endfor %}</dd>
+    <dt>{% translate "Gruppe" %}</dt><dd class="tags">{% for g in user.person.gewerke.all %}<span class="tag">{{ g.name }}</span>{% empty %}–{% endfor %}</dd>
   </dl>
 </section>
 {% endblock %}

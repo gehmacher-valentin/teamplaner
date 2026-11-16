@@ -50,9 +50,9 @@
       {% for p in personenliste %}<option value="{{ p.pk }}" {% if request.GET.verantwortlich == p.pk|stringformat:"d" %}selected{% endif %}>{{ p.anzeigename }}</option>{% endfor %}
     </select>
   </label>
-  <label class="feld"><span class="sr-only">{% translate "Gewerk" %}</span>
+  <label class="feld"><span class="sr-only">{% translate "Gruppe" %}</span>
     <select name="gewerk" data-auto-absenden>
-      <option value="">{% translate "Alle Gewerke" %}</option>
+      <option value="">{% translate "Alle Gruppen" %}</option>
       {% for g in gewerke %}<option value="{{ g.pk }}" {% if request.GET.gewerk == g.pk|stringformat:"d" %}selected{% endif %}>{{ g.name }}</option>{% endfor %}
     </select>
   </label>
@@ -72,7 +72,7 @@
 <section class="karte liste liste--mobil" id="aufgaben-baum" aria-label="{% translate 'Aufgaben' %}" style="--spalten: minmax(0,3fr) 170px 140px 150px 130px 130px; --liste-min: 940px"
   {% if manuell_sortierbar %}data-aufgaben-baum="{% url 'aufgabe_verschieben' projekt.pk %}" data-max-ebenen="{{ max_ebenen }}"{% endif %}>
   <div class="liste__inner">
-    <div class="liste__kopf"><div>{% translate "Aufgabe" %}</div><div>{% translate "Verantwortlich" %}</div><div>{% translate "Gewerk" %}</div><div>{% translate "Eingeteilt" %}</div><div>{% translate "Fällig" %}</div><div>{% translate "Status" %}</div></div>
+    <div class="liste__kopf"><div>{% translate "Aufgabe" %}</div><div>{% translate "Verantwortlich" %}</div><div>{% translate "Gruppe" %}</div><div>{% translate "Eingeteilt" %}</div><div>{% translate "Fällig" %}</div><div>{% translate "Status" %}</div></div>
     {% if ohne_abschnitt or not abschnitte %}
       <div class="abschnitt abschnitt--ohne">
         <div class="abschnitt-aufgaben" data-aufgaben-liste data-abschnitt="" data-tiefe="0">{% for a in ohne_abschnitt %}{% include "projekte/_aufgabe_block.html" %}{% endfor %}</div>

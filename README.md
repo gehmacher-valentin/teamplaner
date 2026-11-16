@@ -23,7 +23,7 @@ Live-Aktualisierung für alle. Oberfläche auf Deutsch und Englisch, zum Selbsth
 - Änderungen erscheinen sofort bei allen, die die Ansicht offen haben
 
 **Projekte und Aufgaben**
-- Projekte mit Tags, Abschnitten, Status und Priorität 1–5; Aufgaben mit Verantwortlichen, Gewerk, Schätzung,
+- Projekte mit Tags, Abschnitten, Status und Priorität 1–5; Aufgaben mit Verantwortlichen, Gruppe, Schätzung,
   Fälligkeit, Unteraufgaben und Anhängen
 - Direkt in der Liste bearbeiten und per Drag-and-drop sortieren, Filter, Volltextsuche
 - Aufgabendetail als Seitenleiste neben der Liste
@@ -65,7 +65,7 @@ Live-Aktualisierung für alle. Oberfläche auf Deutsch und Englisch, zum Selbsth
 
 | | |
 | --- | --- |
-| ![Projekt-Aufgabenliste mit Abschnitten, Verantwortlichen, Gewerken, eingeteilten Tagen und Status](docs/bilder/projekt.png) | ![Aufgabendetail mit Arbeitstage-Kalender, Abhängigkeiten und Unteraufgaben](docs/bilder/aufgabe.png) |
+| ![Projekt-Aufgabenliste mit Abschnitten, Verantwortlichen, Gruppe, eingeteilten Tagen und Status](docs/bilder/projekt.png) | ![Aufgabendetail mit Arbeitstage-Kalender, Abhängigkeiten und Unteraufgaben](docs/bilder/aufgabe.png) |
 | **Aufgabenliste**: direkt bearbeiten, sortieren, filtern | **Aufgabendetail**: Arbeitstage, Abhängigkeiten, Unteraufgaben |
 | ![Gantt-Diagramm über mehrere Projekte mit Abhängigkeitspfeilen](docs/bilder/gantt.png) | ![Teamplaner-Ansicht mit Bereichen, Personen und Freigaben je Person](docs/bilder/ansicht.png) |
 | **Gantt-Diagramm**: Abhängigkeiten auch zwischen Projekten | **Teamplaner-Ansichten**: wer was sehen und bearbeiten darf |

@@ -24,7 +24,7 @@
       <dd class="zeile zeile--eng">{% include "projekte/_detail_feld.html" with feld="schaetzung_personentage" %}<span class="gedaempft">· {% blocktranslate count n=eingeteilt_pt %}{{ n }} Tag eingeteilt{% plural %}{{ n }} Tage eingeteilt{% endblocktranslate %}</span></dd>
       <dt>{% translate "Projekt-Tags" %}</dt>
       <dd class="tags">{% for t in aufgabe.projekt.tags.all %}<span class="tag">{{ t.name }}</span>{% empty %}–{% endfor %}</dd>
-      <dt>{% translate "Gewerk" %}</dt>
+      <dt>{% translate "Gruppe" %}</dt>
       {% include "projekte/_detail_feld.html" with feld="gewerk" %}
     </dl>
     {% include "projekte/_detail_feld.html" with feld="beschreibung" %}

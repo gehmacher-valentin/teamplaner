@@ -13,8 +13,9 @@ const ZwischenUeberschrift = Heading.extend({
   },
 });
 
-export function erweiterungen(markdown: boolean, platzhalter: string) {
-  const gemeinsam = [
+/** ``zusammen``: Rückgängig übernimmt dann die Collaboration-Erweiterung (nur eigene Änderungen). */
+export function erweiterungen(markdown: boolean, platzhalter: string, zusammen = false) {
+  const geteilt = [
     Placeholder.configure({ placeholder: platzhalter }),
     // Auch bei HTML: nur zum Umwandeln von eingefügtem Markdown
     Markdown.configure({ markedOptions: { gfm: true, breaks: true } }),
@@ -23,14 +24,17 @@ export function erweiterungen(markdown: boolean, platzhalter: string) {
     // Nur, was sich als Markdown speichern lässt (Python-Markdown „extra“): kein Unterstrichen,
     // kein Durchgestrichen; Tabellen bleiben erhalten
     return [
-      StarterKit.configure({ heading: { levels: [1, 2, 3] }, underline: false, strike: false, link: { openOnClick: false, autolink: true } }),
+      StarterKit.configure({
+        heading: { levels: [1, 2, 3] }, underline: false, strike: false, link: { openOnClick: false, autolink: true },
+        ...(zusammen ? { undoRedo: false as const } : {}),
+      }),
       TableKit.configure({ table: { resizable: false } }),
-      ...gemeinsam,
+      ...geteilt,
     ];
   }
   return [
     StarterKit.configure({ heading: false, link: { openOnClick: false, autolink: true } }),
     ZwischenUeberschrift.configure({ levels: [3] }),
-    ...gemeinsam,
+    ...geteilt,
   ];
 }

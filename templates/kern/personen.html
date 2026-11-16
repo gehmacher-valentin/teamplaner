@@ -39,7 +39,7 @@
   </form>
   <div class="liste liste--mobil" style="--spalten: minmax(0,2.2fr) minmax(0,1.4fr) minmax(0,1.6fr) minmax(0,1fr) 40px; --liste-min: 760px">
     <div class="liste__inner">
-      <div class="liste__kopf"><div>{% translate "Person" %}</div><div>{% translate "Rolle" %}</div><div>{% translate "Gewerke" %}</div><div>{% translate "Bereich" %}</div><div></div></div>
+      <div class="liste__kopf"><div>{% translate "Person" %}</div><div>{% translate "Rolle" %}</div><div>{% translate "Gruppe" %}</div><div>{% translate "Bereich" %}</div><div></div></div>
       {% for p in personen %}
         <div class="liste__zeile{% if p.archiviert %} liste__zeile--gedaempft{% endif %}">
           <div class="person">{% avatar p %}<span class="person__name">{% if p.bearbeitbar %}<a href="{% url 'einst_person' p.pk %}">{{ p.anzeigename }}</a>{% else %}{{ p.anzeigename }}{% endif %}<br><span class="gedaempft klein">{% if p.ist_platzhalter %}{{ p.notiz|default:_("kein Konto") }}{% else %}{{ p.konto.email }}{% endif %}</span></span></div>

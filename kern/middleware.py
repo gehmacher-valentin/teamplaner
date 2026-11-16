@@ -63,7 +63,7 @@ class NulZeichenMiddleware:
 
 def ist_hintergrund(request):
     """Abfragen, die ohne Zutun der Person laufen (Glocke, Live-Verbindung, Nachladen nach Live-Ereignis)."""
-    return request.headers.get("X-Hintergrund") == "1" or request.path == "/api/planung/stream"
+    return request.headers.get("X-Hintergrund") == "1" or request.path.startswith("/api/planung/stream")
 
 
 class SitzungMiddleware:
