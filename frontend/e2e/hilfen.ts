@@ -1,5 +1,5 @@
 // Gemeinsames für alle Browser-Tests: angemeldete Seiten je Rolle und der Fehlerwächter.
-import { test as basis, expect, type Browser, type BrowserContext, type Page } from "@playwright/test";
+import { test as basis, expect, type Browser, type BrowserContext, type Locator, type Page } from "@playwright/test";
 import { fileURLToPath } from "node:url";
 
 export { expect };
@@ -93,4 +93,13 @@ export async function mitte(ort: ReturnType<Page["locator"]>) {
   const r = await ort.boundingBox();
   if (!r) throw new Error("Element nicht sichtbar");
   return { x: r.x + r.width / 2, y: r.y + r.height / 2, links: r.x, oben: r.y, breite: r.width, hoehe: r.height };
+}
+
+/**
+ * Nach einem HTMX-Austausch: warten, bis HTMX den neuen Inhalt verarbeitet hat. Die Felder stehen
+ * schon während der Settle-Verzögerung im DOM, hx-post und Co. greifen aber erst danach; eine
+ * Eingabe in diesem Fenster ginge verloren.
+ */
+export async function eingesetzt(bereich: Locator) {
+  await expect(bereich.locator(".htmx-added, .htmx-settling")).toHaveCount(0);
 }
