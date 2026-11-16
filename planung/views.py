@@ -35,7 +35,7 @@ def teamplaner(request, lesen=False):
 
 class AnsichtForm(forms.ModelForm):
     wochen = forms.TypedChoiceField(label=gettext_lazy("Zeitraum"), coerce=int, choices=[(1, gettext_lazy("1 Woche")), (2, gettext_lazy("2 Wochen")), (4, gettext_lazy("4 Wochen"))], initial=2)
-    gewerk = forms.ModelChoiceField(Gewerk.objects.all(), label=gettext_lazy("Gewerk"), required=False, empty_label=gettext_lazy("Alle Gewerke"))
+    gewerk = forms.ModelChoiceField(Gewerk.objects.all(), label=gettext_lazy("Gruppe"), required=False, empty_label=gettext_lazy("Alle Gruppen"))
     tag = forms.ModelChoiceField(Tag.objects.all(), label=gettext_lazy("Projekt-Tag"), required=False, empty_label=gettext_lazy("Alle Tags"))
     projekt = forms.ModelChoiceField(Projekt.objects.aktiv(), label=gettext_lazy("Projekt"), required=False, empty_label=gettext_lazy("Alle Projekte"))
 

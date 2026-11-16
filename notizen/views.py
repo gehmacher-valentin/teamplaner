@@ -20,8 +20,9 @@ from zusammenarbeit.anhaenge import INLINE_TYPEN, dateityp
 
 from . import rechte
 from .forms import OrdnerForm
+from .live import startdaten
 from .markdown import als_html
-from .models import Notiz, NotizAnhang, Ordner
+from .models import Notiz, NotizAenderung, NotizAnhang, Ordner
 
 
 def _ordner_oder_403(konto, pk):
@@ -109,7 +110,7 @@ def notiz(request, pk):
     eintrag = get_object_or_404(Notiz.objects.select_related("ordner", "erstellt_von", "geaendert_von"), pk=pk)
     if not rechte.darf_notiz_lesen(request.user, eintrag):
         raise PermissionDenied
-    return render(request, "notizen/notiz.html", _notiz_kontext(request, eintrag))
+    return render(request, "notizen/notiz.html", {**_notiz_kontext(request, eintrag), "gemeinsam": startdaten(eintrag)})
 
 
 def _neue_notiz(konto, ordner_id):
@@ -123,7 +124,7 @@ def _neue_notiz(konto, ordner_id):
 def notiz_neu(request):
     """Leere Notiz in derselben Ansicht; angelegt wird sie erst beim ersten Speichern (notiz_speichern)."""
     eintrag = _neue_notiz(request.user, als_zahl(request.GET.get("ordner")))
-    return render(request, "notizen/notiz.html", _notiz_kontext(request, eintrag))
+    return render(request, "notizen/notiz.html", {**_notiz_kontext(request, eintrag), "gemeinsam": startdaten(eintrag)})
 
 
 @require_POST
@@ -160,6 +161,11 @@ def notiz_speichern(request):
     with transaction.atomic():
         if not neu:
             aktuell = Notiz.objects.select_for_update().get(pk=eintrag.pk)
+            if aktuell.yjs or NotizAenderung.objects.filter(notiz=aktuell).exists():
+                # Wird gemeinsam bearbeitet (notizen.live): Seite neu laden statt den ganzen Text zu ersetzen
+                antwort = HttpResponse(status=204)
+                antwort["HX-Refresh"] = "true"
+                return antwort
             if request.POST.get("version") != str(aktuell.version):
                 antwort = render(request, "notizen/_konflikt.html", {
                     "notiz": aktuell, "aktuell_html": als_html(aktuell.text),

@@ -14,9 +14,10 @@ test("Notiz: anlegen, Text mit Markdown schreiben, über die Suche wiederfinden"
   await seite.keyboard.type("## Offene Punkte");
   await seite.keyboard.press("Enter");
   await seite.keyboard.type("Sichtprüfung Hydraulik vor dem Prüftermin");
-  await seite.locator("body").click({ position: { x: 5, y: 5 } }); // Feld verlassen: speichern
-  await ruhe(seite);
+  await seite.locator("body").click({ position: { x: 5, y: 5 } });
   await expect(seite).toHaveURL(/\/notizen\/\d+\/$/);
+  // Gespeichert wird laufend (gemeinsames Bearbeiten): warten, bis der Server den Text hat
+  await expect.poll(async () => (await seite.request.get(seite.url())).text()).toContain("Sichtprüfung Hydraulik");
 
   // Nach dem Neuladen steht alles da, die Überschrift als Überschrift
   await seite.reload();

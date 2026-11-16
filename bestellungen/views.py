@@ -18,6 +18,7 @@ from kern import rechte
 from kern.hilfen import erfordert
 from kern.models import Person
 from kern.protokoll import aenderungen, protokollieren
+from projekte.models import Projekt
 
 from .forms import BestellungForm
 from .models import REIHENFOLGE, Bestellstatus, Bestellung
@@ -47,6 +48,12 @@ def lieferanten(zeilen):
     return sorted(beste, key=lambda n: (_ohne_akzente(n), n))
 
 
+def projektnamen():
+    """Vorschläge für das Feld „Projekt“: nur die aktiven Projekte aus der Projektliste, alphabetisch."""
+    namen = {" ".join(n.split()) for n in Projekt.objects.aktiv().values_list("name", flat=True)}
+    return sorted(filter(None, namen), key=lambda n: (_ohne_akzente(n), n))
+
+
 def _ohne_akzente(text):
     """Sortierschlüssel: „Ärztebedarf“ steht bei A, nicht hinter Z."""
     return "".join(z for z in unicodedata.normalize("NFD", text.casefold()) if not unicodedata.combining(z))
@@ -63,6 +70,7 @@ def _kontext(request):
     return {
         "bestellungen": zeilen,
         "lieferanten": lieferanten(zeilen),
+        "projektnamen": projektnamen(),
         "statusliste": Bestellstatus.choices,
         "offen": sum(b.status != Bestellstatus.ERHALTEN for b in zeilen),
         "darf_bearbeiten": rechte.darf_bestellungen_bearbeiten(request.user),

@@ -1,6 +1,7 @@
 {% load i18n %}<div id="notiz-titel" class="notiz-titel">
   {% if darf_schreiben %}
-    <form hx-post="{% url 'notiz_speichern' %}" hx-trigger="change" hx-swap="none" hx-include="#notiz-zustand, #notiz-text" hx-sync="#notiz-felder:queue all" class="detailfeld__form">
+    {# Eine neue Notiz legt der Titel an; danach speichert ihn das gemeinsame Bearbeiten (editor/gemeinsam.ts) #}
+    <form {% if not notiz.pk %}hx-post="{% url 'notiz_speichern' %}" hx-trigger="change" hx-swap="none" hx-include="#notiz-zustand, #notiz-text" hx-sync="#notiz-felder:queue all" {% endif %}class="detailfeld__form">
       <label class="sr-only" for="notiz-titel-eingabe">{% translate "Titel" %}</label>
       <h2 aria-label="{% if notiz.titel %}{{ notiz.titel }}{% else %}{% translate 'Neue Notiz' %}{% endif %}"><input id="notiz-titel-eingabe" type="text" name="titel" class="titel-eingabe" maxlength="200" required data-inline
         placeholder="{% translate 'Titel' %}" value="{% if titel_eingabe is not None %}{{ titel_eingabe }}{% else %}{{ notiz.titel }}{% endif %}"{% if not notiz.pk %} autofocus{% endif %}></h2>

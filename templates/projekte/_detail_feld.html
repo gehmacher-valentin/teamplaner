@@ -71,8 +71,8 @@ Ein Feld der Aufgaben-Detailseite: direkt bearbeitbar, speichert beim Verlassen 
 <dd id="{{ fid }}" class="detailfeld"{% if oob %} hx-swap-oob="true"{% endif %}>
   {% if darf_bearbeiten %}
     <form {% include "projekte/_detail_form.html" %}>
-      <select id="{{ eid }}" name="wert" aria-label="{% translate 'Gewerk' %}">
-        <option value="">{% translate "– kein Gewerk –" %}</option>
+      <select id="{{ eid }}" name="wert" aria-label="{% translate 'Gruppe' %}">
+        <option value="">{% translate "– keine Gruppe –" %}</option>
         {% for g in gewerke %}<option value="{{ g.pk }}"{% if g.pk == aufgabe.gewerk_id %} selected{% endif %}>{{ g.name }}</option>{% endfor %}
       </select>
     </form>

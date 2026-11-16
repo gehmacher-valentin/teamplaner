@@ -746,6 +746,8 @@ form.inline { display: inline; }
 .notiz-kopf { flex-wrap: nowrap; }
 .notiz-titel { flex: 1; min-width: 0; }
 .notiz-titel h2 { font-size: 18px; }
+.notiz-anwesend { display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; }
+.notiz-anwesend:empty { display: none; }
 .notizen__haupt .editor { border-color: var(--linie); }
 .notizen__haupt .editor__flaeche .ProseMirror { min-height: 260px; }
 .notiz-aktuell { border: 1px solid var(--rand); border-radius: var(--radius); padding: 10px 14px; background: var(--flaeche-2); }

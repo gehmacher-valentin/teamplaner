@@ -17,7 +17,7 @@
       <textarea name="neu-bedarf" rows="1" maxlength="500" required placeholder="{% translate 'Neuer Bedarf …' %}" aria-label="{% translate 'Bedarf' %}" class="inline-eingabe" data-inline data-enter-absenden data-mitwachsen></textarea>
       <input type="date" name="neu-aufnahmedatum" value="{{ neu.aufnahmedatum.value|date:'Y-m-d' }}" aria-label="{% translate 'Aufnahmedatum' %}" class="inline-eingabe" required>
       <select name="neu-eingetragen_von" aria-label="{% translate 'Eingetragen von' %}" class="inline-eingabe" data-personenwahl>{% if user.person.auswaehlbar %}{% include "teile/personen_optionen.html" with personen=personenliste aktuell=user.person %}{% else %}{% include "teile/personen_optionen.html" with personen=personenliste aktuell=None %}{% endif %}</select>
-      <textarea name="neu-projekt" rows="1" maxlength="200" aria-label="{% translate 'Projekt' %}" class="inline-eingabe" data-inline data-enter-absenden data-mitwachsen></textarea>
+      <textarea name="neu-projekt" rows="1" maxlength="200" aria-label="{% translate 'Projekt' %}" class="inline-eingabe" data-inline data-enter-absenden data-mitwachsen data-vorschlaege="projekt-vorschlaege"></textarea>
       <input type="date" name="neu-bestellt_am" aria-label="{% translate 'Bestellt am' %}" class="inline-eingabe">
       <select name="neu-bestellt_von" aria-label="{% translate 'Bestellt von' %}" class="inline-eingabe" data-personenwahl>{% include "teile/personen_optionen.html" with personen=personenliste aktuell=None %}</select>
       <textarea name="neu-lieferant" rows="1" maxlength="200" aria-label="{% translate 'Lieferant' %}" class="inline-eingabe" data-inline data-enter-absenden data-mitwachsen data-vorschlaege="lieferanten-vorschlaege"></textarea>

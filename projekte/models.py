@@ -165,7 +165,7 @@ class Aufgabe(models.Model):
     )
     gewerk = models.ForeignKey(
         Gewerk, on_delete=models.SET_NULL, null=True, blank=True,
-        related_name="aufgaben", verbose_name=_("Gewerk"),
+        related_name="aufgaben", verbose_name=_("Gruppe"),
     )
     beginn_am = models.DateField(_("Geplanter Beginn"), null=True, blank=True)  # Gantt
     faellig_am = models.DateField(_("Fällig am"), null=True, blank=True)

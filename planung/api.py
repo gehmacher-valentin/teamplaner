@@ -179,6 +179,17 @@ def tagesinfo(request, datum):
 
 
 @api_view(["PUT"])
+def tagesfreigabe_zeitraum(request):
+    try:
+        anzahl = dienste.tagesfreigabe_zeitraum_setzen(
+            request.user, _datum(request.data.get("von"), "von"), _datum(request.data.get("bis"), "bis"),
+            request.data.get("stufe"), client_id=_client_id(request))
+    except dienste.PlanungsFehler as fehler:
+        return _fehler(fehler)
+    return Response({"geaendert": anzahl})
+
+
+@api_view(["PUT"])
 def tagesfreigabe(request, datum):
     try:
         stufe, von = dienste.tagesfreigabe_setzen(request.user, _datum(datum, "datum"), request.data.get("stufe"),

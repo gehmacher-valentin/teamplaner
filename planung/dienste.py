@@ -6,6 +6,7 @@ und Live-Benachrichtigung der anderen Clients (``pg_notify``).
 """
 
 import json
+from datetime import timedelta
 
 from django.db import connection, transaction
 from django.utils.formats import date_format
@@ -274,42 +275,80 @@ def tagesinfo_setzen(konto, datum, text, client_id=None):
     return text
 
 
+def _freigabestufe(konto, stufe_id):
+    """Recht prüfen und Stufe laden; leer = „keine Freigabe“ (None)."""
+    if not rechte.hat_planungsansicht(konto):
+        raise PlanungsFehler("keine_berechtigung", _("Sie dürfen die Tagesfreigabe nicht bearbeiten."), status=403)
+    if not stufe_id:
+        return None
+    try:
+        return FreigabeStufe.objects.get(pk=int(stufe_id))
+    except (FreigabeStufe.DoesNotExist, TypeError, ValueError):
+        raise PlanungsFehler("ungueltig", _("Unbekannte Freigabestufe.")) from None
+
+
+def _freigabe_tag(konto, datum, stufe, eintrag):
+    """Einen Tag auf ``stufe`` setzen (innerhalb einer Transaktion, ``eintrag`` gesperrt oder None).
+    Gibt den Eintrag zurück, oder None, wenn sich nichts geändert hat."""
+    alt = eintrag.stufe if eintrag else None
+    if alt == stufe:
+        return None
+    if stufe is None:
+        eintrag_pk = eintrag.pk
+        eintrag.delete()
+        eintrag.pk = eintrag_pk
+        protokollieren(konto, "tagesfreigabe", eintrag_pk, "geloescht", {"datum": datum, "stufe": alt.name})
+    elif eintrag:
+        eintrag.stufe, eintrag.geaendert_von = stufe, konto.person
+        eintrag.save()
+        protokollieren(konto, "tagesfreigabe", eintrag.pk, "geaendert",
+                       {"datum": datum, "stufe": [alt.name, stufe.name]})
+    else:
+        eintrag = Tagesfreigabe.objects.create(datum=datum, stufe=stufe, geaendert_von=konto.person)
+        protokollieren(konto, "tagesfreigabe", eintrag.pk, "angelegt", {"datum": datum, "stufe": stufe.name})
+    return eintrag
+
+
+def _freigaben_gesperrt(von, bis):
+    return {e.datum: e for e in Tagesfreigabe.objects.select_for_update(of=("self",))
+            .select_related("stufe", "geaendert_von").filter(datum__range=(von, bis))}
+
+
 def tagesfreigabe_setzen(konto, datum, stufe_id, client_id=None):
     """Tagesfreigabe eines Tags setzen; leer („keine Freigabe“) entfernt sie. Gibt die Kennung der Stufe und den
     Namen der Person zurück, die sie gesetzt hat (bei „keine Freigabe“ beide leer)."""
-    if not rechte.hat_planungsansicht(konto):
-        raise PlanungsFehler("keine_berechtigung", _("Sie dürfen die Tagesfreigabe nicht bearbeiten."), status=403)
-    stufe = None
-    if stufe_id:
-        try:
-            stufe = FreigabeStufe.objects.get(pk=int(stufe_id))
-        except (FreigabeStufe.DoesNotExist, TypeError, ValueError):
-            raise PlanungsFehler("ungueltig", _("Unbekannte Freigabestufe.")) from None
+    stufe = _freigabestufe(konto, stufe_id)
     with transaction.atomic():
-        eintrag = Tagesfreigabe.objects.select_for_update(of=("self",)).select_related("stufe", "geaendert_von").filter(
-            datum=datum).first()
-        alt = eintrag.stufe if eintrag else None
-        if alt == stufe:
-            von = eintrag.geaendert_von.anzeigename if eintrag and eintrag.geaendert_von else ""
+        vorher = _freigaben_gesperrt(datum, datum).get(datum)
+        eintrag = _freigabe_tag(konto, datum, stufe, vorher)
+        if eintrag is None:
+            von = vorher.geaendert_von.anzeigename if vorher and vorher.geaendert_von else ""
             return (str(stufe.pk) if stufe else ""), von
-        if stufe is None:
-            eintrag_pk = eintrag.pk
-            eintrag.delete()
-            eintrag.pk = eintrag_pk
-            protokollieren(konto, "tagesfreigabe", eintrag_pk, "geloescht", {"datum": datum, "stufe": alt.name})
-        elif eintrag:
-            eintrag.stufe, eintrag.geaendert_von = stufe, konto.person
-            eintrag.save()
-            protokollieren(konto, "tagesfreigabe", eintrag.pk, "geaendert",
-                           {"datum": datum, "stufe": [alt.name, stufe.name]})
-        else:
-            eintrag = Tagesfreigabe.objects.create(datum=datum, stufe=stufe, geaendert_von=konto.person)
-            protokollieren(konto, "tagesfreigabe", eintrag.pk, "angelegt", {"datum": datum, "stufe": stufe.name})
         wert = str(stufe.pk) if stufe else ""
         von = konto.person.anzeigename if stufe else ""
         _melden("tagesfreigabe", "geaendert", eintrag, [], datum, datum, konto, client_id, alle=True,
                 extra={"stufe": wert, "freigabe_von": von})
     return wert, von
+
+
+def tagesfreigabe_zeitraum_setzen(konto, von, bis, stufe_id, client_id=None):
+    """Tagesfreigabe für alle Kalendertage von ``von`` bis ``bis`` setzen, Wochenenden und Feiertage
+    eingeschlossen; leer entfernt sie. Gibt die Anzahl der geänderten Tage zurück."""
+    stufe = _freigabestufe(konto, stufe_id)
+    _pruefe_zeitraum(von, bis)
+    geaendert = []
+    with transaction.atomic():
+        vorher = _freigaben_gesperrt(von, bis)
+        tag = von
+        while tag <= bis:
+            eintrag = _freigabe_tag(konto, tag, stufe, vorher.get(tag))
+            if eintrag is not None:
+                geaendert.append(eintrag)
+            tag += timedelta(days=1)
+        if geaendert:
+            _melden("tagesfreigabe", "geaendert", geaendert[0], [], von, bis, konto, client_id, alle=True,
+                    extra={"stufe": str(stufe.pk) if stufe else ""})
+    return len(geaendert)
 
 
 def _benachrichtigen(konto, einteilung, aktion, alt_person=None):

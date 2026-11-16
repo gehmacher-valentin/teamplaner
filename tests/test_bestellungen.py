@@ -286,3 +286,26 @@ def test_lieferanten_vorschlaege_alphabetisch_und_zusammengefasst(konten):
     assert lieferanten(Bestellung.objects.order_by("id")) == ["Ärztebedarf", "Baumarkt Nord", "Conrad", "Zubehör"]
     seite = client_fuer(konten[L]).get("/bestellungen/").content.decode()
     assert '<datalist id="lieferanten-vorschlaege"><option value="Ärztebedarf">' in seite
+
+
+# --- Projekt-Vorschläge ---
+
+def test_projekt_vorschlaege_nur_aktive_projekte_freitext_bleibt(konten):
+    from django.utils import timezone
+
+    from bestellungen.views import projektnamen
+    from projekte.models import Projekt
+
+    for name in ["Wienfluss", "Ärmel", "Drau"]:
+        Projekt.objects.create(name=name)
+    Projekt.objects.create(name="Elbe", archiviert_am=timezone.now())
+    Bestellung.objects.create(bedarf="x", projekt="Lager")  # früherer Freitext wird nicht vorgeschlagen
+    assert projektnamen() == ["Ärmel", "Drau", "Wienfluss"]
+    seite = client_fuer(konten[M]).get("/bestellungen/").content.decode()
+    assert '<datalist id="projekt-vorschlaege"><option value="Ärmel"></option><option value="Drau">' in seite
+    assert 'name="neu-projekt"' in seite and 'data-vorschlaege="projekt-vorschlaege"' in seite
+    b = Bestellung.objects.get(bedarf="x")
+    antwort = client_fuer(konten[M]).post(f"/bestellungen/{b.pk}/", {"projekt": "Werkstatt allgemein"}, HTTP_HX_REQUEST="true")
+    assert antwort.status_code == 200
+    b.refresh_from_db()
+    assert b.projekt == "Werkstatt allgemein"

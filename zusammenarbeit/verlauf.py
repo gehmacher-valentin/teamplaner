@@ -13,7 +13,7 @@ ERWAEHNUNG = re.compile(r"@\[(\d+)\]")
 
 FELDNAMEN = {
     "titel": gettext_lazy("Titel"), "abschnitt": gettext_lazy("Abschnitt"), "verantwortlich": gettext_lazy("Verantwortlich"),
-    "gewerk": gettext_lazy("Gewerk"), "beginn_am": gettext_lazy("Beginn"), "faellig_am": gettext_lazy("Fällig"),
+    "gewerk": gettext_lazy("Gruppe"), "beginn_am": gettext_lazy("Beginn"), "faellig_am": gettext_lazy("Fällig"),
     "status": gettext_lazy("Status"),
     "schaetzung_personentage": gettext_lazy("Schätzung"), "eltern": gettext_lazy("Hauptaufgabe"),
 }

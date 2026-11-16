@@ -88,6 +88,8 @@ export const api = {
 
   tagesinfo: (datum: string, text: string) =>
     anfrage<{ datum: string; text: string }>("PUT", `/api/planung/tagesinfo/${datum}`, { text }),
+  tagesfreigabeZeitraum: (von: string, bis: string, stufe: string) =>
+    anfrage<{ geaendert: number }>("PUT", "/api/planung/tagesfreigabe", { von, bis, stufe }),
   tagesfreigabe: (datum: string, stufe: string) =>
     anfrage<{ datum: string; stufe: string }>("PUT", `/api/planung/tagesfreigabe/${datum}`, { stufe }),
 };

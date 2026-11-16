@@ -58,6 +58,13 @@
 .tp-info .tp-info__eingabe:focus { background: var(--flaeche); border-color: var(--akzent); outline: none; }
 /* Zeile „Tagesfreigabe“: deutlich Rot (keine Freigabe) gegen Grün (Freigabe), auch im Druck mit Hintergrund */
 .tp-freigabezeile { border-top: 0; }
+.tp-freigabezeile .tp-person--info { justify-content: space-between; gap: 6px; }
+.tp-freigabe__titel { min-width: 0; overflow-wrap: anywhere; }
+.tp-freigabe__zeitraum {
+  flex: none; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; padding: 0;
+  border: 1px solid var(--rand); border-radius: 6px; background: var(--flaeche); color: var(--text-2); cursor: pointer;
+}
+.tp-freigabe__zeitraum:hover { color: var(--akzent); border-color: var(--akzent); }
 .tp-freigabe { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .tp-freigabe--gesetzt { background: #bfe3b0; color: #1c4a12; }
 .meldung.tp-freigabe--gesetzt { background: #bfe3b0; border-color: #86c46f; color: #1c4a12; font-weight: 600; }

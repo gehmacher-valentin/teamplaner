@@ -12,7 +12,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "../lib/toast";
 import { api, ApiFehler, CLIENT_ID } from "./api";
-import { BearbeitenDialog, useBestaetigung } from "./Dialoge";
+import { BearbeitenDialog, FreigabeDialog, useBestaetigung } from "./Dialoge";
 import { useEntprellt, useGespeichert, useMediaQuery } from "./hooks";
 import {
   doppelbelegungen,
@@ -52,7 +52,8 @@ type Ziehdaten =
 type DialogZustand =
   | { art: "bearbeiten"; eintrag: Eintrag }
   | { art: "neu-einteilung"; aufgabe: Aufgabe; projekt?: Projekt }
-  | { art: "neu-abwesenheit" };
+  | { art: "neu-abwesenheit" }
+  | { art: "freigabe-zeitraum" };
 
 function heuteLokal() {
   const d = new Date();
@@ -359,6 +360,12 @@ export function Teamplaner({ planen }: { planen: boolean }) {
       await api.tagesfreigabe(datum, stufe);
     });
 
+  const freigabeZeitraumSetzen = (von: string, bis: string, stufe: string) =>
+    speichern(async () => {
+      lokal((r) => ({ ...r, tage: r.tage.map((x) => (x.datum >= von && x.datum <= bis ? { ...x, freigabe: stufe, freigabe_von: stufe ? x.freigabe_von : "" } : x)) }));
+      await api.tagesfreigabeZeitraum(von, bis, stufe);
+    });
+
   // ---------- Drag-and-drop ----------
   const sensoren = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -560,6 +567,7 @@ export function Teamplaner({ planen }: { planen: boolean }) {
                   tagesfreigaben={tagesfreigaben}
                   freigabeName={raster.freigabe_name}
                   freigabeStufen={raster.freigabe_stufen} onFreigabe={freigabeSetzen}
+                  onFreigabeZeitraum={() => setDialog({ art: "freigabe-zeitraum" })}
                 />
               )}
               <Legende projekte={Object.values(raster.projekte)} />
@@ -582,7 +590,16 @@ export function Teamplaner({ planen }: { planen: boolean }) {
         </DndContext>
       )}
 
-      {dialog && raster && (
+      {dialog?.art === "freigabe-zeitraum" && raster && (
+        <FreigabeDialog
+          name={raster.freigabe_name}
+          stufen={raster.freigabe_stufen}
+          vorgabeDatum={spalten.includes(heute) ? heute : spalten[0]}
+          onSchliessen={() => setDialog(null)}
+          onSpeichern={(werte) => { setDialog(null); freigabeZeitraumSetzen(werte.von, werte.bis, werte.stufe); }}
+        />
+      )}
+      {dialog && dialog.art !== "freigabe-zeitraum" && raster && (
         <BearbeitenDialog
           eintrag={bearbeitenEintrag}
           aufgabe={dialogAufgabe}

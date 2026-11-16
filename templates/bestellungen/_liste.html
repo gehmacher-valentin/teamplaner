@@ -11,7 +11,7 @@
       <textarea id="b{{ b.pk }}-bedarf" name="bedarf" rows="1" maxlength="500" required aria-label="{% translate 'Bedarf' %}" class="inline-eingabe" data-inline data-mitwachsen>{{ b.bedarf }}</textarea>
       <input id="b{{ b.pk }}-aufnahmedatum" type="date" name="aufnahmedatum" value="{{ b.aufnahmedatum|date:'Y-m-d' }}" required aria-label="{% translate 'Aufnahmedatum' %}" class="inline-eingabe">
       <select id="b{{ b.pk }}-eingetragen_von" name="eingetragen_von" aria-label="{% translate 'Eingetragen von' %}" class="inline-eingabe" data-personenwahl>{% include "teile/personen_optionen.html" with personen=personenliste aktuell=b.eingetragen_von %}</select>
-      <textarea id="b{{ b.pk }}-projekt" name="projekt" rows="1" maxlength="200" aria-label="{% translate 'Projekt' %}" class="inline-eingabe" data-inline data-mitwachsen>{{ b.projekt }}</textarea>
+      <textarea id="b{{ b.pk }}-projekt" name="projekt" rows="1" maxlength="200" aria-label="{% translate 'Projekt' %}" class="inline-eingabe" data-inline data-mitwachsen data-vorschlaege="projekt-vorschlaege">{{ b.projekt }}</textarea>
       <input id="b{{ b.pk }}-bestellt_am" type="date" name="bestellt_am" value="{{ b.bestellt_am|date:'Y-m-d' }}" aria-label="{% translate 'Bestellt am' %}" class="inline-eingabe">
       <select id="b{{ b.pk }}-bestellt_von" name="bestellt_von" aria-label="{% translate 'Bestellt von' %}" class="inline-eingabe" data-personenwahl>{% include "teile/personen_optionen.html" with personen=personenliste aktuell=b.bestellt_von %}</select>
       <textarea id="b{{ b.pk }}-lieferant" name="lieferant" rows="1" maxlength="200" aria-label="{% translate 'Lieferant' %}" class="inline-eingabe" data-inline data-mitwachsen data-vorschlaege="lieferanten-vorschlaege">{{ b.lieferant }}</textarea>
@@ -29,4 +29,5 @@
     <div class="leer">{% translate "Noch keine Bestellungen." %}</div>
   {% endfor %}
   <datalist id="lieferanten-vorschlaege">{% for l in lieferanten %}<option value="{{ l }}"></option>{% endfor %}</datalist>
+  <datalist id="projekt-vorschlaege">{% for p in projektnamen %}<option value="{{ p }}"></option>{% endfor %}</datalist>
 </div>

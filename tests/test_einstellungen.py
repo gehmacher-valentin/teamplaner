@@ -119,7 +119,7 @@ def test_loeschen_mit_rueckfrage_und_verwendung(client_fuer, konten, projekt):
     gewerk = Gewerk.objects.create(name="Gewerk 03")
     gewerk.personen.add(konten[M].person, konten[P].person)
     frage = c.get(f"/einstellungen/listen/gewerk/{gewerk.pk}/?ansicht=frage").content.decode()
-    assert "Gewerk „Gewerk 03“ löschen? Es ist 2 Personen zugeordnet." in frage
+    assert "Gruppe „Gewerk 03“ löschen? Es ist 2 Personen zugeordnet." in frage
     tag = Tag.objects.create(name="Tag 02")
     projekt.tags.add(tag)
     frage = c.get(f"/einstellungen/listen/tag/{tag.pk}/?ansicht=frage").content.decode()

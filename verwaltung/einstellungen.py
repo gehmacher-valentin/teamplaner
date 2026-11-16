@@ -230,7 +230,6 @@ def allgemein(request):
                 protokollieren(request.user, "einstellungen", objekt.pk, "geaendert", diff)
         return gespeichert(request)
     return seite(request, "kern/einst_allgemein.html", "allgemein", einstellungen=objekt,
-                 freigabestufen=_liste_kontext("freigabestufe"),
                  mail_aktiv=mail_aktiv(), kein_smtp=not mail_eingerichtet())
 
 
@@ -315,7 +314,7 @@ def _listen():
         # Art: Modell, Formular, Titel, ziehbar, Verwendung (Zähler), Text zur Verwendung, Löschen gesperrt
         "status": (Status, StatusForm, gettext_lazy("Status"), True, status_verwendung,
                    lambda n: ngettext("%(n)s Aufgabe", "%(n)s Aufgaben", n) % {"n": n}, True),
-        "gewerk": (Gewerk, GewerkForm, gettext_lazy("Gewerke"), False,
+        "gewerk": (Gewerk, GewerkForm, gettext_lazy("Gruppe"), False,
                    lambda: (lambda obj: obj.personen.count()),
                    lambda n: ngettext("%(n)s Person", "%(n)s Personen", n) % {"n": n}, False),
         "tag": (Tag, TagForm, gettext_lazy("Projekt-Tags"), False,
@@ -332,7 +331,7 @@ def _listen():
 
 def _frage(art, objekt, anzahl):
     """Rückfrage beim Löschen mit der Verwendung."""
-    namen = {"status": _("Status „%(name)s“ löschen?"), "gewerk": _("Gewerk „%(name)s“ löschen?"),
+    namen = {"status": _("Status „%(name)s“ löschen?"), "gewerk": _("Gruppe „%(name)s“ löschen?"),
              "tag": _("Tag „%(name)s“ löschen?"), "bereich": _("Bereich „%(name)s“ löschen?"),
              "freigabestufe": _("Freigabestufe „%(name)s“ löschen?")}
     text = namen[art] % {"name": objekt}
@@ -367,7 +366,7 @@ def _art_oder_404(art):
 
 @erfordert(rechte.darf_systemeinstellungen)
 def listen(request):
-    return seite(request, "kern/einst_listen.html", "listen", listen=[_liste_kontext(art) for art in _listen() if art != "freigabestufe"])
+    return seite(request, "kern/einst_listen.html", "listen", listen=[_liste_kontext(art) for art in _listen()])
 
 
 def _eintrag_kontext(art, objekt, **extra):
