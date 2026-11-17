@@ -317,6 +317,8 @@ export function gemeinsamVorbereiten(datenId: string, feld: HTMLTextAreaElement)
           if (notiz === null && wert) {
             notiz = Number(wert);
             document.removeEventListener("htmx:afterSettle", pruefen);
+            // Der Titel kann vor dem Laden des Skripts getippt worden sein (input-Ereignis verpasst)
+            textAngleichen(ytitel, titelFeld()?.value ?? "");
             anlegen();
           }
         };
@@ -330,11 +332,14 @@ export function gemeinsamVorbereiten(datenId: string, feld: HTMLTextAreaElement)
         anlegen();
         return;
       }
-      if (!leer) titelZeigen();
+      // Ältere Stände ohne Titel im Yjs-Dokument: den Titel vom Server behalten und nachtragen
+      const titelNachtragen = schreiben && !ytitel.length && Boolean(titelFeld()?.value);
+      if (!leer && !titelNachtragen) titelZeigen();
       erfasst = true;
       bereit = true;
       zeigen();
       verbinden();
+      if (titelNachtragen) textAngleichen(ytitel, titelFeld()!.value);
     },
   };
 }

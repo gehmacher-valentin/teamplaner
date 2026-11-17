@@ -1,11 +1,11 @@
 // Ablauf 5: Aufgabe in der Projektliste anlegen, in der Seitenleiste direkt bearbeiten, mit
 // @-Erwähnung kommentieren und einen Anhang hochladen. Die erwähnte Person findet den Kommentar
 // im Posteingang.
-import { expect, ruhe, test } from "./hilfen";
+import { eingesetzt, expect, ruhe, test } from "./hilfen";
 
-const TITEL = "Messprotokoll Hallenboden";
-
-test("Aufgabe: anlegen, in der Seitenleiste bearbeiten, erwähnen, Anhang, Posteingang", async ({ seiteFuer }) => {
+test("Aufgabe: anlegen, in der Seitenleiste bearbeiten, erwähnen, Anhang, Posteingang", async ({ seiteFuer }, info) => {
+  // Eigener Titel je Versuch: ein zweiter Versuch (CI) findet sonst die Aufgabe des ersten
+  const TITEL = `Messprotokoll Hallenboden${info.retry ? ` V${info.retry + 1}` : ""}`;
   const seite = await seiteFuer("planer");
   await seite.goto("/projekte/1/");
 
@@ -21,6 +21,7 @@ test("Aufgabe: anlegen, in der Seitenleiste bearbeiten, erwähnen, Anhang, Poste
   await zeile.locator(".aufgabe-titel").click();
   const leiste = seite.locator("#seitenleiste, .seitenleiste").first();
   await expect(leiste.locator(".titel-eingabe")).toHaveValue(TITEL);
+  await eingesetzt(leiste);
 
   // Titel direkt bearbeiten: gespeichert beim Verlassen, die Zeile in der Liste zieht mit
   const titel = leiste.locator(".titel-eingabe");
