@@ -89,6 +89,15 @@
   --pf-petrol-bg: #d8ecea;    --pf-petrol-bar: #3f8a83;    --pf-petrol-fg: #163f3b;
   --pf-oliv-bg: #faf4c4;      --pf-oliv-bar: #e8d83a;      --pf-oliv-fg: #4f4700;
   --pf-grau-bg: #dcdedb;      --pf-grau-bar: #4a504c;      --pf-grau-fg: #2c312e;
+  /* Kräftige Projektfarbe für schmale Linien (Gantt: Sammelbalken, Ist-Linie): hell die Schrift-, dunkel die Balkenfarbe */
+  --pf-bernstein-stark: var(--pf-bernstein-fg);
+  --pf-blau-stark: var(--pf-blau-fg);
+  --pf-gruen-stark: var(--pf-gruen-fg);
+  --pf-violett-stark: var(--pf-violett-fg);
+  --pf-rot-stark: var(--pf-rot-fg);
+  --pf-petrol-stark: var(--pf-petrol-fg);
+  --pf-oliv-stark: var(--pf-oliv-fg);
+  --pf-grau-stark: var(--pf-grau-fg);
   /* Teamplaner und Gantt */
   --info-bg: #fff1a8; --info-gelb-text: #5c4300; --info-gelb-rand: #e3c64a; --info-hover: #fff8d1;
   --frg-ok-bg: #bfe3b0; --frg-ok-fg: #1c4a12; --frg-ok-rand: #86c46f; --frg-von: #2f5a24;
@@ -189,6 +198,14 @@
     --pf-petrol-bg: #377b75;    --pf-petrol-bar: #7fc4bd;    --pf-petrol-fg: #ffffff;
     --pf-oliv-bg: #ddd040;      --pf-oliv-bar: #f3eb98;      --pf-oliv-fg: #2e2800;
     --pf-grau-bg: #b4bab5;      --pf-grau-bar: #dde1de;      --pf-grau-fg: #151816;
+    --pf-bernstein-stark: var(--pf-bernstein-bar);
+    --pf-blau-stark: var(--pf-blau-bar);
+    --pf-gruen-stark: var(--pf-gruen-bar);
+    --pf-violett-stark: var(--pf-violett-bar);
+    --pf-rot-stark: var(--pf-rot-bar);
+    --pf-petrol-stark: var(--pf-petrol-bar);
+    --pf-oliv-stark: var(--pf-oliv-bar);
+    --pf-grau-stark: var(--pf-grau-bar);
     --schatten: 0 8px 24px rgba(0, 0, 0, 0.5);
     --schatten-klein: 0 2px 8px rgba(0, 0, 0, 0.4);
     --schatten-toast: 0 8px 24px rgba(0, 0, 0, 0.6);
@@ -283,6 +300,14 @@
     --pf-petrol-bg: #377b75;    --pf-petrol-bar: #7fc4bd;    --pf-petrol-fg: #ffffff;
     --pf-oliv-bg: #ddd040;      --pf-oliv-bar: #f3eb98;      --pf-oliv-fg: #2e2800;
     --pf-grau-bg: #b4bab5;      --pf-grau-bar: #dde1de;      --pf-grau-fg: #151816;
+    --pf-bernstein-stark: var(--pf-bernstein-bar);
+    --pf-blau-stark: var(--pf-blau-bar);
+    --pf-gruen-stark: var(--pf-gruen-bar);
+    --pf-violett-stark: var(--pf-violett-bar);
+    --pf-rot-stark: var(--pf-rot-bar);
+    --pf-petrol-stark: var(--pf-petrol-bar);
+    --pf-oliv-stark: var(--pf-oliv-bar);
+    --pf-grau-stark: var(--pf-grau-bar);
     --schatten: 0 8px 24px rgba(0, 0, 0, 0.5);
     --schatten-klein: 0 2px 8px rgba(0, 0, 0, 0.4);
     --schatten-toast: 0 8px 24px rgba(0, 0, 0, 0.6);
@@ -300,14 +325,14 @@
   }
 
 /* Projektfarben: Hintergrund, Balkenrand, Text */
-.pf-bernstein { --pf-bg: var(--pf-bernstein-bg); --pf-bar: var(--pf-bernstein-bar); --pf-fg: var(--pf-bernstein-fg); }
-.pf-blau      { --pf-bg: var(--pf-blau-bg); --pf-bar: var(--pf-blau-bar); --pf-fg: var(--pf-blau-fg); }
-.pf-gruen     { --pf-bg: var(--pf-gruen-bg); --pf-bar: var(--pf-gruen-bar); --pf-fg: var(--pf-gruen-fg); }
-.pf-violett   { --pf-bg: var(--pf-violett-bg); --pf-bar: var(--pf-violett-bar); --pf-fg: var(--pf-violett-fg); }
-.pf-rot       { --pf-bg: var(--pf-rot-bg); --pf-bar: var(--pf-rot-bar); --pf-fg: var(--pf-rot-fg); }
-.pf-petrol    { --pf-bg: var(--pf-petrol-bg); --pf-bar: var(--pf-petrol-bar); --pf-fg: var(--pf-petrol-fg); }
-.pf-oliv      { --pf-bg: var(--pf-oliv-bg); --pf-bar: var(--pf-oliv-bar); --pf-fg: var(--pf-oliv-fg); }
-.pf-grau      { --pf-bg: var(--pf-grau-bg); --pf-bar: var(--pf-grau-bar); --pf-fg: var(--pf-grau-fg); }
+.pf-bernstein { --pf-bg: var(--pf-bernstein-bg); --pf-bar: var(--pf-bernstein-bar); --pf-fg: var(--pf-bernstein-fg); --pf-stark: var(--pf-bernstein-stark); }
+.pf-blau      { --pf-bg: var(--pf-blau-bg); --pf-bar: var(--pf-blau-bar); --pf-fg: var(--pf-blau-fg); --pf-stark: var(--pf-blau-stark); }
+.pf-gruen     { --pf-bg: var(--pf-gruen-bg); --pf-bar: var(--pf-gruen-bar); --pf-fg: var(--pf-gruen-fg); --pf-stark: var(--pf-gruen-stark); }
+.pf-violett   { --pf-bg: var(--pf-violett-bg); --pf-bar: var(--pf-violett-bar); --pf-fg: var(--pf-violett-fg); --pf-stark: var(--pf-violett-stark); }
+.pf-rot       { --pf-bg: var(--pf-rot-bg); --pf-bar: var(--pf-rot-bar); --pf-fg: var(--pf-rot-fg); --pf-stark: var(--pf-rot-stark); }
+.pf-petrol    { --pf-bg: var(--pf-petrol-bg); --pf-bar: var(--pf-petrol-bar); --pf-fg: var(--pf-petrol-fg); --pf-stark: var(--pf-petrol-stark); }
+.pf-oliv      { --pf-bg: var(--pf-oliv-bg); --pf-bar: var(--pf-oliv-bar); --pf-fg: var(--pf-oliv-fg); --pf-stark: var(--pf-oliv-stark); }
+.pf-grau      { --pf-bg: var(--pf-grau-bg); --pf-bar: var(--pf-grau-bar); --pf-fg: var(--pf-grau-fg); --pf-stark: var(--pf-grau-stark); }
 
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -886,6 +911,10 @@ legend { font-size: 13px; font-weight: 600; color: var(--text-2); padding: 0 4px
 .wiederholung { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
 .wiederholung__intervall, .wiederholung__bis { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-2); }
 .wiederholung__intervall input { width: 4.5em; }
+.eigenschaften .wiederholung select { width: auto; min-width: 150px; }
+.eigenschaften .wiederholung label input { margin-left: 0; border-color: var(--rand); }
+.eigenschaften .wiederholung__intervall input { width: 4.5em; }
+.eigenschaften .wiederholung__bis input { width: auto; max-width: 170px; }
 .wiederholung__tage { display: flex; flex-wrap: wrap; gap: 4px; border: 0; padding: 0; margin: 0; }
 .wochentag-wahl { position: relative; }
 .wochentag-wahl input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }

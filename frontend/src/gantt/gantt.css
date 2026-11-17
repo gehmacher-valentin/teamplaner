@@ -68,12 +68,12 @@
 .gt-balken--projekt::after { right: -1px; border-right-color: var(--pf-bar); }
 .gt-balken--offen { border-style: dashed; }
 /* Sammelaufgabe: Termine aus den Unteraufgaben, nur als Ganzes verschiebbar */
-.gt-balken--sammel { top: 10px; height: 10px; background: var(--pf-fg); border-color: var(--pf-fg); border-radius: 2px; }
+.gt-balken--sammel { top: 10px; height: 10px; background: var(--pf-stark); border-color: var(--pf-stark); border-radius: 2px; }
 .gt-balken--sammel::before, .gt-balken--sammel::after {
-  content: ""; position: absolute; bottom: -5px; border: 4px solid transparent; border-top-color: var(--pf-fg);
+  content: ""; position: absolute; bottom: -5px; border: 4px solid transparent; border-top-color: var(--pf-stark);
 }
-.gt-balken--sammel::before { left: -1px; border-left-color: var(--pf-fg); }
-.gt-balken--sammel::after { right: -1px; border-right-color: var(--pf-fg); }
+.gt-balken--sammel::before { left: -1px; border-left-color: var(--pf-stark); }
+.gt-balken--sammel::after { right: -1px; border-right-color: var(--pf-stark); }
 /* Projekt ohne eingestellten Zeitraum: Balken aus den Aufgaben; Überzug über Beginn/Ende hinaus */
 .gt-balken--abgeleitet { opacity: 0.5; }
 .gt-ueberzug {
@@ -91,7 +91,7 @@
   background: var(--flaeche); border: 2px solid var(--akzent); cursor: crosshair; opacity: 0; touch-action: none;
 }
 .gt-balken:hover .gt-verbinder, .gt-verbinder:hover { opacity: 1; }
-.gt-ist { position: absolute; top: 27px; height: 4px; border-radius: 2px; background: var(--pf-fg); opacity: 0.55; z-index: 2; }
+.gt-ist { position: absolute; top: 27px; height: 4px; border-radius: 2px; background: var(--pf-stark); opacity: 0.55; z-index: 2; }
 .gt-meilenstein {
   position: absolute; top: 9px; width: 16px; height: 16px; transform: rotate(45deg) scale(0.8); background: var(--pf-bar);
   border-radius: 2px; z-index: 2; cursor: pointer;
@@ -128,9 +128,9 @@
 
 /* Legende */
 .gt-legende-geplant { background: var(--pf-blau-bg); border: 1px solid var(--pf-blau-bar); }
-.gt-legende-ist { background: var(--pf-blau-fg); height: 4px !important; opacity: 0.55; }
+.gt-legende-ist { background: var(--pf-blau-stark); height: 4px !important; opacity: 0.55; }
 .gt-legende-meilenstein { background: var(--pf-blau-bar); transform: rotate(45deg) scale(0.75); }
-.gt-legende-sammel { background: var(--pf-blau-fg); height: 6px !important; }
+.gt-legende-sammel { background: var(--pf-blau-stark); height: 6px !important; }
 .gt-legende-ueberzug { background: repeating-linear-gradient(135deg, var(--konflikt) 0 3px, var(--konflikt-hell) 3px 6px); }
 .gt-legende-verletzt { background: repeating-linear-gradient(90deg, var(--konflikt) 0 5px, transparent 5px 8px); height: 2px !important; }
 
