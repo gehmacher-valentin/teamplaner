@@ -14,7 +14,7 @@ from kern import rechte as kern_rechte
 from kern.hilfen import einstellungsseite, erfordert
 from kern.models import Bereich, Gewerk, Person
 from kern.protokoll import protokollieren
-from projekte.models import Projekt, Tag
+from projekte.models import Projekt
 
 from . import rechte
 from .models import AnsichtFreigabe, TeamplanerAnsicht
@@ -36,7 +36,6 @@ def teamplaner(request, lesen=False):
 class AnsichtForm(forms.ModelForm):
     wochen = forms.TypedChoiceField(label=gettext_lazy("Zeitraum"), coerce=int, choices=[(1, gettext_lazy("1 Woche")), (2, gettext_lazy("2 Wochen")), (4, gettext_lazy("4 Wochen"))], initial=2)
     gewerk = forms.ModelChoiceField(Gewerk.objects.all(), label=gettext_lazy("Gruppe"), required=False, empty_label=gettext_lazy("Alle Gruppen"))
-    tag = forms.ModelChoiceField(Tag.objects.all(), label=gettext_lazy("Projekt-Tag"), required=False, empty_label=gettext_lazy("Alle Tags"))
     projekt = forms.ModelChoiceField(Projekt.objects.aktiv(), label=gettext_lazy("Projekt"), required=False, empty_label=gettext_lazy("Alle Projekte"))
 
     class Meta:
@@ -52,7 +51,7 @@ class AnsichtForm(forms.ModelForm):
         self.fields["personen"].queryset = auswahl.select_related("bereich")
         self.fields["personen"].label_from_instance = lambda p: f"{p.anzeigename} · {p.bereich}"
         filter_ = (self.instance.filter or {}) if self.instance.pk else {}
-        for feld in ["wochen", "gewerk", "tag", "projekt"]:
+        for feld in ["wochen", "gewerk", "projekt"]:
             if feld in filter_:
                 self.initial[feld] = filter_[feld]
 
@@ -61,7 +60,6 @@ class AnsichtForm(forms.ModelForm):
         self.instance.filter = {
             "wochen": d["wochen"],
             "gewerk": d["gewerk"].pk if d["gewerk"] else None,
-            "tag": d["tag"].pk if d["tag"] else None,
             "projekt": d["projekt"].pk if d["projekt"] else None,
         }
         return super().save(commit)

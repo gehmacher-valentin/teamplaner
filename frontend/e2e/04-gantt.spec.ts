@@ -47,6 +47,30 @@ test("Gantt: Einteilung verletzt Abhängigkeit, Warnzeichen statt rotem Pfeil, A
   await expect(zeichen.locator(".gt-warn__hinweis")).toContainText("Vorgänger „Rahmen Antrieb“ (Prototyp Förderband)");
   await expect(zeichen.locator(".gt-warn__hinweis")).toContainText("Einteilung im Teamplaner ändern");
 
+  // Steht das Warnzeichen am unteren Rand des Gantt-Bereichs, klappt der Hinweis nach oben und bleibt ganz sichtbar
+  await zeichen.blur();
+  await seite.mouse.move(0, 0);
+  await zeichen.evaluate((el) => {
+    const rahmen = el.closest<HTMLElement>(".gt-rahmen")!;
+    rahmen.scrollTop = 0;
+    // genug Platz darüber, damit der Hinweis nach oben passt
+    const abstand = el.getBoundingClientRect().bottom - rahmen.getBoundingClientRect().top;
+    rahmen.style.paddingTop = `${Math.max(0, 320 - abstand)}px`;
+    rahmen.style.maxHeight = `${el.getBoundingClientRect().bottom - rahmen.getBoundingClientRect().top + 12}px`;
+  });
+  await zeichen.hover();
+  const hinweis = zeichen.locator(".gt-warn__hinweis");
+  await expect(hinweis).toBeVisible();
+  await expect(hinweis).toHaveClass(/gt-warn__hinweis--oben/);
+  const innerhalb = await hinweis.evaluate((el) => {
+    const rahmen = el.closest<HTMLElement>(".gt-rahmen")!;
+    const r = rahmen.getBoundingClientRect(), h = el.getBoundingClientRect();
+    return h.top >= r.top && h.bottom <= r.top + rahmen.clientHeight && h.right <= r.left + rahmen.clientWidth;
+  });
+  expect(innerhalb, "Hinweis liegt vollständig innerhalb von .gt-rahmen").toBe(true);
+  await seite.mouse.move(0, 0);
+  await zeichen.evaluate((el) => { Object.assign(el.closest<HTMLElement>(".gt-rahmen")!.style, { maxHeight: "", paddingTop: "" }); });
+
   // Aufgeklappt: das Warnzeichen wandert in die Zeile der Unteraufgabe
   await haupt.locator(".gt-klapp").click();
   await expect(zeile(seite, "Servicewagen ausrüsten").locator(".gt-warn")).toHaveCount(1);

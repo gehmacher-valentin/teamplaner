@@ -44,7 +44,7 @@ export function Palette({ daten, heute, modus, projektId, suche, projekte, onMod
           </label>
         )}
         <label className="tp-filter">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B625E" strokeWidth="2" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" className="symbol-gedaempft"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
           <span className="sr-only">{t("aufgaben_filtern")}</span>
           <input type="search" placeholder={t("filtern")} value={suche} onChange={(e) => onSuche(e.target.value)} />
         </label>
@@ -84,7 +84,7 @@ function Karte({ aufgabe, projekt, heute, onEinteilen }: { aufgabe: Aufgabe; pro
     <div className={`tp-karte pf-${projekt?.farbe ?? "grau"}${isDragging ? " tp-balken--zieht" : ""}`}>
       <div ref={setNodeRef} {...attributes} {...listeners} className="tp-karte__ziehen" role="button"
         aria-label={t("karte_ziehen", { titel: aufgabe.titel })}>
-        <svg width="14" height="18" viewBox="0 0 14 18" fill="#8E958F" aria-hidden="true"><circle cx="4" cy="4" r="1.5" /><circle cx="10" cy="4" r="1.5" /><circle cx="4" cy="9" r="1.5" /><circle cx="10" cy="9" r="1.5" /><circle cx="4" cy="14" r="1.5" /><circle cx="10" cy="14" r="1.5" /></svg>
+        <svg width="14" height="18" viewBox="0 0 14 18" fill="currentColor" aria-hidden="true" className="symbol-griff"><circle cx="4" cy="4" r="1.5" /><circle cx="10" cy="4" r="1.5" /><circle cx="4" cy="9" r="1.5" /><circle cx="10" cy="9" r="1.5" /><circle cx="4" cy="14" r="1.5" /><circle cx="10" cy="14" r="1.5" /></svg>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="tp-karte__titel">{aufgabe.titel}</div>
           <div className="gedaempft" style={{ fontSize: 12 }}>{aufgabe.eltern ? `↳ ${aufgabe.eltern} · ` : ""}{projekt?.name}</div>

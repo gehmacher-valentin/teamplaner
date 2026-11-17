@@ -6,7 +6,7 @@ from django.utils.translation import gettext_lazy as _
 from kern import rechte
 from kern.models import Bereich, Gewerk, Konto, Person, Rolle
 from planung.models import FreierTag, FreigabeStufe
-from projekte.models import Status, Tag
+from projekte.models import Status
 
 
 class AnmeldeForm(AuthenticationForm):
@@ -155,8 +155,3 @@ class FreierTagForm(forms.ModelForm):
         fields = ["datum", "bezeichnung"]
         widgets = {"datum": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d")}
 
-
-class TagForm(forms.ModelForm):
-    class Meta:
-        model = Tag
-        fields = ["name"]

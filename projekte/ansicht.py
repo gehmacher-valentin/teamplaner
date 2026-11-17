@@ -18,7 +18,7 @@ from planung.models import Einteilung
 from planung.raster import aufgaben_kennzahlen
 from zusammenarbeit.verlauf import verlauf_eintraege
 
-from . import dienste, termine
+from . import dienste, termine, wiederholung
 from .forms import UnteraufgabeForm
 from .models import UNTERAUFGABEN_EBENEN, Aufgabe, Status
 
@@ -109,13 +109,27 @@ def detail_kontext(konto, aufgabe):
         "darf_bearbeiten": rechte.darf_aufgaben_bearbeiten(konto, aufgabe.projekt),
         "darf_abschliessen": rechte.darf_abschliessen_und_kommentieren(konto),
         "offene_unteraufgaben": dienste.offene_unteraufgaben(aufgabe),
+        **wiederholung_kontext(aufgabe),
+    }
+
+
+def wiederholung_kontext(aufgabe):
+    """Eingabe und Anzeige der Wiederholung im Aufgabendetail."""
+    regel = aufgabe.wiederholung or {}
+    return {
+        "frequenzen": wiederholung.FREQUENZEN,
+        "wochentag_liste": list(enumerate(wiederholung.wochentag_namen())),
+        "regel": regel,
+        "regel_text": wiederholung.regel_text(regel),
+        "regel_einheit": wiederholung.einheit(regel),
+        "folgeaufgabe": Aufgabe.objects.filter(wiederholt_von=aufgabe).only("pk", "titel", "faellig_am").first(),
     }
 
 
 def aufgabe_laden(pk):
     return get_object_or_404(
         Aufgabe.objects.select_related("projekt", "abschnitt", "verantwortlich__konto", "verantwortlich__bereich",
-                                       "gewerk", "status").prefetch_related("projekt__tags"),
+                                       "gewerk", "status"),
         pk=pk,
     )
 

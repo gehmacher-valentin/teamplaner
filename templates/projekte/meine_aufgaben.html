@@ -47,7 +47,7 @@
           <button type="submit" class="haken" {% if not darf_abschliessen %}disabled{% endif %} aria-label="{% translate 'Als erledigt markieren' %}: {{ a.titel }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></button>
         </form>
         <div class="zugewiesen__titel">
-          <a class="aufgabe-titel" href="{% url 'aufgabe' a.pk %}">{{ a.titel }}</a>
+          <a class="aufgabe-titel" href="{% url 'aufgabe' a.pk %}">{{ a.titel }}</a>{% if a.wiederholung %} <span class="wiederkehrend" title="{% translate 'Wiederkehrende Aufgabe' %}" aria-label="{% translate 'Wiederkehrende Aufgabe' %}">↻</span>{% endif %}
           <div class="zugewiesen__unter klein">
             <a href="{% url 'projekt' a.projekt_id %}" class="zugewiesen__projekt pf-{{ a.projekt.farbe }}"><span class="farbpunkt"></span><span class="zelle-text">{{ a.projekt.name }}</span></a>
             {% if a.eltern_id %}<a class="eltern-hinweis" href="{% url 'aufgabe' a.eltern_id %}" title="{% translate 'Unteraufgabe von' %} {{ a.eltern.titel }}">↳ {{ a.eltern.titel }}</a>{% endif %}

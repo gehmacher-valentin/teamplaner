@@ -182,6 +182,14 @@ class KontoManager(BaseUserManager):
         return konto
 
 
+class Farbschema(models.TextChoices):
+    """Hell, dunkel oder wie am Gerät eingestellt – steht als ``data-theme`` am ``<html>``."""
+
+    SYSTEM = "system", _("Wie am Gerät")
+    HELL = "light", _("Hell")
+    DUNKEL = "dark", _("Dunkel")
+
+
 class Konto(AbstractBaseUser):
     """Anmeldedaten und Rolle einer Person. Platzhalter haben strukturell kein Konto."""
 
@@ -194,6 +202,7 @@ class Konto(AbstractBaseUser):
     mail_einstellungen = models.JSONField(_("E-Mail-Benachrichtigungen"), default=dict, blank=True)
     sprache = models.CharField(_("Sprache"), max_length=5, choices=settings.LANGUAGES, default="de")
     feier_animation = models.BooleanField(_("Feieranimation beim Abhaken"), default=False)
+    farbschema = models.CharField(_("Farbschema"), max_length=10, choices=Farbschema.choices, default=Farbschema.SYSTEM)
     # Gantt: Unteraufgaben immer aufgeklappt; Maßstab, Pfeile usw. bleiben im Browser
     gantt_unteraufgaben_offen = models.BooleanField(_("Unteraufgaben im Gantt aufgeklappt"), default=False)
     # Technisches Konto: behält alle Rechte seiner Rolle, steht aber in keiner Personenauswahl

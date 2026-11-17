@@ -13,6 +13,7 @@
       </button>
     </form>
     <a class="aufgabe-titel{% if a.status.ist_erledigt %} aufgabe-titel--erledigt{% endif %}" href="{% url 'aufgabe' a.pk %}" data-aufgabe-link="{{ a.pk }}">{{ a.titel }}</a>
+    {% if a.wiederholung %}<span class="wiederkehrend" title="{% translate 'Wiederkehrende Aufgabe' %}" aria-label="{% translate 'Wiederkehrende Aufgabe' %}">↻</span>{% endif %}
     {% if a.eltern_id %}<a class="eltern-hinweis gedaempft klein" href="{% url 'aufgabe' a.eltern_id %}" data-aufgabe-link="{{ a.eltern_id }}" title="{% translate 'Unteraufgabe von' %} {{ a.eltern.titel }}">↳ {{ a.eltern.titel }}</a>{% endif %}
     {% if a.unter_gesamt %}<button type="button" class="unter-zaehler" data-unter-umschalten="{{ a.pk }}" aria-expanded="true"
       title="{% translate 'Unteraufgaben ein- oder ausblenden' %}" aria-label="{% blocktranslate with e=a.unter_erledigt g=a.unter_gesamt %}{{ e }} von {{ g }} Unteraufgaben erledigt – ein- oder ausblenden{% endblocktranslate %}">

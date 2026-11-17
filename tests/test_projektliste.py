@@ -7,7 +7,7 @@ from django.test import Client
 from gantt.models import GanttAnsicht
 from kern.models import Protokolleintrag, Rolle
 from projekte import dienste
-from projekte.models import Projekt
+from projekte.models import Projekt, Tag
 from zusammenarbeit.models import Benachrichtigung
 
 pytestmark = pytest.mark.django_db
@@ -23,12 +23,12 @@ def client_fuer(konto):
 
 @pytest.mark.parametrize("rolle, erlaubt", [(A, True), (BL, True), (P, True), (M, False), (L, False)])
 def test_prioritaet_setzen(konten, projekt, rolle, erlaubt):
-    antwort = client_fuer(konten[rolle]).post(f"/projekte/{projekt.pk}/prioritaet/", {"prioritaet": "2", "weiter": "/projekte/?tag="})
+    antwort = client_fuer(konten[rolle]).post(f"/projekte/{projekt.pk}/prioritaet/", {"prioritaet": "2", "weiter": "/projekte/?archiv=1"})
     projekt.refresh_from_db()
     assert antwort.status_code == (302 if erlaubt else 403)
     assert projekt.prioritaet == (2 if erlaubt else None)
     if erlaubt:
-        assert antwort.url == "/projekte/?tag="
+        assert antwort.url == "/projekte/?archiv=1"
 
 
 def test_liste_nach_prioritaet_sortiert(konten):
@@ -88,3 +88,18 @@ def test_posteingang_im_kopf(konten, aufgabe):
     feld = c.post("/posteingang/feld/").content.decode()
     assert "mitteilung--neu" not in feld and 'hx-swap-oob="true"' in feld
     assert not Benachrichtigung.objects.filter(gelesen_am__isnull=True).exists()
+
+
+def test_projekt_tags_ausgeblendet(konten, projekt, aufgabe):
+    """Tags bleiben im Datenmodell, erscheinen aber nirgends mehr; Bearbeiten lässt sie unverändert."""
+    tag = Tag.objects.create(name="Tagname-Unsichtbar")
+    projekt.tags.add(tag)
+    c = client_fuer(konten[A])
+    for url in ["/projekte/", f"/projekte/{projekt.pk}/", f"/projekte/{projekt.pk}/bearbeiten/", "/projekte/neu/",
+                f"/aufgaben/{aufgabe.pk}/", "/suche/?q=Lagerhalle", "/einstellungen/listen/"]:
+        seite = c.get(url).content.decode()
+        assert "Tagname-Unsichtbar" not in seite and "tags_text" not in seite and "Projekt-Tags" not in seite, url
+    assert c.get(f"/einstellungen/listen/tag/{tag.pk}/?ansicht=frage").status_code == 404
+    antwort = c.post(f"/projekte/{projekt.pk}/bearbeiten/", {"name": projekt.name, "farbe": projekt.farbe})
+    assert antwort.status_code == 302
+    assert list(projekt.tags.all()) == [tag]

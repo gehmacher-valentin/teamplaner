@@ -30,7 +30,6 @@
     {% for p in projekte %}
       <div class="liste__zeile" style="display:flex; gap:10px; align-items:center">
         <a href="{% url 'projekt' p.pk %}" class="zeile pf-{{ p.farbe }}" style="flex:1; text-decoration:none; color:inherit"><span class="farbpunkt"></span><strong>{{ p.name }}</strong>{% if p.archiviert %} <span class="badge">{% translate "archiviert" %}</span>{% endif %}</a>
-        <span class="tags">{% for t in p.tags.all %}<span class="tag">{{ t.name }}</span>{% endfor %}</span>
       </div>
     {% empty %}<div class="leer">{% translate "Keine Projekte gefunden." %}</div>{% endfor %}
   </section>
