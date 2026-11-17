@@ -16,10 +16,6 @@
     {% include "teile/feld.html" with feld=form.beginn breite="200px" %}
     {% include "teile/feld.html" with feld=form.ende breite="200px" %}
   </div>
-  <label class="feld">{{ form.tags_text.label }}
-    <input type="text" name="tags_text" value="{{ form.tags_text.value|default:'' }}" list="tag-vorschlaege" autocomplete="off">
-    <datalist id="tag-vorschlaege">{% for t in tags %}<option value="{{ t.name }}">{% endfor %}</datalist>
-  </label>
   {% include "teile/personenauswahl.html" with feld=form.mitglieder %}
   {% include "teile/feld.html" with feld=form.beschreibung %}
   <div class="formular__aktionen">

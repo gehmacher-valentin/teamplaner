@@ -9,7 +9,6 @@
       <h1>{{ projekt.name }}{% if projekt.archiviert %} <span class="badge">{% translate "archiviert" %}</span>{% endif %}</h1>
       <div class="seitenkopf__text" style="margin-top:2px">
         {% translate "Projektleitung" %} {{ projekt.projektleitung|default:"–" }}
-        {% if projekt.tags.all %} · {% translate "Tags:" %} <span class="tags">{% for t in projekt.tags.all %}<a class="tag" href="{% url 'projekte' %}?tag={{ t.pk }}" style="text-decoration:none">{{ t.name }}</a>{% endfor %}</span>{% endif %}
       </div>
     </div>
   </div>

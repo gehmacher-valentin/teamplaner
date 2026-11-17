@@ -56,6 +56,34 @@ Ein Feld der Aufgaben-Detailseite: direkt bearbeitbar, speichert beim Verlassen 
   {% else %}{% with datum=aufgabe.beginn_am %}{% include "projekte/_detail_datum.html" with ueberfaellig=False %}{% endwith %}{% endif %}
   {% include "projekte/_detail_fehler.html" %}
 </dd>
+{% elif feld == "wiederholung" %}
+<dd id="{{ fid }}" class="detailfeld"{% if oob %} hx-swap-oob="true"{% endif %}>
+  {% if darf_bearbeiten %}
+    <form {% include "projekte/_detail_form.html" %}>
+      <div class="wiederholung">
+        <select id="{{ eid }}" name="frequenz" aria-label="{% translate 'Wiederholung' %}">
+          <option value="">{% translate "Keine (Zeitspanne)" %}</option>
+          {% for wert, name in frequenzen %}<option value="{{ wert }}"{% if wert == regel.frequenz %} selected{% endif %}>{{ name }}</option>{% endfor %}
+        </select>
+        {% if regel %}
+          <label class="wiederholung__intervall">{% translate "alle" %}
+            <input type="number" name="intervall" min="1" max="99" value="{{ regel.intervall|default:1 }}" inputmode="numeric" data-inline>
+            {{ regel_einheit }}</label>
+          {% if regel.frequenz == "woechentlich" %}
+            <fieldset class="wiederholung__tage">
+              <legend class="sr-only">{% translate "Wochentage" %}</legend>
+              {% for nr, name in wochentag_liste %}<label class="wochentag-wahl"><input type="checkbox" name="wochentage" value="{{ nr }}"{% if nr in regel.wochentage %} checked{% endif %}><span>{{ name }}</span></label>{% endfor %}
+            </fieldset>
+          {% endif %}
+          <label class="wiederholung__bis">{% translate "bis" %}
+            <input type="date" name="bis" value="{{ regel.bis|default:'' }}" aria-label="{% translate 'Enddatum der Wiederholung' %}"></label>
+        {% endif %}
+      </div>
+    </form>
+  {% elif regel_text %}<span>↻ {{ regel_text }}</span>{% else %}–{% endif %}
+  {% if folgeaufgabe %}<div class="klein gedaempft">{% translate "Nächster Termin:" %} <a href="{% url 'aufgabe' folgeaufgabe.pk %}"{% if seitenleiste %} data-aufgabe-link="{{ folgeaufgabe.pk }}"{% endif %}>{{ folgeaufgabe.faellig_am|date:"d.m.Y" }}</a></div>{% endif %}
+  {% include "projekte/_detail_fehler.html" %}
+</dd>
 {% elif feld == "schaetzung_personentage" %}
 <span id="{{ fid }}" class="detailfeld detailfeld--zahl"{% if oob %} hx-swap-oob="true"{% endif %}>
   {% if darf_bearbeiten %}

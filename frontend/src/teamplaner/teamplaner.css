@@ -1,6 +1,6 @@
 /* Teamplaner und Lesekalender (Personen × Tage) */
 
-.tp { display: flex; flex-direction: column; gap: 14px; --info-bg: #fff1a8; --info-text: #5c4300; --info-rand: #e3c64a; }
+.tp { display: flex; flex-direction: column; gap: 14px; }
 
 .tp-zeitraum { font-size: 13px; padding: 0 4px; white-space: nowrap; }
 
@@ -35,26 +35,26 @@
 .tp-tag__notiz { font-size: 11px; color: var(--feiertag-text); font-weight: 600; min-height: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tp-tag.tp-frei { background: var(--feiertag); }
 .tp-tag.tp-heute { background: var(--akzent-hell); box-shadow: inset 0 -3px 0 var(--akzent); }
-.tp-wochenanfang { border-left: 2px solid #9aa19b !important; }
+.tp-wochenanfang { border-left: 2px solid var(--wochenanfang) !important; }
 
 /* Info-Zeile: Freitext je Tag für alle, gelb sobald etwas eingetragen ist */
 .tp-infozeile { display: flex; background: var(--flaeche); border-bottom: 1px solid var(--rand); }
 .tp-person--info { padding-top: 6px; padding-bottom: 6px; align-items: center; background: var(--flaeche-2); }
 .tp-info {
   border-left: 1px solid var(--linie-2); min-width: 0; min-height: 30px; display: flex; align-items: center;
-  padding: 2px 6px; font-size: 12px; font-weight: 600; color: var(--info-text);
+  padding: 2px 6px; font-size: 12px; font-weight: 600; color: var(--info-gelb-text);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .tp-info:first-child { border-left: 0; }
 .tp-info--gesetzt { background: var(--info-bg); }
 .tp-info .tp-info__eingabe {
   width: 100%; height: 26px; padding: 0 4px; border: 1px solid transparent; border-radius: 4px; background: transparent;
-  font-size: 12px; font-weight: 600; color: var(--info-text); text-overflow: ellipsis;
+  font-size: 12px; font-weight: 600; color: var(--info-gelb-text); text-overflow: ellipsis;
 }
 .tp-info .tp-info__eingabe::placeholder { color: var(--text-3); font-weight: 400; opacity: 0; }
 .tp-info:hover .tp-info__eingabe { border-color: var(--rand-stark); background: var(--flaeche); }
 .tp-info:hover .tp-info__eingabe::placeholder, .tp-info .tp-info__eingabe:focus::placeholder { opacity: 1; }
-.tp-info--gesetzt:hover .tp-info__eingabe { background: #fff8d1; }
+.tp-info--gesetzt:hover .tp-info__eingabe { background: var(--info-hover); }
 .tp-info .tp-info__eingabe:focus { background: var(--flaeche); border-color: var(--akzent); outline: none; }
 /* Zeile „Tagesfreigabe“: deutlich Rot (keine Freigabe) gegen Grün (Freigabe), auch im Druck mit Hintergrund */
 .tp-freigabezeile { border-top: 0; }
@@ -66,11 +66,11 @@
 }
 .tp-freigabe__zeitraum:hover { color: var(--akzent); border-color: var(--akzent); }
 .tp-freigabe { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-.tp-freigabe--gesetzt { background: #bfe3b0; color: #1c4a12; }
-.meldung.tp-freigabe--gesetzt { background: #bfe3b0; border-color: #86c46f; color: #1c4a12; font-weight: 600; }
+.tp-freigabe--gesetzt { background: var(--frg-ok-bg); color: var(--frg-ok-fg); }
+.meldung.tp-freigabe--gesetzt { background: var(--frg-ok-bg); border-color: var(--frg-ok-rand); color: var(--frg-ok-fg); font-weight: 600; }
 /* „keine Freigabe“ in Rot, darunter dünner, wer freigegeben hat */
 .tp-info.tp-freigabe { position: relative; flex-direction: column; align-items: stretch; justify-content: center; gap: 1px; padding: 3px; }
-.tp-freigabe--keine { background: #f6c4bc; color: #7f1710; font-weight: 700; }
+.tp-freigabe--keine { background: var(--frg-nein-bg); color: var(--frg-nein-fg); font-weight: 700; }
 .tp-freigabe__stufe {
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
   white-space: normal; overflow-wrap: break-word; line-height: 1.2; font-size: 10.5px;
@@ -81,13 +81,13 @@
 .tp-freigabe--bearbeitbar:hover { box-shadow: inset 0 0 0 1px var(--rand-stark); }
 .tp-freigabe--bearbeitbar:focus-within { box-shadow: inset 0 0 0 2px var(--akzent); }
 .tp-freigabe__von {
-  display: block; font-size: 10px; font-weight: 400; line-height: 1.3; color: #2f5a24;
+  display: block; font-size: 10px; font-weight: 400; line-height: 1.3; color: var(--frg-von);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.meldung.tp-freigabe--keine { border-color: #e48a7d; background: #f6c4bc; color: #7f1710; font-weight: 700; }
+.meldung.tp-freigabe--keine { border-color: var(--frg-nein-rand); background: var(--frg-nein-bg); color: var(--frg-nein-fg); font-weight: 700; }
 .meldung .tp-freigabe__von { font-size: 12px; }
-.meldung.tp-info--gesetzt { background: var(--info-bg); border-color: var(--info-rand); color: var(--info-text); }
-.tp-tageswahl button.tp-info-punkt { box-shadow: inset 0 -4px 0 var(--info-rand); }
+.meldung.tp-info--gesetzt { background: var(--info-bg); border-color: var(--info-gelb-rand); color: var(--info-gelb-text); }
+.tp-tageswahl button.tp-info-punkt { box-shadow: inset 0 -4px 0 var(--info-gelb-rand); }
 
 .tp-gruppe {
   display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 14px; background: var(--grau-bg);
@@ -97,7 +97,7 @@
 .tp-gruppe__anzahl { font-weight: 500; color: var(--text-3); }
 
 .tp-zeile { display: flex; border-bottom: 1px solid var(--rand); }
-.tp-zeile--ich .tp-person { background: #f7f9fe; box-shadow: inset 4px 0 0 var(--akzent); }
+.tp-zeile--ich .tp-person { background: var(--ich-bg); box-shadow: inset 4px 0 0 var(--akzent); }
 .tp-zeile--archiviert .tp-person__name { color: var(--text-3); }
 
 .tp-flaeche { flex: 1; position: relative; grid-template-rows: 1fr; min-width: 0; }
@@ -106,14 +106,17 @@
 .tp-zelle:first-child { border-left: 0; }
 .tp-zelle.tp-frei { background: var(--feiertag); }
 .tp-zelle.tp-heute { background: var(--akzent-hell-2); }
-.tp-zelle.tp-konflikt { background: var(--warn-bg); box-shadow: inset 0 3px 0 #c2410c; }
-.tp-zelle--ueber { background: #dfe8fa !important; }
+.tp-zelle.tp-konflikt {
+  background: repeating-linear-gradient(45deg, var(--warn-bg) 0 6px, var(--konflikt-hell) 6px 8px);
+  box-shadow: inset 0 3px 0 var(--konflikt);
+}
+.tp-zelle--ueber { background: var(--ueber-bg) !important; }
 
 .tp-vorschau {
   grid-row: 1; z-index: 1; margin: 4px 2px; border: 2px dashed var(--akzent); border-radius: 5px;
-  background: rgba(31, 79, 184, 0.08); pointer-events: none;
+  background: var(--vorschau-bg); pointer-events: none;
 }
-.tp-vorschau--abwesenheit { border-color: #5b625e; background: rgba(91, 98, 94, 0.08); }
+.tp-vorschau--abwesenheit { border-color: var(--text-3); background: var(--vorschau-abw-bg); }
 
 .tp-spuren { grid-row: 1; grid-column: 1 / -1; position: relative; display: flex; flex-direction: column; gap: 4px; padding: 6px 0; z-index: 2; }
 .tp-spur { min-height: 40px; }
@@ -127,8 +130,8 @@
 }
 a.tp-balken:hover { color: var(--pf-fg); filter: brightness(0.97); }
 .tp-balken--abwesend {
-  background: repeating-linear-gradient(135deg, #e3e5e1 0 6px, #f1f2ef 6px 12px); color: #3f4541; border-left: 0;
-  --pf-bar: #8e958f;
+  background: repeating-linear-gradient(135deg, var(--abwesend-1) 0 6px, var(--abwesend-2) 6px 12px); color: var(--abwesend-text); border-left: 0;
+  --pf-bar: var(--abwesend-bar);
 }
 .tp-balken--bearbeitbar { cursor: grab; touch-action: none; }
 .tp-balken--bearbeitbar:focus-visible { outline: 2px solid var(--akzent); outline-offset: 1px; }
@@ -142,16 +145,16 @@ a.tp-balken:hover { color: var(--pf-fg); filter: brightness(0.97); }
 .tp-balken__unter { font-size: 11px; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: relative; }
 .tp-balken__frei {
   position: absolute; top: 0; bottom: 0; pointer-events: none;
-  background: repeating-linear-gradient(135deg, rgba(238, 231, 220, 0.92) 0 5px, rgba(205, 192, 172, 0.92) 5px 10px);
+  background: repeating-linear-gradient(135deg, var(--frei-schraffur-1) 0 5px, var(--frei-schraffur-2) 5px 10px);
 }
-.tp-balken--feiertag { background-image: repeating-linear-gradient(135deg, rgba(238, 231, 220, 0.7) 0 5px, rgba(205, 192, 172, 0.7) 5px 10px); }
+.tp-balken--feiertag { background-image: repeating-linear-gradient(135deg, var(--frei-schraffur-1) 0 5px, var(--frei-schraffur-2) 5px 10px); }
 .tp-griff { position: absolute; top: 0; bottom: 0; width: 8px; cursor: ew-resize; z-index: 3; }
 .tp-griff--links { left: -4px; }
 .tp-griff--rechts { right: 0; }
-.tp-balken--bearbeitbar:hover .tp-griff--rechts { background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.12)); }
+.tp-balken--bearbeitbar:hover .tp-griff--rechts { background: linear-gradient(90deg, transparent, var(--griff-schatten)); }
 .tp-balken__x {
   position: absolute; top: 2px; right: 6px; width: 20px; height: 20px; border: 0; border-radius: 50%;
-  background: rgba(255, 255, 255, 0.85); color: var(--text-2); font-size: 15px; line-height: 1; cursor: pointer;
+  background: var(--knopf-auf-balken); color: var(--text-2); font-size: 15px; line-height: 1; cursor: pointer;
   display: none; align-items: center; justify-content: center; z-index: 4; padding: 0;
 }
 .tp-balken--bearbeitbar:hover .tp-balken__x, .tp-balken--bearbeitbar:focus-within .tp-balken__x { display: flex; }
@@ -163,9 +166,9 @@ a.tp-balken:hover { color: var(--pf-fg); filter: brightness(0.97); }
 /* ---------- Legende ---------- */
 .tp-legende { padding: 12px 14px; border-top: 1px solid var(--rand); background: var(--flaeche-2); position: sticky; left: 0; }
 .tp-legende__projekt { background: var(--pf-bg); border-left: 3px solid var(--pf-bar); width: 14px !important; height: 10px !important; border-radius: 2px !important; }
-.tp-legende__abwesend { background: repeating-linear-gradient(135deg, #e3e5e1 0 4px, #f1f2ef 4px 8px); }
-.tp-legende__frei { background: repeating-linear-gradient(135deg, #eee7dc 0 3px, #cdc0ac 3px 6px); }
-.tp-legende__konflikt { background: var(--warn-bg); box-shadow: inset 0 2px 0 #c2410c; }
+.tp-legende__abwesend { background: repeating-linear-gradient(135deg, var(--abwesend-1) 0 4px, var(--abwesend-2) 4px 8px); }
+.tp-legende__frei { background: repeating-linear-gradient(135deg, var(--frei-schraffur-1) 0 3px, var(--frei-schraffur-2) 3px 6px); }
+.tp-legende__konflikt { background: repeating-linear-gradient(45deg, var(--warn-bg) 0 3px, var(--konflikt-hell) 3px 5px); box-shadow: inset 0 2px 0 var(--konflikt); }
 .tp-legende__platzhalter { border: 1.5px dashed var(--platzhalter-rand); border-radius: 50% !important; }
 
 /* ---------- Palette ---------- */
@@ -174,7 +177,7 @@ a.tp-balken:hover { color: var(--pf-fg); filter: brightness(0.97); }
 .tp-palette__liste { padding: 12px; display: flex; flex-direction: column; gap: 10px; overflow: auto; }
 .tp-abwesend-chip {
   flex: 1; font-size: 14px; font-weight: 600; padding: 9px 12px; border-radius: 6px; text-align: center; cursor: grab;
-  background: repeating-linear-gradient(135deg, #e3e5e1 0 6px, #f1f2ef 6px 12px); border: 1px solid var(--rand-stark); touch-action: none;
+  background: repeating-linear-gradient(135deg, var(--abwesend-1) 0 6px, var(--abwesend-2) 6px 12px); border: 1px solid var(--rand-stark); touch-action: none;
 }
 .tp-filter { display: flex; align-items: center; gap: 8px; border: 1px solid var(--rand-stark); border-radius: 6px; padding: 0 10px; height: 34px; }
 .tp-filter input { border: 0; height: 32px; flex: 1; padding: 0; outline: none; }
@@ -198,7 +201,7 @@ a.tp-balken:hover { color: var(--pf-fg); filter: brightness(0.97); }
 }
 .tp-tageswahl button.tp-frei { background: var(--feiertag); }
 .tp-tageswahl button.tp-heute { border-color: var(--akzent); }
-.tp-tageswahl button[aria-pressed="true"] { background: var(--text); color: #fff; border-color: var(--text); }
+.tp-tageswahl button[aria-pressed="true"] { background: var(--text); color: var(--auf-text); border-color: var(--text); }
 .tp-tagesansicht__gruppe { padding: 10px 14px; background: var(--grau-bg); border-bottom: 1px solid var(--rand); font-size: 14px; border-radius: 8px 8px 0 0; }
 .tp-tagesansicht__zeile { display: flex; flex-direction: column; gap: 6px; padding: 10px 14px; border-bottom: 1px solid var(--linie); }
 .tp-tagesansicht__zeile:last-child { border-bottom: 0; }
@@ -245,11 +248,19 @@ a.tp-balken:hover { color: var(--pf-fg); filter: brightness(0.97); }
   grid-row: 1; grid-column: 1 / -1; align-self: start; z-index: 3; pointer-events: none;
   display: grid; grid-template-columns: repeat(var(--spalten), minmax(0, 1fr));
 }
-.tp-konfliktmarken .an { height: 4px; margin: 0 2px; background: #c2410c; border-radius: 0 0 3px 3px; }
+.tp-konfliktmarken .an {
+  position: relative; height: 4px; margin: 0 2px; border-radius: 0 0 3px 3px;
+  background: repeating-linear-gradient(90deg, var(--konflikt) 0 6px, transparent 6px 9px);
+}
+/* Symbol zusätzlich zur Farbe (Farbsehschwäche) */
+.tp-konfliktmarken .an::after {
+  content: "!"; position: absolute; top: 4px; right: 2px; width: 14px; height: 14px; border-radius: 50%;
+  background: var(--konflikt); color: var(--flaeche); font-size: 11px; font-weight: 800; line-height: 14px; text-align: center;
+}
 
 /* Dialog einer geplanten Karte: Aufgabe deutlich zum Öffnen anbieten */
 .tp-dialog-aufgabe {
-  display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid #c9d6f1; border-left: 4px solid var(--akzent);
+  display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--info-rand); border-left: 4px solid var(--akzent);
   border-radius: var(--radius); background: var(--akzent-hell-2); color: var(--text); text-decoration: none;
 }
 .tp-dialog-aufgabe:hover { background: var(--akzent-hell); color: var(--text); }
@@ -257,6 +268,6 @@ a.tp-balken:hover { color: var(--pf-fg); filter: brightness(0.97); }
 .tp-dialog-aufgabe__eltern { font-size: 12px; color: var(--text-3); }
 .tp-dialog-aufgabe__knopf {
   flex: none; display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: var(--radius);
-  background: var(--akzent); color: #fff; font-size: 14px; font-weight: 600;
+  background: var(--akzent); color: var(--auf-akzent); font-size: 14px; font-weight: 600;
 }
 .tp-dialog-aufgabe:hover .tp-dialog-aufgabe__knopf { background: var(--akzent-dunkel); }

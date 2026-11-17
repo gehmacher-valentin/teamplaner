@@ -6,7 +6,7 @@ export interface Ansicht {
   id: string;
   name: string;
   recht: Recht;
-  filter: { gewerke?: number[]; projekte?: number[]; tags?: number[]; bereiche?: number[]; wochen?: number };
+  filter: { gewerke?: number[]; projekte?: number[]; bereiche?: number[]; wochen?: number };
 }
 
 export interface Tag {
@@ -86,7 +86,6 @@ export interface Projekt {
   id: number;
   name: string;
   farbe: string;
-  tags: number[];
 }
 
 export interface Raster {
@@ -114,7 +113,6 @@ export interface Optionen {
   ansichten: Ansicht[];
   darf_planen: boolean;
   projekte: Projekt[];
-  tags: { id: number; name: string }[];
   gewerke: { id: number; name: string }[];
   bereiche: { id: number; name: string }[];
 }

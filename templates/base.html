@@ -1,7 +1,9 @@
 {% load static i18n teamplaner %}<!doctype html>
-<html lang="{{ LANGUAGE_CODE|default:'de' }}">
+{% with farbschema=user.farbschema|default:"system" %}<html lang="{{ LANGUAGE_CODE|default:'de' }}" data-theme="{{ farbschema }}">
 <head>
   <meta charset="utf-8">
+  {# Formularelemente und Scrollbalken passend; data-theme kommt vom Server, deshalb blitzt nichts hell auf #}
+  <meta name="color-scheme" content="{% if farbschema == 'light' %}light{% elif farbschema == 'dark' %}dark{% else %}light dark{% endif %}">{% endwith %}
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf-token" content="{{ csrf_token }}">
   <title>{% block titel %}{% endblock %} – {% translate "Teamplaner" %}</title>

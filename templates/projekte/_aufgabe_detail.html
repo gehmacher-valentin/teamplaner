@@ -14,16 +14,17 @@
       {% endif %}
       <dt>{% translate "Status" %}</dt>
       {% include "projekte/_detail_feld.html" with feld="status" %}
-      {% if not sammelaufgabe or aufgabe.beginn_am %}
+      {% if not aufgabe.wiederholung and not sammelaufgabe or aufgabe.beginn_am %}
         <dt>{% if darf_bearbeiten and not sammelaufgabe %}<label for="eingabe-beginn_am">{% translate "Geplanter Beginn" %}</label>{% else %}{% translate "Geplanter Beginn" %}{% endif %}</dt>
         {% include "projekte/_detail_feld.html" with feld="beginn_am" %}
       {% endif %}
-      <dt>{% if darf_bearbeiten and not sammelaufgabe %}<label for="eingabe-faellig_am">{% translate "Fällig" %}</label>{% else %}{% translate "Fällig" %}{% endif %}</dt>
+      {% if aufgabe.wiederholung %}{% translate "Stichtag" as faellig_text %}{% else %}{% translate "Fällig" as faellig_text %}{% endif %}
+      <dt>{% if darf_bearbeiten and not sammelaufgabe %}<label for="eingabe-faellig_am">{{ faellig_text }}</label>{% else %}{{ faellig_text }}{% endif %}</dt>
       {% include "projekte/_detail_feld.html" with feld="faellig_am" %}
+      <dt>{% if darf_bearbeiten %}<label for="eingabe-wiederholung">{% translate "Wiederholung" %}</label>{% else %}{% translate "Wiederholung" %}{% endif %}</dt>
+      {% include "projekte/_detail_feld.html" with feld="wiederholung" %}
       <dt>{% if darf_bearbeiten %}<label for="eingabe-schaetzung_personentage">{% translate "Geschätzt" %}</label>{% else %}{% translate "Geschätzt" %}{% endif %}</dt>
       <dd class="zeile zeile--eng">{% include "projekte/_detail_feld.html" with feld="schaetzung_personentage" %}<span class="gedaempft">· {% blocktranslate count n=eingeteilt_pt %}{{ n }} Tag eingeteilt{% plural %}{{ n }} Tage eingeteilt{% endblocktranslate %}</span></dd>
-      <dt>{% translate "Projekt-Tags" %}</dt>
-      <dd class="tags">{% for t in aufgabe.projekt.tags.all %}<span class="tag">{{ t.name }}</span>{% empty %}–{% endfor %}</dd>
       <dt>{% translate "Gruppe" %}</dt>
       {% include "projekte/_detail_feld.html" with feld="gewerk" %}
     </dl>
@@ -56,7 +57,7 @@
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>
               </button>
             </form>
-            <a href="{% url 'aufgabe' u.pk %}"{% if seitenleiste %} data-aufgabe-link="{{ u.pk }}"{% endif %} class="unteraufgaben__titel{% if u.status.ist_erledigt %} aufgabe-titel--erledigt{% endif %}">{{ u.titel }}</a>
+            <a href="{% url 'aufgabe' u.pk %}"{% if seitenleiste %} data-aufgabe-link="{{ u.pk }}"{% endif %} class="unteraufgaben__titel{% if u.status.ist_erledigt %} aufgabe-titel--erledigt{% endif %}">{{ u.titel }}</a>{% if u.wiederholung %}<span class="wiederkehrend" title="{% translate 'Wiederkehrende Aufgabe' %}" aria-label="{% translate 'Wiederkehrende Aufgabe' %}">↻</span>{% endif %}
             {% if u.faellig_am %}<span class="mono klein{% if u.faellig_am|ueberfaellig and not u.status.ist_erledigt %} faellig--ueberfaellig{% endif %}">{{ u.faellig_am|date:"d.m." }}</span>{% endif %}
             {% if u.verantwortlich %}<span class="person klein" title="{{ u.verantwortlich.anzeigename }}">{% avatar u.verantwortlich "klein" %}<span class="unteraufgaben__name">{{ u.verantwortlich.anzeigename }}</span></span>{% endif %}
             <span class="{{ u.status|status_klasse }} unteraufgaben__status">{{ u.status }}</span>

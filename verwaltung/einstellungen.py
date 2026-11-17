@@ -26,11 +26,11 @@ from gantt import rechte as gantt_rechte
 from kern import rechte, zwei_faktor
 from kern.freigaben import BEARBEITEN, SEHEN, zusammenfassung
 from kern.hilfen import einstellungsseite, erfordert
-from kern.models import Bereich, Gewerk, Rolle, Systemeinstellungen
+from kern.models import Bereich, Farbschema, Gewerk, Rolle, Systemeinstellungen
 from kern.protokoll import aenderungen, protokollieren
 from planung.kalender import gesetzliche_feiertage, neue_freie_tage, zeitraeume
 from planung.models import FreierTag, FreigabeStufe
-from projekte.models import Aufgabe, Status, Statusfarbe, Tag
+from projekte.models import Aufgabe, Status, Statusfarbe
 from zusammenarbeit import mailverlauf
 from zusammenarbeit.mail import (
     KATEGORIEN,
@@ -42,7 +42,7 @@ from zusammenarbeit.mail import (
 from zusammenarbeit.models import MailStatus
 
 from . import freigaben
-from .forms import BereichForm, FreigabeStufeForm, GewerkForm, StatusForm, TagForm
+from .forms import BereichForm, FreigabeStufeForm, GewerkForm, StatusForm
 
 
 def _darf_personen(konto):
@@ -173,7 +173,8 @@ def benachrichtigung_speichern(request):
 
 @login_required
 def darstellung(request):
-    return seite(request, "kern/einst_darstellung.html", "darstellung", sprachen=settings.LANGUAGES)
+    return seite(request, "kern/einst_darstellung.html", "darstellung", sprachen=settings.LANGUAGES,
+                 farbschemata=Farbschema.choices)
 
 
 DARSTELLUNG_SCHALTER = {"feier_animation", "gantt_unteraufgaben_offen"}
@@ -182,9 +183,18 @@ DARSTELLUNG_SCHALTER = {"feier_animation", "gantt_unteraufgaben_offen"}
 @require_POST
 @login_required
 def darstellung_speichern(request):
-    """Sprache, Feieranimation, Unteraufgaben im Gantt – sofort, nur das eigene Konto."""
+    """Sprache, Farbschema, Feieranimation, Unteraufgaben im Gantt – sofort, nur das eigene Konto."""
     konto = request.user
     feld = request.POST.get("feld")
+    if feld == "farbschema":
+        wert = request.POST.get("wert")
+        if wert not in Farbschema.values:
+            return HttpResponse(status=400)
+        konto.farbschema = wert
+        konto.save(update_fields=["farbschema"])
+        antwort = HttpResponse(status=204)
+        antwort["HX-Refresh"] = "true"  # data-theme steht am <html>
+        return antwort
     if feld == "sprache":
         sprache = request.POST.get("wert")
         if sprache not in dict(settings.LANGUAGES):
@@ -284,7 +294,7 @@ RECHTEMATRIX = [
     (gettext_lazy("Benutzerkonten anlegen und deaktivieren"), "ja ja nein nein nein",
      gettext_lazy("Bestehende Konten nur mit niedrigerer Rolle als der eigenen; Admin-Konten über die Kommandozeile")),
     (gettext_lazy("Rollen vergeben"), "ja ja nein nein nein", gettext_lazy("Bereichsleitung bis maximal zur eigenen Rolle")),
-    (gettext_lazy("Projekte anlegen, Tags vergeben, archivieren"), "ja ja ja nein nein", ""),
+    (gettext_lazy("Projekte anlegen, bearbeiten, archivieren"), "ja ja ja nein nein", ""),
     (gettext_lazy("Aufgaben anlegen und bearbeiten"), "ja ja ja eigene nein", gettext_lazy("Mitarbeiter:innen: in Projekten, in denen sie Mitglied sind")),
     (gettext_lazy("Aufgaben abschließen, kommentieren"), "ja ja ja ja nein", ""),
     (gettext_lazy("Teamplaner-Ansichten anlegen und freigeben"), "ja ja nein nein nein", ""),
@@ -303,7 +313,7 @@ def rollen(request):
     return seite(request, "kern/einst_rollen.html", "rollen", rechtematrix=RECHTEMATRIX, rollen=list(Rolle))
 
 
-# ---------- Listen: Status, Gewerke, Projekt-Tags, Bereiche, Freigabestufen ----------
+# ---------- Listen: Status, Gewerke, Bereiche, Freigabestufen ----------
 
 def _listen():
     def status_verwendung():
@@ -317,9 +327,6 @@ def _listen():
         "gewerk": (Gewerk, GewerkForm, gettext_lazy("Gruppe"), False,
                    lambda: (lambda obj: obj.personen.count()),
                    lambda n: ngettext("%(n)s Person", "%(n)s Personen", n) % {"n": n}, False),
-        "tag": (Tag, TagForm, gettext_lazy("Projekt-Tags"), False,
-                lambda: (lambda obj: obj.projekte.count()),
-                lambda n: ngettext("%(n)s Projekt", "%(n)s Projekte", n) % {"n": n}, False),
         "bereich": (Bereich, BereichForm, gettext_lazy("Bereiche"), True,
                     lambda: (lambda obj: obj.personen.count()),
                     lambda n: ngettext("%(n)s Person", "%(n)s Personen", n) % {"n": n}, True),
@@ -332,13 +339,11 @@ def _listen():
 def _frage(art, objekt, anzahl):
     """Rückfrage beim Löschen mit der Verwendung."""
     namen = {"status": _("Status „%(name)s“ löschen?"), "gewerk": _("Gruppe „%(name)s“ löschen?"),
-             "tag": _("Tag „%(name)s“ löschen?"), "bereich": _("Bereich „%(name)s“ löschen?"),
+             "bereich": _("Bereich „%(name)s“ löschen?"),
              "freigabestufe": _("Freigabestufe „%(name)s“ löschen?")}
     text = namen[art] % {"name": objekt}
     if anzahl and art == "gewerk":
         text += " " + ngettext("Es ist %(n)s Person zugeordnet.", "Es ist %(n)s Personen zugeordnet.", anzahl) % {"n": anzahl}
-    elif anzahl and art == "tag":
-        text += " " + ngettext("Er hängt an %(n)s Projekt.", "Er hängt an %(n)s Projekten.", anzahl) % {"n": anzahl}
     return text
 
 

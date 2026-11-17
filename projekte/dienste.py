@@ -14,13 +14,13 @@ from zusammenarbeit.dienste import (
     zuweisung_benachrichtigen,
 )
 
-from . import termine
+from . import termine, wiederholung
 from .models import UNTERAUFGABEN_EBENEN, Aufgabe, Status
 
 ERLAUBTE_TAGS = {"p", "br", "strong", "b", "em", "i", "u", "s", "ul", "ol", "li", "h3", "a", "blockquote", "code", "pre",
                  "hr"}
 
-VERLAUF_FELDER = ["titel", "abschnitt", "verantwortlich", "gewerk", "beginn_am", "faellig_am", "status",
+VERLAUF_FELDER = ["titel", "abschnitt", "verantwortlich", "gewerk", "beginn_am", "faellig_am", "wiederholung", "status",
                   "schaetzung_personentage", "beschreibung"]
 
 
@@ -73,6 +73,13 @@ def _verlauf_diff(alt, neu):
     diff = aenderungen(alt, neu)
     if "beschreibung" in diff:
         diff["beschreibung"] = ["…" if alt["beschreibung"] else "", "…" if neu["beschreibung"] else ""]
+    if "wiederholung" in diff:
+        # Lesbar statt als Dict; ändert sich nur der Anker (Stichtag verschoben), zählt das nicht
+        texte = [wiederholung.regel_text(alt["wiederholung"]), wiederholung.regel_text(neu["wiederholung"])]
+        if texte[0] == texte[1]:
+            del diff["wiederholung"]
+        else:
+            diff["wiederholung"] = texte
     return diff
 
 
@@ -96,6 +103,10 @@ def aufgabe_speichern(konto, aufgabe, daten, version, nachziehen=True):
             if feld == "beschreibung":
                 wert = html_bereinigen(wert)
             setattr(aktuell, feld, wert)
+        if aktuell.wiederholung:
+            # Wiederkehrend: nur ein Stichtag, keine Zeitspanne; der Anker folgt dem Stichtag
+            aktuell.beginn_am = None
+            aktuell.wiederholung = wiederholung.mit_anker(aktuell.wiederholung, aktuell.faellig_am)
         if "status" in daten:
             if aktuell.status.ist_erledigt and aktuell.erledigt_am is None:
                 aktuell.erledigt_am = timezone.now()
@@ -120,12 +131,75 @@ def aufgabe_speichern(konto, aufgabe, daten, version, nachziehen=True):
         if nachziehen and ("beginn_am" in diff or "faellig_am" in diff):
             termine.nach_aenderung(konto, [aktuell.pk])
             aktuell.refresh_from_db()
+        folge = None
+        if aktuell.status.ist_erledigt and not war_erledigt:
+            folge = folgeaufgabe_anlegen(konto, aktuell)
+    aktuell.neue_folgeaufgabe = folge
     return aktuell
+
+
+def _kopie(konto, vorlage, *, eltern, abschnitt, versatz, **felder):
+    """Offene Kopie für die Wiederholung: Titel, Beschreibung, Verantwortlich, Gruppe, Schätzung, Regel,
+    Sortierung; Termine um ``versatz`` verschoben. Verlauf, Einteilungen, Kommentare, Anhänge und
+    Abhängigkeiten bleiben bei der alten Aufgabe."""
+    werte = {
+        "projekt_id": vorlage.projekt_id, "abschnitt": abschnitt, "eltern": eltern, "titel": vorlage.titel,
+        "beschreibung": vorlage.beschreibung, "verantwortlich_id": vorlage.verantwortlich_id,
+        "gewerk_id": vorlage.gewerk_id, "schaetzung_personentage": vorlage.schaetzung_personentage,
+        "wiederholung": vorlage.wiederholung, "sortierung": vorlage.sortierung,
+        "beginn_am": vorlage.beginn_am + versatz if vorlage.beginn_am else None,
+        "faellig_am": vorlage.faellig_am + versatz if vorlage.faellig_am else None,
+        "status": Status.standard_offen(), "erstellt_von": konto.person,
+    }
+    werte.update(felder)
+    neu = Aufgabe.objects.create(**werte)
+    protokollieren(konto, "aufgabe", neu.pk, "angelegt",
+                   {"titel": neu.titel, "wiederholung_von": vorlage}, aufgabe_id=neu.pk)
+    if neu.verantwortlich_id:
+        zuweisung_benachrichtigen(konto, neu)
+    return neu
+
+
+def _unteraufgaben_kopieren(konto, vorlage_id, neu, versatz):
+    """Alle Ebenen als offene Kopien. Folgeaufgaben wiederkehrender Unteraufgaben, die beim Abhaken gerade
+    erst entstanden sind, werden nicht noch einmal kopiert – ihre Vorlage wird es schon."""
+    teilbaum = set(nachkommen(vorlage_id))
+    for unter in Aufgabe.objects.filter(eltern_id=vorlage_id).order_by("sortierung", "id"):
+        if unter.wiederholt_von_id in teilbaum:
+            continue
+        kopie = _kopie(konto, unter, eltern=neu, abschnitt=neu.abschnitt, versatz=versatz)
+        protokollieren(konto, "unteraufgabe", kopie.pk, "angelegt", {"titel": kopie.titel}, aufgabe_id=neu.pk)
+        _unteraufgaben_kopieren(konto, unter.pk, kopie, versatz)
+
+
+def folgeaufgabe_anlegen(konto, aufgabe):
+    """Beim Abhaken einer wiederkehrenden Aufgabe die nächste am selben Ort anlegen (samt Unteraufgaben).
+
+    Nicht, wenn es schon eine Folgeaufgabe gibt (wieder geöffnet und erneut abgehakt), wenn die Wiederholung
+    entfernt wurde oder der nächste Termin nach dem Enddatum liegt. Teil der laufenden Transaktion."""
+    regel = aufgabe.wiederholung
+    if not regel or not aufgabe.faellig_am or Aufgabe.objects.filter(wiederholt_von=aufgabe).exists():
+        return None
+    termin = wiederholung.naechster_termin(aufgabe.faellig_am, regel)
+    bis = wiederholung.ende(regel)
+    if bis and termin > bis:
+        return None
+    versatz = termin - aufgabe.faellig_am
+    neu = _kopie(konto, aufgabe, eltern=aufgabe.eltern, abschnitt=aufgabe.abschnitt, versatz=versatz,
+                 faellig_am=termin, beginn_am=None, wiederholt_von=aufgabe)
+    if neu.eltern_id:
+        protokollieren(konto, "unteraufgabe", neu.pk, "angelegt", {"titel": neu.titel}, aufgabe_id=neu.eltern_id)
+    _unteraufgaben_kopieren(konto, aufgabe.pk, neu, versatz)
+    projekt_aufgabe_benachrichtigen(konto, neu)
+    termine.nach_aenderung(konto, [neu.pk] + ([neu.eltern_id] if neu.eltern_id else []))
+    return neu
 
 
 def termine_setzen(konto, aufgabe, beginn, ende, version):
     """Geplanter Beginn und Fälligkeit (Gantt-Diagramm). Sammelaufgaben, deren Termine sich aus den
     Unteraufgaben ergeben, werden als Ganzes verschoben – ihre Dauer ändert sich dabei nicht."""
+    if aufgabe.wiederholung:  # wiederkehrend: nur der Stichtag
+        return aufgabe_speichern(konto, aufgabe, {"faellig_am": ende or beginn}, version)
     if not termine.ist_sammelaufgabe(aufgabe):
         return aufgabe_speichern(konto, aufgabe, {"beginn_am": beginn, "faellig_am": ende}, version)
     with transaction.atomic():

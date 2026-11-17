@@ -10,6 +10,12 @@
       {% for code, name in sprachen %}<option value="{{ code }}"{% if code == user.sprache %} selected{% endif %}>{{ name }}</option>{% endfor %}
     </select>
   </div>
+  <div class="einstellungszeile einstellungszeile--auswahl">
+    <label for="farbschema" class="luecke">{% translate "Farbschema" %}</label>
+    <select id="farbschema" name="wert" hx-post="{% url 'einst_darstellung_speichern' %}" hx-trigger="change" hx-swap="none" hx-vals='{"feld": "farbschema"}'>
+      {% for wert, name in farbschemata %}<option value="{{ wert }}"{% if wert == user.farbschema %} selected{% endif %}>{{ name }}</option>{% endfor %}
+    </select>
+  </div>
   {% translate "Feieranimation beim Abhaken" as titel %}{% include "kern/_schalter.html" with id="feier" feld="feier_animation" an=user.feier_animation url="einst_darstellung_speichern" %}
   {% translate "Unteraufgaben im Gantt aufgeklappt" as titel %}{% include "kern/_schalter.html" with id="unteraufgaben" feld="gantt_unteraufgaben_offen" an=user.gantt_unteraufgaben_offen url="einst_darstellung_speichern" %}
 </section>

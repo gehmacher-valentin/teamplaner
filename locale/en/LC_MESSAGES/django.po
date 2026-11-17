@@ -3495,3 +3495,175 @@ msgstr "removed the attachment “%(name)s”."
 #: zusammenarbeit/views.py:73
 msgid "Kommentar gelöscht."
 msgstr "Comment deleted."
+
+#: projekte/wiederholung.py
+msgid "Täglich"
+msgstr "Daily"
+
+#: projekte/wiederholung.py
+msgid "Wöchentlich"
+msgstr "Weekly"
+
+#: projekte/wiederholung.py
+msgid "Monatlich"
+msgstr "Monthly"
+
+#: projekte/wiederholung.py
+msgid "Jährlich"
+msgstr "Yearly"
+
+#: projekte/wiederholung.py
+#, python-format
+msgid "Das Intervall muss zwischen 1 und %(n)s liegen."
+msgstr "The interval must be between 1 and %(n)s."
+
+#: projekte/wiederholung.py
+msgid "Das Enddatum liegt vor dem Stichtag."
+msgstr "The end date is before the due date."
+
+#: projekte/wiederholung.py
+msgid "Sa"
+msgstr "Sat"
+
+#: projekte/wiederholung.py
+msgid "So"
+msgstr "Sun"
+
+#: projekte/wiederholung.py
+#, python-format
+msgid "Alle %(n)s Tage"
+msgid_plural "Alle %(n)s Tage"
+msgstr[0] "Every %(n)s days"
+msgstr[1] "Every %(n)s days"
+
+#: projekte/wiederholung.py
+#, python-format
+msgid "Alle %(n)s Wochen"
+msgid_plural "Alle %(n)s Wochen"
+msgstr[0] "Every %(n)s weeks"
+msgstr[1] "Every %(n)s weeks"
+
+#: projekte/wiederholung.py
+#, python-format
+msgid "Alle %(n)s Monate"
+msgid_plural "Alle %(n)s Monate"
+msgstr[0] "Every %(n)s months"
+msgstr[1] "Every %(n)s months"
+
+#: projekte/wiederholung.py
+#, python-format
+msgid "Alle %(n)s Jahre"
+msgid_plural "Alle %(n)s Jahre"
+msgstr[0] "Every %(n)s years"
+msgstr[1] "Every %(n)s years"
+
+#: projekte/wiederholung.py
+#, python-format
+msgid "bis %(datum)s"
+msgstr "until %(datum)s"
+
+#: projekte/wiederholung.py
+msgctxt "Wiederholung"
+msgid "Tag"
+msgid_plural "Tage"
+msgstr[0] "day"
+msgstr[1] "days"
+
+#: projekte/wiederholung.py
+msgctxt "Wiederholung"
+msgid "Woche"
+msgid_plural "Wochen"
+msgstr[0] "week"
+msgstr[1] "weeks"
+
+#: projekte/wiederholung.py
+msgctxt "Wiederholung"
+msgid "Monat"
+msgid_plural "Monate"
+msgstr[0] "month"
+msgstr[1] "months"
+
+#: projekte/wiederholung.py
+msgctxt "Wiederholung"
+msgid "Jahr"
+msgid_plural "Jahre"
+msgstr[0] "year"
+msgstr[1] "years"
+
+#: projekte/models.py
+msgid "Wiederholung"
+msgstr "Repeat"
+
+#: projekte/models.py
+msgid "Wiederholung von"
+msgstr "Repeat of"
+
+#: kern/models.py
+msgid "Farbschema"
+msgstr "Colour scheme"
+
+#: kern/models.py
+msgid "Wie am Gerät"
+msgstr "Same as device"
+
+#: kern/models.py
+msgid "Hell"
+msgstr "Light"
+
+#: kern/models.py
+msgid "Dunkel"
+msgstr "Dark"
+
+#: projekte/views.py
+msgid "Wiederkehrende Aufgaben brauchen einen Stichtag."
+msgstr "Recurring tasks need a due date."
+
+#: projekte/views.py
+msgid "Wiederkehrende Aufgaben haben nur einen Stichtag."
+msgstr "Recurring tasks only have a due date."
+
+#: projekte/views.py
+#, python-format
+msgid "Nächster Termin angelegt: %(titel)s, %(datum)s."
+msgstr "Next occurrence created: %(titel)s, %(datum)s."
+
+#: zusammenarbeit/verlauf.py
+#, python-format
+msgid "hat die Aufgabe angelegt (Wiederholung von „%(titel)s“)."
+msgstr "created the task (repeat of “%(titel)s”)."
+
+#: verwaltung/einstellungen.py
+msgid "Projekte anlegen, bearbeiten, archivieren"
+msgstr "Create, edit and archive projects"
+
+#: templates/projekte/_aufgabe_detail.html
+msgid "Stichtag"
+msgstr "Due date"
+
+#: templates/projekte/_detail_feld.html
+msgid "Keine (Zeitspanne)"
+msgstr "None (time span)"
+
+#: templates/projekte/_detail_feld.html
+msgid "alle"
+msgstr "every"
+
+#: templates/projekte/_detail_feld.html
+msgid "Wochentage"
+msgstr "Weekdays"
+
+#: templates/projekte/_detail_feld.html
+msgid "bis"
+msgstr "until"
+
+#: templates/projekte/_detail_feld.html
+msgid "Enddatum der Wiederholung"
+msgstr "End date of the repeat"
+
+#: templates/projekte/_detail_feld.html
+msgid "Nächster Termin:"
+msgstr "Next occurrence:"
+
+#: templates/projekte/_aufgabe_zeile.html
+msgid "Wiederkehrende Aufgabe"
+msgstr "Recurring task"

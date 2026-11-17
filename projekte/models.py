@@ -175,6 +175,12 @@ class Aufgabe(models.Model):
         _("Geschätzte Personentage"), max_digits=5, decimal_places=1, null=True, blank=True,
         validators=[MinValueValidator(0)],
     )
+    # Wiederkehrend statt Zeitspanne: Regel (projekte.wiederholung), Stichtag ist faellig_am
+    wiederholung = models.JSONField(_("Wiederholung"), null=True, blank=True)
+    wiederholt_von = models.OneToOneField(
+        "self", on_delete=models.SET_NULL, null=True, blank=True, related_name="folgeaufgabe",
+        verbose_name=_("Wiederholung von"),
+    )
     sortierung = models.PositiveIntegerField(default=0)
     erledigt_am = models.DateTimeField(null=True, blank=True)
     version = models.PositiveIntegerField(default=1)  # optimistisches Sperren

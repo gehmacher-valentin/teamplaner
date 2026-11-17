@@ -10,7 +10,7 @@ from gantt.models import GanttAnsicht, GanttFreigabe
 from kern.models import Bereich, Gewerk, Protokolleintrag, Rolle
 from planung.kalender import neue_freie_tage, zeitraeume
 from planung.models import AnsichtFreigabe, FreierTag, Recht, TeamplanerAnsicht
-from projekte.models import Aufgabe, Status, Tag
+from projekte.models import Aufgabe, Status
 
 from .conftest import ROLLEN, freigeben
 
@@ -38,6 +38,26 @@ def test_darstellung_speichert_sofort_nur_eigenes_konto(client_fuer, konten):
     assert not konten[M].feier_animation
     assert htmx(c, "/einstellungen/darstellung/speichern/", {"feld": "rolle", "an": "1"}).status_code == 400
     assert htmx(c, "/einstellungen/darstellung/speichern/", {"feld": "sprache", "wert": "xx"}).status_code == 400
+
+
+def test_farbschema_am_konto(client_fuer, konten):
+    """Hell, dunkel oder wie am Gerät: steht als data-theme am <html>, Standard ist „wie am Gerät“."""
+    c = client_fuer(konten[M])
+    seite = c.get("/einstellungen/darstellung/").content.decode()
+    assert 'data-theme="system"' in seite and '<meta name="color-scheme" content="light dark">' in seite
+    assert 'id="farbschema"' in seite
+    antwort = htmx(c, "/einstellungen/darstellung/speichern/", {"feld": "farbschema", "wert": "dark"})
+    assert antwort.status_code == 204 and antwort["HX-Refresh"] == "true"
+    konten[M].refresh_from_db()
+    assert konten[M].farbschema == "dark"
+    seite = c.get("/meine-aufgaben/").content.decode()
+    assert 'data-theme="dark"' in seite and '<meta name="color-scheme" content="dark">' in seite
+    # Nur das eigene Konto; ungültige Werte abgewiesen
+    assert 'data-theme="system"' in client_fuer(konten[P]).get("/meine-aufgaben/").content.decode()
+    assert htmx(c, "/einstellungen/darstellung/speichern/", {"feld": "farbschema", "wert": "lila"}).status_code == 400
+    # Anmeldeseite folgt dem Gerät
+    from django.test import Client
+    assert 'data-theme="system"' in Client().get("/anmelden/").content.decode()
 
 
 def _mit_zwei_faktor(client_fuer, konto):
@@ -111,7 +131,7 @@ def test_hinzufuegen_ans_ende(client_fuer, konten):
     assert antwort.status_code == 200 and "autofocus" in antwort.content.decode()  # Fokus bleibt für den nächsten
     neu = Bereich.objects.get(name="Bereich A Süd")
     assert neu.sortierung > max(b.sortierung for b in Bereich.objects.exclude(pk=neu.pk))
-    assert htmx(c, "/einstellungen/listen/tag/neu/", {"neu-name": ""})["X-Fehler"] == "1"
+    assert htmx(c, "/einstellungen/listen/gewerk/neu/", {"neu-name": ""})["X-Fehler"] == "1"
 
 
 def test_loeschen_mit_rueckfrage_und_verwendung(client_fuer, konten, projekt):
@@ -120,10 +140,6 @@ def test_loeschen_mit_rueckfrage_und_verwendung(client_fuer, konten, projekt):
     gewerk.personen.add(konten[M].person, konten[P].person)
     frage = c.get(f"/einstellungen/listen/gewerk/{gewerk.pk}/?ansicht=frage").content.decode()
     assert "Gruppe „Gewerk 03“ löschen? Es ist 2 Personen zugeordnet." in frage
-    tag = Tag.objects.create(name="Tag 02")
-    projekt.tags.add(tag)
-    frage = c.get(f"/einstellungen/listen/tag/{tag.pk}/?ansicht=frage").content.decode()
-    assert "Tag „Tag 02“ löschen? Er hängt an 1 Projekt." in frage
     htmx(c, f"/einstellungen/listen/gewerk/{gewerk.pk}/loeschen/")
     assert not Gewerk.objects.filter(pk=gewerk.pk).exists()
     assert Protokolleintrag.objects.filter(objekt_typ="gewerk", aktion="geloescht").exists()

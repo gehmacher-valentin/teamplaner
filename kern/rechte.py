@@ -86,7 +86,7 @@ def darf_lesen(konto):
 
 
 def darf_projekte_verwalten(konto):
-    """Projekte anlegen, bearbeiten, Tags vergeben, archivieren."""
+    """Projekte anlegen, bearbeiten, archivieren."""
     return _mindestens(konto, Rolle.PLANER)
 
 

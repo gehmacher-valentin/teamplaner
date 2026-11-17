@@ -1,6 +1,6 @@
 /* Gantt-Diagramm */
 
-.gt { display: flex; flex-direction: column; gap: 14px; --gt-wochenende: rgba(26, 29, 27, 0.045); --gt-links: 320px; --gt-zeile: 34px; }
+.gt { display: flex; flex-direction: column; gap: 14px; --gt-links: 320px; --gt-zeile: 34px; }
 
 .gt-rahmen { overflow: auto; max-height: calc(100vh - 250px); position: relative; }
 .gt-inner { position: relative; user-select: none; -webkit-user-select: none; }
@@ -78,9 +78,9 @@
 .gt-balken--abgeleitet { opacity: 0.5; }
 .gt-ueberzug {
   position: absolute; top: 9px; height: 12px; border-radius: 2px; z-index: 2; pointer-events: auto;
-  background: repeating-linear-gradient(135deg, #c2410c 0 4px, rgba(194, 65, 12, 0.25) 4px 8px);
+  background: repeating-linear-gradient(135deg, var(--konflikt) 0 4px, var(--konflikt-hell) 4px 8px);
 }
-.gt-daten--ueberzug { color: #c2410c; font-weight: 600; }
+.gt-daten--ueberzug { color: var(--konflikt); font-weight: 600; }
 .gt-balken--bearbeitbar { cursor: grab; touch-action: none; }
 .gt-balken:focus-visible { outline: 2px solid var(--akzent); outline-offset: 2px; }
 .gt-griff { position: absolute; top: -2px; bottom: -2px; width: 7px; cursor: ew-resize; }
@@ -102,8 +102,8 @@
 .gt-pfeile { position: absolute; top: 0; z-index: 3; overflow: visible; pointer-events: none; }
 .gt-pfeil { pointer-events: stroke; cursor: pointer; }
 .gt-pfeil__treffer { fill: none; stroke: transparent; stroke-width: 10; }
-.gt-pfeil__linie { fill: none; stroke: #7d847f; stroke-width: 1.5; }
-.gt-pfeil--verletzt .gt-pfeil__linie { stroke: #c2410c; stroke-width: 2; stroke-dasharray: 5 3; }
+.gt-pfeil__linie { fill: none; stroke: var(--pfeil); stroke-width: 1.5; }
+.gt-pfeil--verletzt .gt-pfeil__linie { stroke: var(--konflikt); stroke-width: 2; stroke-dasharray: 5 3; }
 .gt-pfeil:hover .gt-pfeil__linie { stroke-width: 2.5; }
 .gt-verbinden { stroke: var(--akzent); stroke-width: 2; stroke-dasharray: 4 3; pointer-events: none; }
 
@@ -114,9 +114,12 @@
 .gt-warn__hinweis {
   display: none; position: absolute; left: -4px; top: calc(100% + 6px); z-index: 20; width: max-content; max-width: 340px;
   flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 8px; background: var(--flaeche); color: var(--text);
-  border: 1px solid #f0c7aa; box-shadow: 0 6px 20px rgba(26, 29, 27, 0.16); font-size: 13px; font-weight: 400; line-height: 1.4;
+  border: 1px solid var(--warn-rand); box-shadow: var(--schatten-hinweis); font-size: 13px; font-weight: 400; line-height: 1.4;
   white-space: normal; text-transform: none; letter-spacing: 0; cursor: default;
 }
+/* Zu wenig Platz bis zum unteren bzw. rechten Rand des Gantt-Bereichs (hinweisAusrichten) */
+.gt-warn__hinweis--oben { top: auto; bottom: calc(100% + 6px); }
+.gt-warn__hinweis--rechts { left: auto; right: -4px; }
 .gt-warn__hinweis strong { color: var(--warn-text); }
 .gt-warn:hover .gt-warn__hinweis, .gt-warn:focus .gt-warn__hinweis { display: flex; }
 /* Der Hinweis ragt über die folgenden Zeilen: deren Namensspalte liegt sonst darüber */
@@ -124,12 +127,12 @@
 .legende .gt-warn__symbol { vertical-align: -3px; }
 
 /* Legende */
-.gt-legende-geplant { background: #dce5f6; border: 1px solid #4f79c9; }
-.gt-legende-ist { background: #1c3766; height: 4px !important; opacity: 0.55; }
-.gt-legende-meilenstein { background: #4f79c9; transform: rotate(45deg) scale(0.75); }
-.gt-legende-sammel { background: #1c3766; height: 6px !important; }
-.gt-legende-ueberzug { background: repeating-linear-gradient(135deg, #c2410c 0 3px, rgba(194, 65, 12, 0.25) 3px 6px); }
-.gt-legende-verletzt { background: repeating-linear-gradient(90deg, #c2410c 0 5px, transparent 5px 8px); height: 2px !important; }
+.gt-legende-geplant { background: var(--pf-blau-bg); border: 1px solid var(--pf-blau-bar); }
+.gt-legende-ist { background: var(--pf-blau-fg); height: 4px !important; opacity: 0.55; }
+.gt-legende-meilenstein { background: var(--pf-blau-bar); transform: rotate(45deg) scale(0.75); }
+.gt-legende-sammel { background: var(--pf-blau-fg); height: 6px !important; }
+.gt-legende-ueberzug { background: repeating-linear-gradient(135deg, var(--konflikt) 0 3px, var(--konflikt-hell) 3px 6px); }
+.gt-legende-verletzt { background: repeating-linear-gradient(90deg, var(--konflikt) 0 5px, transparent 5px 8px); height: 2px !important; }
 
 @media (max-width: 760px) {
   .gt { --gt-links: 180px; }
@@ -184,5 +187,5 @@ button.gt-wahl__karte:focus-visible { outline: 2px solid var(--akzent); outline-
 }
 .gt-wahl__plus { color: var(--text-3); }
 button.gt-wahl__karte:hover .gt-wahl__plus { background: var(--flaeche); color: var(--akzent); }
-.gt-wahl__x { border: 0; background: rgba(255, 255, 255, 0.85); color: var(--text-2); cursor: pointer; padding: 0; }
-.gt-wahl__x:hover { color: var(--fehler, #b42318); }
+.gt-wahl__x { border: 0; background: var(--knopf-auf-balken); color: var(--text-2); cursor: pointer; padding: 0; }
+.gt-wahl__x:hover { color: var(--gefahr); }

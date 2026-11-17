@@ -493,10 +493,10 @@ export function Gantt() {
               <svg className="gt-pfeile" style={{ left: LINKS }} width={breite} height={liste.length * ZEILE} aria-hidden="true">
                 <defs>
                   <marker id="gt-spitze" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-                    <path d="M0,0 L10,5 L0,10 z" fill="#7d847f" />
+                    <path d="M0,0 L10,5 L0,10 z" fill="var(--pfeil)" />
                   </marker>
                   <marker id="gt-spitze-rot" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-                    <path d="M0,0 L10,5 L0,10 z" fill="#c2410c" />
+                    <path d="M0,0 L10,5 L0,10 z" fill="var(--konflikt)" />
                   </marker>
                 </defs>
                 {pfeilListe.map((p) => {
@@ -567,14 +567,42 @@ export function warnText(w: GWarnung, zeile?: number): string {
 }
 
 /**
+ * Hinweis des Warnzeichens im sichtbaren Bereich halten: reicht der Platz bis zum unteren Rand des
+ * Gantt-Bereichs (.gt-rahmen, scrollt selbst und schneidet ab) nicht, klappt er nach oben; ragt er
+ * rechts hinaus, steht er rechtsbündig am Zeichen.
+ */
+export function hinweisAusrichten(zeichen: HTMLElement) {
+  const hinweis = zeichen.querySelector<HTMLElement>(".gt-warn__hinweis");
+  if (!hinweis) return;
+  hinweis.classList.remove("gt-warn__hinweis--oben", "gt-warn__hinweis--rechts");
+  const messen = () => {
+    const h = hinweis.getBoundingClientRect();
+    if (!h.height) return false; // noch nicht sichtbar
+    const z = zeichen.getBoundingClientRect();
+    const rahmen = zeichen.closest<HTMLElement>(".gt-rahmen");
+    const r = rahmen?.getBoundingClientRect();
+    // clientHeight/-Width ohne Scrollbalken; zusätzlich nie über das Fenster hinaus
+    const unten = Math.min(r ? r.top + rahmen!.clientHeight : Infinity, window.innerHeight);
+    const oben = Math.max(r?.top ?? 0, 0);
+    const rechts = Math.min(r ? r.left + rahmen!.clientWidth : Infinity, window.innerWidth);
+    if (h.bottom > unten && z.top - oben > unten - z.bottom) hinweis.classList.add("gt-warn__hinweis--oben");
+    if (h.right > rechts) hinweis.classList.add("gt-warn__hinweis--rechts");
+    return true;
+  };
+  if (!messen()) requestAnimationFrame(messen);
+}
+
+/**
  * Warnzeichen in der Namensspalte: Einteilungen aus dem Teamplaner verletzen eine Abhängigkeit.
  * Ein Zeichen je Zeile, alle Fälle im Hinweis; erreichbar per Maus und Tastatur.
  */
 function Warnzeichen({ warnungen, zeile }: { warnungen?: GWarnung[]; zeile?: number }) {
   if (!warnungen?.length) return null;
   const texte = warnungen.map((w) => warnText(w, zeile));
+  const ausrichten = (ev: React.SyntheticEvent<HTMLElement>) => hinweisAusrichten(ev.currentTarget);
   return (
-    <span className="gt-warn" tabIndex={0} role="img" aria-label={`${t("legende_warnung")}: ${texte.join(" ")}`}>
+    <span className="gt-warn" tabIndex={0} role="img" aria-label={`${t("legende_warnung")}: ${texte.join(" ")}`}
+      onMouseEnter={ausrichten} onFocus={ausrichten}>
       <WarnSymbol />
       <span className="gt-warn__hinweis" role="tooltip">
         <strong>{t("legende_warnung")}</strong>

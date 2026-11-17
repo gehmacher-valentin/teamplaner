@@ -111,7 +111,8 @@ Für Rechteprüfung und Einteilungslogik sind automatische Tests Pflicht.
 | `tests/test_aufgabenbaum.py`, `tests/test_unteraufgaben.py`, `tests/test_seitenleiste.py` | Projektliste als Baum (Ziehen, Ebenen, Rechte), Unteraufgaben bis drei Ebenen, Aufgabendetail als Seitenleiste |
 | `tests/test_termine.py` | Termine nachziehen: Hauptaufgaben, Nachfolger, Sammelaufgaben; Gantt-Daten mit zwei Ebenen |
 | `tests/test_tagesinfo.py`, `tests/test_personen.py` | Info-Zeile im Teamplaner; Systemkonto, Personenauswahl mit Tippsuche |
-| `tests/test_einstellungen.py` | Einstellungsbereich: Schalter, Listen-Editor, Kalender mit Zeiträumen, Personen, Freigaben, Ansichten |
+| `tests/test_einstellungen.py` | Einstellungsbereich: Schalter, Farbschema (hell, dunkel, wie am Gerät), Listen-Editor, Kalender mit Zeiträumen, Personen, Freigaben, Ansichten |
+| `tests/test_wiederholung.py` | Wiederkehrende Aufgaben: Regel (Monatsende, Intervalle, Wochentage, Enddatum), Folgeaufgabe auf allen Wegen des Abhakens, kein Doppelanlegen, Unteraufgaben, nicht übernommene Daten, Eingabe im Detail |
 | `tests/test_vorlagen.py` | Vorlagen ohne mehrzeilige `{# #}`-Kommentare (erscheinen sonst als Text) |
 | `frontend/src/teamplaner/*.test.ts` | Rasterlogik und Übersetzung im Browser |
 | `frontend/src/editor/*.test.ts`, `frontend/src/lib/*.test.ts` | Markdown beim Einfügen, Editor-Rundlauf, Spaltenbreiten, Personenauswahl, Vorschläge, Restzeit der Admin-Sitzung, nur die jüngste Ladeanfrage zählt (`neueste.ts`) |
@@ -120,7 +121,7 @@ Für Rechteprüfung und Einteilungslogik sind automatische Tests Pflicht.
 | `frontend/e2e/01-rundgang.spec.ts` | alle Seiten der Navigation am Desktop und am Handy, Einstellungen, keine Vorlagenreste |
 | `frontend/e2e/02-einladen.spec.ts` | Konto einladen, auch in der eigenen Rolle: Link erscheint einmal und funktioniert |
 | `frontend/e2e/03-einteilen.spec.ts` | Teamplaner: aus der Palette ziehen, verschieben, verlängern, rückgängig, live bei einer zweiten Person |
-| `frontend/e2e/04-gantt.spec.ts` | Gantt: Warnzeichen bei Verletzung durch Einteilungen, Balken ziehen und Nachziehen, schnelle Änderungen, Abhängigkeit anlegen und entfernen |
+| `frontend/e2e/04-gantt.spec.ts` | Gantt: Warnzeichen bei Verletzung durch Einteilungen, Hinweis klappt am unteren Rand nach oben, Balken ziehen und Nachziehen, schnelle Änderungen, Abhängigkeit anlegen und entfernen |
 | `frontend/e2e/05-aufgabe.spec.ts` | Aufgabe anlegen, Seitenleiste, direkt bearbeiten, Erwähnung, Anhang, Posteingang |
 | `frontend/e2e/06-notizen-bestellungen.spec.ts` | Notiz und Bestellung anlegen, bearbeiten, wiederfinden |
 
@@ -131,7 +132,7 @@ Dazu prüft `shellcheck` die Betriebs- und Bauskripte.
 | Ordner | Inhalt |
 | --- | --- |
 | `kern/` | Basis für alle anderen Apps: Person, Konto, Rolle, Bereich, Gewerk (angezeigt als „Gruppe“), Protokoll; `rechte.py` = zentrale Rechteprüfung, `middleware.py` (Sitzung, Zwei-Faktor, CSP, Abweisen von NUL-Zeichen), `hilfen.py` (`als_zahl`, `TEXT_MAX_ZEICHEN`, `einstellungsseite`), `freigaben.py` (Freigaben je Ansicht), `zwei_faktor.py`, Profilfotos |
-| `projekte/` | Projekte, Tags, Abschnitte, Status, Aufgaben (Unteraufgaben = Aufgaben mit `eltern`); `dienste.py` (Schreiben mit Verlauf), `ansicht.py` (Aufgaben für Liste und Detail laden und aufbereiten), `seitenleiste.py` (Aufgabendetail neben der Liste) |
+| `projekte/` | Projekte, Abschnitte, Status, Aufgaben (Unteraufgaben = Aufgaben mit `eltern`); Projekt-Tags nur noch im Datenmodell, nicht in der Oberfläche; `dienste.py` (Schreiben mit Verlauf, Folgeaufgabe wiederkehrender Aufgaben), `wiederholung.py` (Regel, nächster Termin), `ansicht.py` (Aufgaben für Liste und Detail laden und aufbereiten), `seitenleiste.py` (Aufgabendetail neben der Liste) |
 | `planung/` | Einteilung, Abwesenheit, freie Tage, Ansichten; `kalender.py` (Feiertage, Regeln), `dienste.py` (Schreiben mit Prüfungen), `api.py`, `live.py` (SSE) |
 | `zusammenarbeit/` | Kommentare, Erwähnungen, Anhänge, Benachrichtigungen mit Posteingang; `mail.py` (E-Mail-Kategorien und Versand, je E-Mail eine Protokollzeile), `mailverlauf.py` (Versandverlauf für Befehl und Einstellungsseite), `verlauf.py` (Kommentare und Änderungen als lesbare Einträge), `anhaenge.py` (Inhaltstyp, Anzeige im Browser) |
 | `gantt/` | Gantt-Ansichten mit Freigaben; `daten.py` (Abgleich, Verletzungen), `dienste.py` (Termine, Abhängigkeiten, neue Projekte in Gesamtansichten) |
@@ -165,6 +166,14 @@ Grundregeln:
   eigenes Modul ohne View-Code (z. B. `zusammenarbeit/verlauf.py`, `projekte/ansicht.py`).
 - IDs und Versionen aus Anfragen über `kern.hilfen.als_zahl` lesen: ungültige Eingaben ergeben 400
   oder 404, nie einen Fehler 500. Lange Freitexte auf `TEXT_MAX_ZEICHEN` begrenzen.
+
+## Farben und Darkmode
+
+Alle Farben stehen als CSS-Variablen in `frontend/src/styles/app.css` (`:root`), die dunklen Werte darunter unter
+`:root[data-theme="dark"]` und – für „wie am Gerät“ – in `@media (prefers-color-scheme: dark)`. `data-theme` setzt
+`templates/base.html` aus dem Konto (`Konto.farbschema`), deshalb blitzt beim Laden nichts hell auf. Neue Stile
+verwenden nur Variablen, keine fest eingetragenen Farben. Die Projektfarben (`.pf-*`) folgen der Okabe-Ito-Palette
+und bleiben auch bei Rot-Grün-Schwäche unterscheidbar; Doppelbelegungen tragen zusätzlich Schraffur und „!“.
 
 ## Übersetzungen
 

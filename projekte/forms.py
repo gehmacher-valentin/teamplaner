@@ -5,7 +5,7 @@ from kern.forms import PersonenAuswahl
 from kern.hilfen import TEXT_MAX_ZEICHEN
 from kern.models import Person
 
-from .models import PRIORITAETEN, Abschnitt, Projekt, Tag
+from .models import PRIORITAETEN, Abschnitt, Projekt
 
 
 class PersonenMehrfachAuswahl(forms.ModelMultipleChoiceField):
@@ -20,31 +20,8 @@ class PersonenMehrfachAuswahl(forms.ModelMultipleChoiceField):
         return " · ".join(teile)
 
 
-class TagsFeld(forms.CharField):
-    """Kommagetrennte Tags; unbekannte werden angelegt."""
-
-    def __init__(self, **kwargs):
-        super().__init__(required=False, label=_("Tags"), **kwargs)
-
-    def clean(self, value):
-        namen = []
-        for teil in (value or "").split(","):
-            name = " ".join(teil.split())[:60]
-            if name and name.lower() not in {n.lower() for n in namen}:
-                namen.append(name)
-        return namen
-
-
-def tags_speichern(projekt, namen):
-    tags = []
-    for name in namen:
-        tag = Tag.objects.filter(name__iexact=name).first() or Tag.objects.create(name=name)
-        tags.append(tag)
-    projekt.tags.set(tags)
-
-
 class ProjektForm(forms.ModelForm):
-    tags_text = TagsFeld()
+    """Projekt-Tags (Projekt.tags) bleiben im Datenmodell, erscheinen aber nicht mehr in der Oberfläche."""
 
     class Meta:
         model = Projekt
@@ -75,20 +52,12 @@ class ProjektForm(forms.ModelForm):
             aktuell=self.instance.projektleitung if self.instance.pk else None, required=False,
             label=_("Projektleitung"), empty_label=_("– keine –"),
         )
-        if self.instance.pk:
-            self.initial["tags_text"] = ", ".join(t.name for t in self.instance.tags.all())
 
     def clean(self):
         daten = super().clean()
         if daten.get("beginn") and daten.get("ende") and daten["ende"] < daten["beginn"]:
             self.add_error("ende", _("Das Ende liegt vor dem Beginn."))
         return daten
-
-    def save(self, commit=True):
-        projekt = super().save(commit)
-        if commit:
-            tags_speichern(projekt, self.cleaned_data["tags_text"])
-        return projekt
 
 
 class SchnellAufgabeForm(forms.Form):

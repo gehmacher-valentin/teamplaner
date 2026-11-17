@@ -28,7 +28,7 @@ from planung.kalender import freie_tage, montag, werktage, zaehlende_tage
 from planung.models import Abwesenheit, Einteilung
 from zusammenarbeit.models import Kommentar
 
-from . import dienste, termine
+from . import dienste, termine, wiederholung
 from .ansicht import (
     aufgabe_laden,
     baum,
@@ -45,9 +45,8 @@ from .forms import (
     ProjektForm,
     SchnellAufgabeForm,
     UnteraufgabeForm,
-    tags_speichern,
 )
-from .models import PRIORITAETEN, UNTERAUFGABEN_EBENEN, Abschnitt, Aufgabe, Projekt, Status, Tag
+from .models import PRIORITAETEN, UNTERAUFGABEN_EBENEN, Abschnitt, Aufgabe, Projekt, Status
 from .seitenleiste import liste_oob, offene_seitenleiste, seitenleiste_antwort
 
 
@@ -70,20 +69,14 @@ def _darf_bearbeiten_oder_403(konto, projekt):
 
 @login_required
 def projekte(request):
-    tag_roh = request.GET.get("tag")
-    tag_id = als_zahl(tag_roh) if tag_roh else None
-    if tag_roh and tag_id is None:
-        return HttpResponse(status=400)
     archiv = request.GET.get("archiv") == "1"
     liste = (Projekt.objects.filter(archiviert_am__isnull=not archiv)
-             .select_related("projektleitung").prefetch_related("tags")
+             .select_related("projektleitung")
              .annotate(offen=Count("aufgaben", filter=Q(aufgaben__status__ist_erledigt=False), distinct=True),
                        anzahl_mitglieder=Count("mitglieder", distinct=True))
              .order_by(*Projekt._meta.ordering))  # Meta.ordering gilt bei GROUP BY nicht
-    if tag_id:
-        liste = liste.filter(tags=tag_id)
     return render(request, "projekte/projekte.html", {
-        "projekte": liste, "tags": Tag.objects.all(), "tag_id": tag_id,
+        "projekte": liste,
         "archiv": archiv, "aktiv": "projekte", "prioritaeten": PRIORITAETEN,
     })
 
@@ -115,12 +108,11 @@ def projekt_anlegen(request):
             projekt.erstellt_von = request.user.person
             projekt.save()
             form.save_m2m()
-            tags_speichern(projekt, form.cleaned_data["tags_text"])  # neue Projekte sind leer, ohne Abschnitte
             gantt_dienste.neues_projekt_aufnehmen(projekt)
             protokollieren(request.user, "projekt", projekt.pk, "angelegt", {"name": projekt.name})
         messages.success(request, _("Projekt „%(name)s“ angelegt.") % {"name": projekt.name})
         return redirect(projekt)
-    return render(request, "projekte/projekt_formular.html", {"form": form, "aktiv": "projekte", "tags": Tag.objects.all()})
+    return render(request, "projekte/projekt_formular.html", {"form": form, "aktiv": "projekte"})
 
 
 @erfordert(rechte.darf_projekte_verwalten)
@@ -141,7 +133,7 @@ def projekt_bearbeiten(request, pk):
             messages.success(request, _("Gespeichert."))
             return redirect(projekt)
     return render(request, "projekte/projekt_formular.html", {
-        "form": form, "projekt": projekt, "aktiv": "projekte", "aktives_projekt": projekt.pk, "tags": Tag.objects.all(),
+        "form": form, "projekt": projekt, "aktiv": "projekte", "aktives_projekt": projekt.pk,
     })
 
 
@@ -155,7 +147,7 @@ SORTIERUNGEN = {
 
 @login_required
 def projekt(request, pk):
-    projekt = get_object_or_404(Projekt.objects.select_related("projektleitung").prefetch_related("tags", "mitglieder__konto"), pk=pk)
+    projekt = get_object_or_404(Projekt.objects.select_related("projektleitung").prefetch_related("mitglieder__konto"), pk=pk)
     g = request.GET
     filter_status = g.get("status", "offen")
     sortierung = g.get("sort", "manuell") if g.get("sort") in SORTIERUNGEN else "manuell"
@@ -327,11 +319,25 @@ def aufgabe_verschieben(request, pk):
 
 INLINE_FELDER = {"verantwortlich", "gewerk", "faellig_am", "status"}
 # Auf der Detailseite ist jedes Feld direkt bearbeitbar
-DETAIL_FELDER = INLINE_FELDER | {"titel", "abschnitt", "beginn_am", "schaetzung_personentage", "beschreibung"}
+DETAIL_FELDER = INLINE_FELDER | {"titel", "abschnitt", "beginn_am", "schaetzung_personentage", "beschreibung",
+                                  "wiederholung"}
 
 
 class _Ungueltig(Exception):
     """Eingabe am Feld abgelehnt; die Meldung erscheint am Feld."""
+
+
+def _wiederholung_daten(aufgabe, post):
+    """Regel aus dem Formular; mit Regel nur ein Stichtag (ohne Fälligkeit: heute), keine Zeitspanne."""
+    stichtag = aufgabe.faellig_am or timezone.localdate()
+    try:
+        regel = wiederholung.regel_bauen(post.get("frequenz", ""), post.get("intervall"), post.getlist("wochentage"),
+                                         post.get("bis", ""), stichtag)
+    except wiederholung.UngueltigeRegel as fehler:
+        raise _Ungueltig(str(fehler)) from fehler
+    if regel is None:
+        return {"wiederholung": None}
+    return {"wiederholung": regel, "faellig_am": stichtag, "beginn_am": None}
 
 
 def _feld_wert(aufgabe, feld, roh):
@@ -372,6 +378,10 @@ def _feld_wert(aufgabe, feld, roh):
     except (ValueError, InvalidOperation, Person.DoesNotExist, Gewerk.DoesNotExist, Status.DoesNotExist,
             Abschnitt.DoesNotExist) as fehler:
         raise _Ungueltig(_("Ungültige Eingabe.")) from fehler
+    if aufgabe.wiederholung and feld == "faellig_am" and wert is None:
+        raise _Ungueltig(_("Wiederkehrende Aufgaben brauchen einen Stichtag."))
+    if aufgabe.wiederholung and feld == "beginn_am":
+        raise _Ungueltig(_("Wiederkehrende Aufgaben haben nur einen Stichtag."))
     beginn = wert if feld == "beginn_am" else aufgabe.beginn_am
     faellig = wert if feld == "faellig_am" else aufgabe.faellig_am
     if beginn and faellig and faellig < beginn:
@@ -396,16 +406,18 @@ def aufgabe_feld(request, pk):
     if detail and request.POST.get("verwerfen"):  # Konflikt: die aktuelle Fassung übernehmen
         return _detail_feld_antwort(request, aufgabe, feld, ersetzen=True)
     try:
-        wert = _feld_wert(aufgabe, feld, roh)
+        daten = _wiederholung_daten(aufgabe, request.POST) if feld == "wiederholung" else {feld: _feld_wert(aufgabe, feld, roh)}
     except _Ungueltig as fehler:
         if detail:
             return _detail_feld_antwort(request, aufgabe, feld, fehler=str(fehler), eingabe=roh)
         return HttpResponse(status=400)
+    wert = daten.get(feld)
     war_erledigt = aufgabe.status.ist_erledigt
+    war_wiederkehrend = bool(aufgabe.wiederholung)
     alle = feld == "status" and wert.ist_erledigt and request.POST.get("unteraufgaben") == "alle"
     try:
         with transaction.atomic():
-            aufgabe = dienste.aufgabe_speichern(request.user, aufgabe, {feld: wert}, request.POST.get("version"))
+            aufgabe = dienste.aufgabe_speichern(request.user, aufgabe, daten, request.POST.get("version"))
             if alle:
                 dienste.unteraufgaben_erledigen(request.user, aufgabe)
     except dienste.Konflikt:
@@ -416,6 +428,10 @@ def aufgabe_feld(request, pk):
                                         eingabe=roh if feld == "beschreibung" else None)
         return _zeile_antwort(request, aufgabe, fehler=meldung)
     feiern = request.user.feier_animation and aufgabe.status.ist_erledigt and not war_erledigt
+    folge = getattr(aufgabe, "neue_folgeaufgabe", None)
+    if folge or (detail and feld == "wiederholung" and bool(aufgabe.wiederholung) != war_wiederkehrend):
+        # Neue Folgeaufgabe in der Liste bzw. Zeitspanne ↔ Stichtag im Detail: ganze Seite neu laden
+        return _neu_laden(request, folge, feiern)
     if detail and alle:
         # Unteraufgaben, Fortschritt und Verlauf ändern sich mit: ganze Seite neu laden
         if feiern:
@@ -435,6 +451,22 @@ def aufgabe_feld(request, pk):
         _geaendert_melden(antwort, aufgabe, *(dienste.nachkommen(aufgabe.pk) if alle else ()))
     if feiern:
         antwort["HX-Trigger"] = "feiern"
+    return antwort
+
+
+def _folge_melden(request, folge):
+    messages.info(request, _("Nächster Termin angelegt: %(titel)s, %(datum)s.") % {
+        "titel": folge.titel, "datum": folge.faellig_am.strftime("%d.%m.%Y")})
+
+
+def _neu_laden(request, folge=None, feiern=False):
+    """HTMX-Antwort, die die Seite neu lädt (Meldung und Feier erscheinen danach)."""
+    if folge:
+        _folge_melden(request, folge)
+    if feiern:
+        request.session["feiern"] = True
+    antwort = HttpResponse(status=204)
+    antwort["HX-Refresh"] = "true"
     return antwort
 
 
@@ -477,6 +509,11 @@ def aufgabe_erledigt(request, pk):
     alle = request.POST.get("unteraufgaben") == "alle"
     aufgabe = dienste.erledigt_setzen(request.user, aufgabe, request.POST.get("erledigt") == "1", unteraufgaben_mit=alle)
     feiern = request.user.feier_animation and aufgabe.status.ist_erledigt and not war_erledigt
+    folge = getattr(aufgabe, "neue_folgeaufgabe", None)
+    if folge and request.htmx:
+        return _neu_laden(request, folge, feiern)
+    if folge:
+        _folge_melden(request, folge)
     offen = offene_seitenleiste(request)
     if offen:  # Haken im Kopf oder an einer Unteraufgabe; in der Liste ändert sich auch der Zähler darüber
         antwort = seitenleiste_antwort(request, offen, zeilen=[aufgabe.pk, aufgabe.eltern_id, offen],
@@ -602,8 +639,7 @@ def _suchergebnisse(text, aufgaben=50, projekte=20, kommentare=30):
     )
     pv = SearchVector("name", weight="A", config="german") + SearchVector("beschreibung", weight="B", config="german")
     ergebnisse["projekte"] = list(
-        Projekt.objects.annotate(sv=pv).filter(Q(sv=anfrage) | Q(name__icontains=text))
-        .prefetch_related("tags")[:projekte]
+        Projekt.objects.annotate(sv=pv).filter(Q(sv=anfrage) | Q(name__icontains=text))[:projekte]
     )
     kv = SearchVector("text", config="german")
     treffer = list(

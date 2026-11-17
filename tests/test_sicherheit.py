@@ -476,7 +476,7 @@ def test_ungueltige_filter_ergeben_keinen_fehler_500(konten, client_fuer, wert):
     for name in ("projekt", "gewerk", "tag"):
         erwartet = 200 if wert.isdigit() else 400  # zu große Zahl: gültig, findet nur nichts
         assert api.get(f"/api/planung/palette?{name}={wert}").status_code == erwartet
-    assert angemeldet(konten[BL]).get(f"/projekte/?tag={wert}").status_code == (200 if wert.isdigit() else 400)
+    assert angemeldet(konten[BL]).get(f"/projekte/?tag={wert}").status_code == 200  # Tags ausgeblendet, Filter ignoriert
 
 
 @pytest.mark.parametrize("monat", ["9999-99", "2026-13", "2026-00", "0000-01", "0001-01", "9999-12", "abc"])

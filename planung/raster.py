@@ -9,7 +9,7 @@ from django.utils.translation import gettext as _
 
 from kern import rechte as kern_rechte
 from kern.models import Bereich, Gewerk, Person, Systemeinstellungen
-from projekte.models import Aufgabe, Projekt, Tag
+from projekte.models import Aufgabe, Projekt
 from zusammenarbeit.models import Anhang
 
 from . import rechte
@@ -132,8 +132,8 @@ def aufgabe_dict(aufgabe, pt=0, personen=0, anhaenge=0):
 
 def projekte_dict(projekt_ids):
     return {
-        p.pk: {"id": p.pk, "name": p.name, "farbe": p.farbe, "tags": [t.pk for t in p.tags.all()]}
-        for p in Projekt.objects.filter(pk__in=projekt_ids).prefetch_related("tags")
+        p.pk: {"id": p.pk, "name": p.name, "farbe": p.farbe}
+        for p in Projekt.objects.filter(pk__in=projekt_ids)
     }
 
 
@@ -272,10 +272,9 @@ def palette(konto, *, modus="offen", projekt_id=None, gewerk_id=None, tag_id=Non
 def filteroptionen():
     return {
         "projekte": [
-            {"id": p.pk, "name": p.name, "farbe": p.farbe, "tags": [t.pk for t in p.tags.all()]}
-            for p in Projekt.objects.aktiv().prefetch_related("tags")
+            {"id": p.pk, "name": p.name, "farbe": p.farbe}
+            for p in Projekt.objects.aktiv()
         ],
-        "tags": [{"id": t.pk, "name": t.name} for t in Tag.objects.all()],
         "gewerke": [{"id": g.pk, "name": g.name} for g in Gewerk.objects.all()],
         "bereiche": [{"id": b.pk, "name": b.name} for b in Bereich.objects.all()],
     }

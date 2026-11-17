@@ -37,7 +37,6 @@ interface Einstellungen {
   wochen: number;
   bereich: number | null;
   gewerk: number | null;
-  tag: number | null;
   projekt: number | null;
   archivierte: boolean;
   paletteModus: "offen" | "projekt";
@@ -63,7 +62,7 @@ function heuteLokal() {
 export function Teamplaner({ planen }: { planen: boolean }) {
   const heute = heuteLokal();
   const [e, setE] = useGespeichert<Einstellungen>("teamplaner-einstellungen", {
-    ansicht: "", wochen: 2, bereich: null, gewerk: null, tag: null, projekt: null, archivierte: false,
+    ansicht: "", wochen: 2, bereich: null, gewerk: null, projekt: null, archivierte: false,
     paletteModus: "offen", paletteProjekt: null,
   });
   const [start, setStart] = useState(() => montagVon(heute));
@@ -126,14 +125,13 @@ export function Teamplaner({ planen }: { planen: boolean }) {
         modus: e.paletteModus,
         projekt: e.paletteModus === "projekt" ? e.paletteProjekt : e.projekt,
         gewerk: e.gewerk,
-        tag: e.tag,
         q: suche,
       }, hintergrund);
       if (nr === paletteNr.current) setPalette(daten);
     } catch {
       /* Palette ist nicht kritisch */
     }
-  }, [darfPlanen, e.paletteModus, e.paletteProjekt, e.projekt, e.gewerk, e.tag, suche]);
+  }, [darfPlanen, e.paletteModus, e.paletteProjekt, e.projekt, e.gewerk, suche]);
   useEffect(() => {
     const t = window.setTimeout(() => ladePalette(), 200);
     return () => window.clearTimeout(t);
@@ -237,10 +235,9 @@ export function Teamplaner({ planen }: { planen: boolean }) {
       const a = raster.aufgaben[eintrag.aufgabe_id];
       if (!a) return false;
       if (e.projekt && a.projekt_id !== e.projekt) return true;
-      if (e.tag && !raster.projekte[a.projekt_id]?.tags.includes(e.tag)) return true;
       return false;
     },
-    [raster, e.projekt, e.tag],
+    [raster, e.projekt],
   );
   // Systemkonten (auswaehlbar = false) behalten ihre Balken, bekommen aber keine neuen
   const einteilbar = useMemo(() => (raster?.personen ?? []).filter((p) => p.einteilbar && p.auswaehlbar), [raster]);
@@ -426,12 +423,11 @@ export function Teamplaner({ planen }: { planen: boolean }) {
       wochen: f.wochen ?? e.wochen,
       gewerk: f.gewerk ?? null,
       projekt: f.projekt ?? null,
-      tag: f.tag ?? null,
       bereich: null,
     });
   };
 
-  const aktiveFilter = [e.bereich, e.gewerk, e.tag, e.projekt].filter(Boolean).length + (e.archivierte ? 1 : 0);
+  const aktiveFilter = [e.bereich, e.gewerk, e.projekt].filter(Boolean).length + (e.archivierte ? 1 : 0);
   const kwText = wochen > 1 ? `${kalenderwoche(start)}–${kalenderwoche(bis)}` : String(kalenderwoche(start));
   const zeitraum = mobil ? t("kw", { n: kwText }) : `${t("kw", { n: kwText })} · ${kurzDatum(start)}–${langDatum(bis)}`;
   const ziehTitel = (() => {
@@ -495,13 +491,6 @@ export function Teamplaner({ planen }: { planen: boolean }) {
               <select value={e.gewerk ?? ""} onChange={(ev) => setE({ gewerk: ev.target.value ? Number(ev.target.value) : null })}>
                 <option value="">{t("alle_gewerke")}</option>
                 {optionen.gewerke.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
-              </select>
-            </label>
-            <label className="feld">
-              {t("projekt_tag")}
-              <select value={e.tag ?? ""} onChange={(ev) => setE({ tag: ev.target.value ? Number(ev.target.value) : null })}>
-                <option value="">{t("alle_tags")}</option>
-                {optionen.tags.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
             </label>
             <label className="feld">
