@@ -88,14 +88,17 @@ def _fusszeile():
         _("E-Mail-Einstellungen ändern: %(link)s") % {"link": absolute_url(reverse("einst_benachrichtigungen"))}
 
 
-def _html(betreff, bloecke):
-    """HTML-Teil im Stil des Teamplaners (Tabellen und Inline-Styles, keine Bilder oder Skripte).
+def _html(betreff, bloecke, titel=""):
+    """HTML-Teil im Stil des Teamplaners (Tabellen und Inline-Styles, keine Bilder oder Skripte):
+    dunkler Kopf wie auf der Webseite, Inhalt als Karte mit optionalem ``titel``, Blau nur für den
+    Hauptknopf und Links.
 
     ``bloecke``: Liste aus ``{"absatz": text}``, ``{"knopf": beschriftung, "url": url}``,
     ``{"link": url}`` (Adresse zum Kopieren) und ``{"ereignisse": [{"text", "zeit", "url", "beschriftung"}]}``.
     Alle Texte werden im Template escaped."""
     return render_to_string("mail/basis.html", {
-        "betreff": betreff, "marke": _marke(), "bloecke": bloecke,
+        "betreff": betreff, "titel": titel, "marke": _marke(), "bloecke": bloecke,
+        "organisation": Systemeinstellungen.laden().organisation,
         "einstellungen_url": absolute_url(reverse("einst_benachrichtigungen")),
         "sprache": translation.get_language(),
     })
@@ -176,7 +179,8 @@ def sammelmail_senden(liste):
                                "url": ziel[2] if ziel else ""})
         zeilen += ["", _("Zum Posteingang: %(link)s") % {"link": posteingang}]
         bloecke = [{"ereignisse": ereignisse}, {"knopf": _("Zum Posteingang"), "url": posteingang}]
-        _senden(konto.email, betreff, "\n".join(zeilen) + _fusszeile(), _html(betreff, bloecke))
+        titel = _("%(n)s neue Benachrichtigungen") % {"n": len(liste)}
+        _senden(konto.email, betreff, "\n".join(zeilen) + _fusszeile(), _html(betreff, bloecke, titel))
 
 
 def offene_versenden(limit=50):
@@ -283,7 +287,7 @@ def einladung_senden(konto, link):
         text = "\n".join([gruss, "", bitte, link, "", gilt])
         betreff = f"[{_('Teamplaner')}] " + _("Einladung")
         html = _html(betreff, [{"absatz": gruss}, {"absatz": bitte}, {"knopf": _("Passwort festlegen"), "url": link},
-                               {"link": link}, {"absatz": gilt}])
+                               {"link": link}, {"absatz": gilt}], _("Einladung"))
         _einreihen(Postausgang.Art.EINLADUNG, konto.email, betreff, text + _fusszeile(), html)
     return True
 
@@ -300,7 +304,8 @@ def reset_senden(konto, link):
         text = "\n".join([gruss, "", bitte, link, "", gilt, ignorieren])
         betreff = f"[{_('Teamplaner')}] " + _("Passwort zurücksetzen")
         html = _html(betreff, [{"absatz": gruss}, {"absatz": bitte}, {"knopf": _("Passwort festlegen"), "url": link},
-                               {"link": link}, {"absatz": gilt}, {"absatz": ignorieren}])
+                               {"link": link}, {"absatz": gilt}, {"absatz": ignorieren}],
+                     _("Passwort zurücksetzen"))
         _einreihen(Postausgang.Art.RESET, konto.email, betreff, text + _fusszeile(), html)
     return True
 
@@ -329,5 +334,6 @@ def sicherheitshinweis(konto, anlass, an=None, **werte):
         text = "\n".join([gruss, "", hinweis, "", warnung])
         betreff = f"[{_('Teamplaner')}] " + _("Sicherheitshinweis zu Ihrem Konto")
         html = _html(betreff, [{"absatz": gruss}, {"absatz": hinweis}, {"absatz": warnung, "wichtig": True},
-                               {"knopf": _("Zur Anmeldung"), "url": absolute_url(reverse("login"))}])
+                               {"knopf": _("Zur Anmeldung"), "url": absolute_url(reverse("login"))}],
+                     _("Sicherheitshinweis zu Ihrem Konto"))
         _einreihen(Postausgang.Art.SICHERHEIT, an or konto.email, betreff, text + _fusszeile(), html)

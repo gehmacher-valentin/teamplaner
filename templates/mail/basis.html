@@ -8,49 +8,69 @@
 <title>{{ betreff }}</title>
 </head>
 <body style="margin:0; padding:0; background-color:#f4f5f2; -webkit-text-size-adjust:100%;">
-{# Tabellen und Inline-Styles: so stellen auch Outlook und Webmailer die Mail richtig dar #}
+{# Farben, Schrift und Maße wie frontend/src/styles/app.css: dunkler Kopf, weiße Karte, Blau nur für Hauptknopf und Links #}
+{# Tabellen und Inline-Styles, damit auch Outlook und Webmailer die Mail richtig darstellen #}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f5f2;">
   <tr>
-    <td align="center" style="padding:24px 12px;">
-      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%; max-width:600px; background-color:#ffffff; border:1px solid #daddd8; border-radius:8px; border-collapse:separate;">
+    <td align="center" style="padding:0 0 32px 0;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#1a1d1b;">
         <tr>
-          <td style="background-color:#1f4fb8; border-radius:8px 8px 0 0; padding:16px 24px; font-family:Arial, Helvetica, sans-serif; font-size:16px; font-weight:bold; color:#ffffff;">{{ marke }}</td>
+          <td align="center" style="padding:0 12px;">
+            <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%; max-width:600px;">
+              <tr>
+                <td style="padding:14px 12px; font-family:'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif; color:#f4f5f2;">
+                  <span style="font-size:18px; font-weight:bold; letter-spacing:0.02em; color:#f4f5f2;">{% translate "Teamplaner" %}</span>{% if organisation %}<span style="font-size:13px; color:#b9c0bb;">&nbsp;&nbsp;{{ organisation }}</span>{% endif %}
+                </td>
+              </tr>
+            </table>
+          </td>
         </tr>
+      </table>
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%; max-width:600px; margin-top:24px;">
         <tr>
-          <td style="padding:24px 24px 8px 24px; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:22px; color:#1a1d1b;">
-            {% for b in bloecke %}
-              {% if b.absatz %}
-                <p style="margin:0 0 16px 0;{% if b.wichtig %} font-weight:bold;{% endif %}">{{ b.absatz|linebreaksbr }}</p>
-              {% elif b.knopf %}
-                <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:4px 0 20px 0;">
-                  <tr>
-                    <td style="background-color:#1f4fb8; border-radius:6px;">
-                      <a href="{{ b.url }}" style="display:inline-block; padding:11px 20px; font-family:Arial, Helvetica, sans-serif; font-size:15px; font-weight:bold; color:#ffffff; text-decoration:none; border-radius:6px; border:1px solid #163a88;">{{ b.knopf }}</a>
-                    </td>
-                  </tr>
-                </table>
-              {% elif b.link %}
-                <p style="margin:0 0 16px 0; font-size:13px; line-height:19px; color:#3f4541;">{% translate "Falls der Knopf nicht funktioniert, diese Adresse im Browser öffnen:" %}<br><a href="{{ b.link }}" style="color:#1f4fb8; word-break:break-all;">{{ b.link }}</a></p>
-              {% elif b.ereignisse %}
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px 0; border-top:1px solid #eceeea;">
-                  {% for e in b.ereignisse %}
-                    <tr>
-                      <td valign="top" style="width:52px; padding:12px 8px 12px 0; border-bottom:1px solid #eceeea; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:22px; color:#5b625e; white-space:nowrap;">{{ e.zeit }}</td>
-                      <td valign="top" style="padding:12px 0; border-bottom:1px solid #eceeea; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:22px; color:#1a1d1b;">
-                        {{ e.text }}
-                        {% if e.url %}<br><a href="{{ e.url }}" style="font-size:13px; color:#1f4fb8; font-weight:bold; text-decoration:underline;">{{ e.beschriftung }} &rarr;</a>{% endif %}
-                      </td>
-                    </tr>
-                  {% endfor %}
-                </table>
+          <td style="padding:0 12px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#ffffff; border:1px solid #daddd8; border-radius:8px; border-collapse:separate;">
+              {% if titel %}
+              <tr>
+                <td style="padding:14px 20px; border-bottom:1px solid #eceeea; font-family:'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif; font-size:16px; line-height:20px; font-weight:bold; color:#1a1d1b;">{{ titel }}</td>
+              </tr>
               {% endif %}
-            {% endfor %}
+              <tr>
+                <td style="padding:20px 20px 4px 20px; font-family:'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif; font-size:15px; line-height:22px; color:#1a1d1b;">
+                  {% for b in bloecke %}
+                    {% if b.absatz %}
+                      <p style="margin:0 0 16px 0;{% if b.wichtig %} font-weight:bold;{% endif %}">{{ b.absatz|linebreaksbr }}</p>
+                    {% elif b.knopf %}
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:4px 0 20px 0;">
+                        <tr>
+                          <td style="background-color:#1f4fb8; border-radius:6px;">
+                            <a href="{{ b.url }}" style="display:inline-block; padding:9px 14px; font-family:'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif; font-size:14px; line-height:18px; font-weight:600; color:#ffffff; text-decoration:none; border:1px solid #1f4fb8; border-radius:6px;">{{ b.knopf }}</a>
+                          </td>
+                        </tr>
+                      </table>
+                    {% elif b.link %}
+                      <p style="margin:0 0 16px 0; font-size:13px; line-height:19px; color:#5b625e;">{% translate "Falls der Knopf nicht funktioniert, diese Adresse im Browser öffnen:" %}<br><a href="{{ b.link }}" style="color:#1f4fb8; word-break:break-all;">{{ b.link }}</a></p>
+                    {% elif b.ereignisse %}
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:-8px 0 16px 0;">
+                        {% for e in b.ereignisse %}
+                          <tr>
+                            <td valign="top" style="width:48px; padding:10px 8px 10px 0;{% if not forloop.last %} border-bottom:1px solid #eceeea;{% endif %} font-family:'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif; font-size:13px; line-height:22px; color:#5b625e; white-space:nowrap;">{{ e.zeit }}</td>
+                            <td valign="top" style="padding:10px 0;{% if not forloop.last %} border-bottom:1px solid #eceeea;{% endif %} font-family:'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif; font-size:15px; line-height:22px; color:#1a1d1b;">
+                              {{ e.text }}{% if e.url %}<br><a href="{{ e.url }}" style="font-size:13px; color:#1f4fb8;">{{ e.beschriftung }}</a>{% endif %}
+                            </td>
+                          </tr>
+                        {% endfor %}
+                      </table>
+                    {% endif %}
+                  {% endfor %}
+                </td>
+              </tr>
+            </table>
           </td>
         </tr>
         <tr>
-          <td style="padding:16px 24px 20px 24px; border-top:1px solid #eceeea; font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:18px; color:#5b625e;">
-            {{ marke }}<br>
-            <a href="{{ einstellungen_url }}" style="color:#1f4fb8; text-decoration:underline;">{% translate "E-Mail-Einstellungen ändern" %}</a>
+          <td style="padding:16px 32px 0 32px; font-family:'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif; font-size:12px; line-height:18px; color:#5b625e;">
+            {{ marke }} &middot; <a href="{{ einstellungen_url }}" style="color:#5b625e; text-decoration:underline;">{% translate "E-Mail-Einstellungen ändern" %}</a>
           </td>
         </tr>
       </table>
