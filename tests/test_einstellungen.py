@@ -290,6 +290,34 @@ def test_rolle_unter_planer_stuft_bearbeiten_herab(client_fuer, konten, ansicht_
     assert AnsichtFreigabe.objects.get(konto=ziel).recht == Recht.SEHEN
 
 
+def _rolle_setzen(c, ziel, rolle):
+    antwort = c.post(f"/einstellungen/personen/{ziel.pk}/", {
+        "anzeigename": ziel.person.anzeigename, "email": ziel.email, "rolle": rolle,
+        "bereich": ziel.person.bereich_id}, follow=True)
+    return antwort.content.decode()
+
+
+def test_planer_ohne_bearbeiten_freigabe_bekommt_hinweis(client_fuer, konten, ansicht_a):
+    ziel = konten[M]
+    freigeben(ansicht_a, ziel, Recht.SEHEN)
+    seite = _rolle_setzen(client_fuer(konten[BL]), ziel, Rolle.PLANER)
+    assert "ist jetzt Planer:in" in seite and "„Bearbeiten“ hat." in seite
+    assert 'href="/einstellungen/ansichten/?art=teamplaner"' in seite
+    assert AnsichtFreigabe.objects.get(konto=ziel).recht == Recht.SEHEN  # nicht automatisch hochgestuft
+
+
+def test_planer_mit_bearbeiten_freigabe_ohne_hinweis(client_fuer, konten, ansicht_a):
+    ziel = konten[M]
+    freigeben(ansicht_a, ziel, Recht.BEARBEITEN)
+    seite = _rolle_setzen(client_fuer(konten[BL]), ziel, Rolle.PLANER)
+    assert "Gespeichert." in seite and "ist jetzt Planer:in" not in seite
+
+
+@pytest.mark.parametrize("von, nach", [(M, L), (P, M), (L, BL)])
+def test_andere_rollenwechsel_ohne_hinweis(client_fuer, konten, von, nach):
+    seite = _rolle_setzen(client_fuer(konten[A]), konten[von], nach)
+    assert "Gespeichert." in seite and "ist jetzt Planer:in" not in seite
+
 # --- Ansichten & Freigaben ---
 
 def test_ansichten_mit_reitern_und_reihenfolge(client_fuer, konten, ansicht_a, ansicht_b):

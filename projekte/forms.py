@@ -1,11 +1,23 @@
+import random
+
 from django import forms
+from django.db.models import Count
 from django.utils.translation import gettext_lazy as _
 
 from kern.forms import PersonenAuswahl
 from kern.hilfen import TEXT_MAX_ZEICHEN
 from kern.models import Person
 
-from .models import PRIORITAETEN, Abschnitt, Projekt
+from .models import PRIORITAETEN, Abschnitt, Projekt, Projektfarbe
+
+
+def seltenste_farbe():
+    """Vorauswahl für neue Projekte: die unter den aktiven Projekten seltenste Farbe, bei Gleichstand
+    zufällig. Alle Farben der Palette kommen in Frage, auch Grau."""
+    anzahl = dict(Projekt.objects.filter(archiviert_am__isnull=True)
+                  .order_by().values("farbe").annotate(n=Count("pk")).values_list("farbe", "n"))
+    wenigste = min(anzahl.get(f, 0) for f in Projektfarbe.values)
+    return random.choice([f for f in Projektfarbe.values if anzahl.get(f, 0) == wenigste])
 
 
 class PersonenMehrfachAuswahl(forms.ModelMultipleChoiceField):
@@ -40,6 +52,8 @@ class ProjektForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if not self.instance.pk and "farbe" not in (kwargs.get("initial") or {}):
+            self.initial["farbe"] = seltenste_farbe()  # statt immer Blau aus dem Modell
         aktive = Person.objects.auswaehlbar()
         if self.instance.pk:
             aktive = (aktive | self.instance.mitglieder.all()).distinct()

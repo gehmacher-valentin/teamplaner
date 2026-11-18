@@ -3667,3 +3667,12 @@ msgstr "Next occurrence:"
 #: templates/projekte/_aufgabe_zeile.html
 msgid "Wiederkehrende Aufgabe"
 msgstr "Recurring task"
+
+#: verwaltung/views.py
+#, python-format
+msgid "%(name)s ist jetzt Planer:in. Den Teamplaner sieht sie erst, wenn sie auf mindestens einer Teamplaner-Ansicht „Bearbeiten“ hat."
+msgstr "%(name)s is now a planner. The team planner only appears once they have “Edit” on at least one team planner view."
+
+#: verwaltung/views.py
+msgid "Freigaben der Teamplaner-Ansichten"
+msgstr "Sharing settings of the team planner views"

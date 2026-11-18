@@ -7,7 +7,7 @@
  *
  * Eine Notiz ohne Yjs-Stand (älter oder gerade angelegt) bekommt ihn vom ersten Browser, der sie
  * öffnet (/start/); wer dabei zu spät kommt, lädt neu. Wer schreiben darf, meldet sich regelmäßig als
- * anwesend; die Namen der anderen stehen neben dem Titel.
+ * anwesend; die anderen erscheinen als Avatare neben dem Titel.
  */
 import type { Editor } from "@tiptap/core";
 import * as Y from "yjs";
@@ -27,6 +27,56 @@ const ABGLEICH_NACH_MS = 2000;
 const ANWESEND_ALLE_MS = 20000;
 const ANWESEND_GILT_MS = 50000;
 const ZUSAMMENFASSEN_AB = 200;
+
+export interface Anwesend {
+  person: number;
+  name: string;
+  initialen?: string;
+  foto?: string | null;
+}
+
+/** Ab so vielen Mitbearbeitenden werden die übrigen als „+N“ zusammengefasst */
+export const ANWESEND_HOECHSTENS = 5;
+
+/** Runde Avatare (Foto oder Initialen) wie Avatar.tsx; der Name erscheint beim Zeigen oder Antippen. */
+export function anwesendeElemente(personen: Anwesend[]): HTMLElement[] {
+  const sortiert = [...personen].sort((x, y) => x.name.localeCompare(y.name));
+  const zeigen = sortiert.length > ANWESEND_HOECHSTENS ? sortiert.slice(0, ANWESEND_HOECHSTENS - 1) : sortiert;
+  const huelle = (name: string, inhalt: HTMLElement) => {
+    const h = document.createElement("span");
+    h.className = "anwesend";
+    h.tabIndex = 0;
+    h.setAttribute("role", "img");
+    h.setAttribute("aria-label", name);
+    h.dataset.name = name;
+    inhalt.setAttribute("aria-hidden", "true");
+    h.append(inhalt);
+    return h;
+  };
+  const elemente = zeigen.map((p) => {
+    let av: HTMLElement;
+    if (p.foto) {
+      const img = document.createElement("img");
+      img.className = "avatar avatar--klein avatar--foto";
+      img.src = p.foto;
+      img.alt = "";
+      av = img;
+    } else {
+      av = document.createElement("span");
+      av.className = `avatar avatar--klein av-${p.person % 8}`;
+      av.textContent = p.initialen || p.name.slice(0, 1);
+    }
+    return huelle(p.name, av);
+  });
+  const rest = sortiert.slice(zeigen.length);
+  if (rest.length) {
+    const mehr = document.createElement("span");
+    mehr.className = "avatar avatar--klein avatar--mehr";
+    mehr.textContent = `+${rest.length}`;
+    elemente.push(huelle(rest.map((p) => p.name).join(", "), mehr));
+  }
+  return elemente;
+}
 
 export function zuBytes(text: string): Uint8Array {
   const roh = atob(text);
@@ -202,24 +252,19 @@ export function gemeinsamVorbereiten(datenId: string, feld: HTMLTextAreaElement)
   }
 
   // ---------- Anwesend ----------
-  const anwesende = new Map<string, { name: string; person: number; bis: number }>();
+  const anwesende = new Map<string, Anwesend & { bis: number }>();
   let eigenePerson = -1;
   let antwortTimer = 0;
   const anwesendZeigen = () => {
     const ort = document.getElementById("notiz-anwesend");
     if (!ort) return;
     const jetzt = Date.now();
-    const namen = new Map<number, string>();
+    const personen = new Map<number, Anwesend>();
     for (const [id, a] of anwesende) {
       if (a.bis < jetzt) anwesende.delete(id);
-      else if (a.person !== eigenePerson) namen.set(a.person, a.name);
+      else if (a.person !== eigenePerson) personen.set(a.person, a);
     }
-    ort.replaceChildren(...[...namen.values()].sort((x, y) => x.localeCompare(y)).map((name) => {
-      const s = document.createElement("span");
-      s.className = "tag";
-      s.textContent = name;
-      return s;
-    }));
+    ort.replaceChildren(...anwesendeElemente([...personen.values()]));
   };
   const melden = (weg = false) => {
     if (!schreiben || notiz === null) return;
@@ -251,7 +296,7 @@ export function gemeinsamVorbereiten(datenId: string, feld: HTMLTextAreaElement)
         }
       });
       q.addEventListener("da", (ev) => {
-        const d = JSON.parse((ev as MessageEvent).data) as { client: string; person: number; name: string; weg: boolean };
+        const d = JSON.parse((ev as MessageEvent).data) as Anwesend & { client: string; weg: boolean };
         if (d.client === client) {
           eigenePerson = d.person;
         } else if (d.weg) {
@@ -261,7 +306,9 @@ export function gemeinsamVorbereiten(datenId: string, feld: HTMLTextAreaElement)
           if (!anwesende.has(d.client) && !antwortTimer) {
             antwortTimer = window.setTimeout(() => { antwortTimer = 0; melden(); }, 200);
           }
-          anwesende.set(d.client, { name: d.name, person: d.person, bis: Date.now() + ANWESEND_GILT_MS });
+          anwesende.set(d.client, {
+            name: d.name, person: d.person, initialen: d.initialen, foto: d.foto, bis: Date.now() + ANWESEND_GILT_MS,
+          });
         }
         anwesendZeigen();
       });

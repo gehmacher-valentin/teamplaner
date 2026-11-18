@@ -1051,7 +1051,19 @@ form.inline { display: inline; }
 .notiz-kopf { flex-wrap: nowrap; }
 .notiz-titel { flex: 1; min-width: 0; }
 .notiz-titel h2 { font-size: 18px; }
-.notiz-anwesend { display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; }
+.notiz-anwesend { display: flex; align-items: center; justify-content: flex-end; padding-left: 6px; }
+.anwesend { position: relative; display: inline-flex; border-radius: 50%; cursor: default; }
+.anwesend + .anwesend { margin-left: -6px; }
+.anwesend .avatar { box-shadow: 0 0 0 2px var(--flaeche); }
+.anwesend:hover, .anwesend:focus-visible { z-index: 2; }
+.anwesend:focus-visible { outline: 2px solid var(--akzent); outline-offset: 2px; }
+.anwesend::after {
+  content: attr(data-name); position: absolute; top: calc(100% + 6px); right: 0; z-index: 30; padding: 4px 8px;
+  border-radius: 6px; background: var(--text); color: var(--auf-text); font-size: 12px; font-weight: 600;
+  white-space: nowrap; pointer-events: none; opacity: 0; visibility: hidden; transition: opacity 0.12s;
+}
+.anwesend:hover::after, .anwesend:focus::after { opacity: 1; visibility: visible; }
+.avatar--mehr { background: var(--flaeche-3); color: var(--text-2); border: 1px solid var(--rand-stark); }
 .notiz-anwesend:empty { display: none; }
 .notizen__haupt .editor { border-color: var(--linie); }
 .notizen__haupt .editor__flaeche .ProseMirror { min-height: 260px; }
@@ -1376,6 +1388,9 @@ dialog::backdrop { background: var(--backdrop); }
 .farbpunkt-wahl { position: relative; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 1px solid currentColor; padding: 0; }
 .farbpunkt-wahl input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
 .farbpunkt-wahl:has(input:checked), .farbpunkt-wahl:has(input:focus-visible) { outline: 2px solid var(--akzent); outline-offset: 2px; }
+.farbpunkt-wahl--projekt { background: var(--pf-bar); border-color: var(--pf-stark); }
+.farbpunkte--feld { min-height: 36px; flex-wrap: wrap; padding: 0 2px; }
+.formular__zeile > .feld--farbe { flex: 0 1 auto; }
 .einst-liste__neu { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 8px 12px 8px 16px; color: var(--text-3); }
 .einst-liste__neu input[type="text"] { height: 34px; border-color: transparent; background: transparent; flex: 1; min-width: 0; padding: 0 8px; }
 .einst-liste__neu input[type="text"]:hover { border-color: var(--rand-stark); }
