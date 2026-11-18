@@ -3,11 +3,13 @@ Gantt-Gesamtansicht nimmt neue Projekte auf."""
 
 import pytest
 from django.test import Client
+from django.utils import timezone
 
 from gantt.models import GanttAnsicht
 from kern.models import Protokolleintrag, Rolle
 from projekte import dienste
-from projekte.models import Projekt, Tag
+from projekte.forms import ProjektForm
+from projekte.models import Projekt, Projektfarbe, Tag
 from zusammenarbeit.models import Benachrichtigung
 
 pytestmark = pytest.mark.django_db
@@ -103,3 +105,31 @@ def test_projekt_tags_ausgeblendet(konten, projekt, aufgabe):
     antwort = c.post(f"/projekte/{projekt.pk}/bearbeiten/", {"name": projekt.name, "farbe": projekt.farbe})
     assert antwort.status_code == 302
     assert list(projekt.tags.all()) == [tag]
+
+
+# --- Projektfarbe: Vorschau und Vorauswahl ---
+
+def test_farbe_als_farbpunkte_mit_namen(konten, projekt):
+    seite = client_fuer(konten[P]).get(f"/projekte/{projekt.pk}/bearbeiten/").content.decode()
+    assert 'role="radiogroup"' in seite and "<select name=\"farbe\"" not in seite
+    for farbe in Projektfarbe:
+        assert f'pf-{farbe.value}" title="{farbe.label}"' in seite
+    # Bearbeiten: die gespeicherte Farbe bleibt ausgewählt
+    assert f'value="{projekt.farbe}" checked' in seite
+
+
+def test_neues_projekt_bekommt_seltenste_farbe(konten):
+    for farbe in Projektfarbe.values:
+        if farbe != Projektfarbe.OLIV:
+            Projekt.objects.create(name=f"P {farbe}", farbe=farbe)
+    Projekt.objects.create(name="Archiviert", farbe=Projektfarbe.OLIV, archiviert_am=timezone.now())
+    assert ProjektForm().initial["farbe"] == Projektfarbe.OLIV  # archivierte zählen nicht
+    seite = client_fuer(konten[P]).get("/projekte/neu/").content.decode()
+    assert 'value="oliv" checked' in seite
+
+
+def test_vorauswahl_zufaellig_aus_allen_farben_inklusive_grau(konten, projekt):
+    assert projekt.farbe == "bernstein"
+    gesehen = {ProjektForm().initial["farbe"] for _ in range(200)}
+    assert gesehen == set(Projektfarbe.values) - {"bernstein"}
+    assert ProjektForm(instance=projekt).initial["farbe"] == "bernstein"

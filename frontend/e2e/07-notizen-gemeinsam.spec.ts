@@ -18,8 +18,14 @@ test("Notiz: gleichzeitig bearbeiten, live bei allen, ohne Überschreiben", asyn
   const b = await seiteFuer("mitarbeit");
   await b.goto(url);
   await expect(editor(b)).toContainText("Förderband");
-  await expect(a.locator("#notiz-anwesend")).toContainText("Person 01");
-  await expect(b.locator("#notiz-anwesend")).toContainText("Person 05");
+  // Mitbearbeitende als runder Avatar (Initialen), der Name für Screenreader und beim Zeigen
+  const anwesendA = a.locator("#notiz-anwesend").getByRole("img", { name: "Person 01" });
+  await expect(anwesendA).toBeVisible();
+  await expect(anwesendA.locator(".avatar")).toHaveText("P1");
+  await expect(a.locator("#notiz-anwesend")).not.toContainText("Person 01");
+  await anwesendA.hover();
+  await expect(anwesendA).toHaveAttribute("data-name", "Person 01");
+  await expect(b.locator("#notiz-anwesend").getByRole("img", { name: "Person 05" })).toBeVisible();
 
   // Gleichzeitig tippen: a am Anfang, b am Ende
   await editor(a).click();
@@ -46,5 +52,5 @@ test("Notiz: gleichzeitig bearbeiten, live bei allen, ohne Überschreiben", asyn
 
   // Wer die Seite verlässt, verschwindet aus der Anzeige
   await b.close();
-  await expect(a.locator("#notiz-anwesend")).not.toContainText("Person 01");
+  await expect(a.locator("#notiz-anwesend").getByRole("img", { name: "Person 01" })).toHaveCount(0);
 });

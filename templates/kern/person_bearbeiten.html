@@ -64,7 +64,7 @@
 </section>
 
 {% if freigaben %}
-<section class="karte" aria-labelledby="fg-titel" data-sofort-bereich>
+<section class="karte" id="freigaben" aria-labelledby="fg-titel" data-sofort-bereich>
   <div class="karte__kopf"><h2 id="fg-titel">{% translate "Freigaben" %}</h2></div>
   {% for gruppe in freigaben %}
     <div class="freigabe-gruppe">

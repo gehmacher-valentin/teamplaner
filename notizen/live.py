@@ -221,7 +221,8 @@ def anwesend(request, pk):
     if not rechte.darf_notiz_schreiben(request.user, notiz):
         return HttpResponse(status=403)
     person = request.user.person
-    _melden(notiz.pk, "da", client=client, person=person.pk, name=person.anzeigename, weg=bool(daten.get("weg")))
+    _melden(notiz.pk, "da", client=client, person=person.pk, name=person.anzeigename, initialen=person.initialen,
+            foto=person.foto_url, weg=bool(daten.get("weg")))
     return HttpResponse(status=204)
 
 

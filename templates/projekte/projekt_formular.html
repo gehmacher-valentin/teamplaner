@@ -8,7 +8,15 @@
   {% csrf_token %}
   <div class="formular__zeile">
     {% include "teile/feld.html" with feld=form.name %}
-    {% include "teile/feld.html" with feld=form.farbe breite="160px" %}
+    <div class="feld feld--farbe">
+      <span id="{{ form.farbe.auto_id }}_titel">{{ form.farbe.label }}</span>
+      <div class="farbpunkte farbpunkte--feld" role="radiogroup" aria-labelledby="{{ form.farbe.auto_id }}_titel">
+        {% for wert, name in form.farbe.field.choices %}{% if wert %}
+          <label class="farbpunkt-wahl farbpunkt-wahl--projekt pf-{{ wert }}" title="{{ name }}"><input type="radio" id="{{ form.farbe.auto_id }}_{{ wert }}" name="{{ form.farbe.html_name }}" value="{{ wert }}"{% if form.farbe.value == wert %} checked{% endif %}><span class="sr-only">{{ name }}</span></label>
+        {% endif %}{% endfor %}
+      </div>
+      {% if form.farbe.errors %}<ul class="fehlerliste">{% for f in form.farbe.errors %}<li>{{ f }}</li>{% endfor %}</ul>{% endif %}
+    </div>
     {% include "teile/feld.html" with feld=form.prioritaet breite="120px" %}
     {% include "teile/feld.html" with feld=form.projektleitung %}
   </div>

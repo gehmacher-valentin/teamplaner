@@ -19,6 +19,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.crypto import salted_hmac
+from django.utils.html import format_html
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _
 from django.views.decorators.cache import never_cache
@@ -406,6 +407,20 @@ def _freigaben_der_person(ziel):
     return gruppen
 
 
+def _hinweis_planer_ohne_ansicht(konto, ziel):
+    """Die Rolle allein zeigt den Teamplaner noch nicht: dazu braucht es „Bearbeiten“ auf einer Ansicht."""
+    if arten()["teamplaner"][3](konto):
+        ziel_url = reverse("einst_ansichten") + "?art=teamplaner"
+    else:
+        ziel_url = reverse("einst_person", args=[ziel.pk]) + "#freigaben"
+    return format_html(
+        '{} <a href="{}">{}</a>',
+        _("%(name)s ist jetzt Planer:in. Den Teamplaner sieht sie erst, wenn sie auf mindestens einer "
+          "Teamplaner-Ansicht „Bearbeiten“ hat.") % {"name": ziel.person.anzeigename},
+        ziel_url, _("Freigaben der Teamplaner-Ansichten"),
+    )
+
+
 @erfordert(rechte.darf_konten_verwalten)
 def person_bearbeiten(request, pk):
     konto = request.user
@@ -442,6 +457,8 @@ def person_bearbeiten(request, pk):
             # An die bisherige Adresse: die Person merkt es, auch wenn jemand anderes ihr Konto übernehmen will
             sicherheitshinweis(ziel, "email_geaendert", an=alt["email"], neu=ziel.email)
         messages.success(request, _("Gespeichert."))
+        if "rolle" in diff and ziel.rolle == Rolle.PLANER and not hat_planungsansicht(ziel):
+            messages.info(request, _hinweis_planer_ohne_ansicht(konto, ziel))
         return redirect("einst_person", pk=pk)
     darf_freigaben = {art: recht(konto) for art, (_a, _f, _t, recht, _u) in arten().items()}
     link = _link_abholen(request, ziel)
