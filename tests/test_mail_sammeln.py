@@ -135,6 +135,8 @@ def test_benachrichtigung_mit_html_und_gleichen_links(konten, aufgabe):
                 "https://teamplaner.example.test/einstellungen/benachrichtigungen/"):
         assert url in nachricht.body and f'href="{url}"' in html
     assert ">Zur Aufgabe</a>" in html and "<script" not in html and "<img" not in html
+    # Wie die Webseite: dunkler Kopf (--kopf), Blau (--akzent) nur für Hauptknopf und Links
+    assert "background-color:#1a1d1b" in html and html.count("background-color:#1f4fb8") == 1
     assert "\n-- \n" in nachricht.body  # Text-Teil unverändert
 
 
