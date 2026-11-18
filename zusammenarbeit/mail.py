@@ -11,12 +11,15 @@
 """
 
 import logging
+from collections import defaultdict
+from datetime import timedelta
 
 from django.conf import settings
-from django.core.mail import EmailMessage
+from django.core.mail import EmailMultiAlternatives
 from django.db import transaction
+from django.template.loader import render_to_string
 from django.urls import reverse
-from django.utils import timezone, translation
+from django.utils import formats, timezone, translation
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
 
@@ -63,7 +66,7 @@ def mail_aktiv():
 def wartende_verwerfen():
     """Beim Abschalten des Versands: Wartendes ginge sonst beim Wiedereinschalten verspätet
     raus, auch abgelaufene oder ersetzte Passwort-Links – deshalb auch den Text leeren."""
-    Postausgang.objects.filter(status=MailStatus.OFFEN).update(status=MailStatus.KEINE, text="")
+    Postausgang.objects.filter(status=MailStatus.OFFEN).update(status=MailStatus.KEINE, text="", html="")
     Benachrichtigung.objects.filter(mail_status=MailStatus.OFFEN).update(mail_status=MailStatus.KEINE)
 
 
@@ -75,11 +78,27 @@ def absolute_url(pfad):
     return settings.TEAMPLANER_ADRESSE.rstrip("/") + pfad
 
 
-def _fusszeile():
+def _marke():
     org = Systemeinstellungen.laden().organisation
-    marke = _("Teamplaner · %(org)s") % {"org": org} if org else _("Teamplaner")
-    return "\n\n-- \n" + marke + "\n" + \
+    return _("Teamplaner · %(org)s") % {"org": org} if org else _("Teamplaner")
+
+
+def _fusszeile():
+    return "\n\n-- \n" + _marke() + "\n" + \
         _("E-Mail-Einstellungen ändern: %(link)s") % {"link": absolute_url(reverse("einst_benachrichtigungen"))}
+
+
+def _html(betreff, bloecke):
+    """HTML-Teil im Stil des Teamplaners (Tabellen und Inline-Styles, keine Bilder oder Skripte).
+
+    ``bloecke``: Liste aus ``{"absatz": text}``, ``{"knopf": beschriftung, "url": url}``,
+    ``{"link": url}`` (Adresse zum Kopieren) und ``{"ereignisse": [{"text", "zeit", "url", "beschriftung"}]}``.
+    Alle Texte werden im Template escaped."""
+    return render_to_string("mail/basis.html", {
+        "betreff": betreff, "marke": _marke(), "bloecke": bloecke,
+        "einstellungen_url": absolute_url(reverse("einst_benachrichtigungen")),
+        "sprache": translation.get_language(),
+    })
 
 
 def protokoll_adresse(email):
@@ -107,9 +126,24 @@ def _protokoll_fehler(art, empfaenger, eintrag, versuch, fehler):
     log.debug("Fehler beim Versand (%s)", eintrag, exc_info=fehler)
 
 
-def _senden(empfaenger_email, betreff, text):
+def _senden(empfaenger_email, betreff, text, html=""):
+    """Text-Teil immer, dazu der HTML-Teil als Alternative (multipart/alternative)."""
     betreff = " ".join(betreff.split())  # Zeilenumbrüche (z. B. im Aufgabentitel) sind im Betreff ungültig
-    EmailMessage(subject=betreff[:200], body=text, to=[empfaenger_email]).send(fail_silently=False)
+    nachricht = EmailMultiAlternatives(subject=betreff[:200], body=text, to=[empfaenger_email])
+    if html:
+        nachricht.attach_alternative(html, "text/html")
+    nachricht.send(fail_silently=False)
+
+
+def _ziel(b):
+    """Link zur Benachrichtigung: (Textzeile, Knopfbeschriftung, Adresse) oder None."""
+    if b.aufgabe_id:
+        url = absolute_url(b.aufgabe.get_absolute_url())
+        return _("Zur Aufgabe: %(link)s") % {"link": url}, _("Zur Aufgabe"), url
+    if b.art == A.LIEFERTERMIN:
+        url = absolute_url(reverse("bestellungen"))
+        return _("Zur Bestellliste: %(link)s") % {"link": url}, _("Zur Bestellliste"), url
+    return None
 
 
 def benachrichtigung_senden(b):
@@ -117,14 +151,32 @@ def benachrichtigung_senden(b):
     konto = b.empfaenger.konto
     with translation.override(konto.sprache):
         betreff = f"[{_('Teamplaner')}] {b.text}"
-        zeilen = [b.text]
-        if b.aufgabe_id:
-            zeilen.append("")
-            zeilen.append(_("Zur Aufgabe: %(link)s") % {"link": absolute_url(b.aufgabe.get_absolute_url())})
-        elif b.art == A.LIEFERTERMIN:
-            zeilen.append("")
-            zeilen.append(_("Zur Bestellliste: %(link)s") % {"link": absolute_url(reverse("bestellungen"))})
-        _senden(konto.email, betreff, "\n".join(zeilen) + _fusszeile())
+        zeilen, bloecke = [b.text], [{"absatz": b.text}]
+        ziel = _ziel(b)
+        if ziel:
+            zeilen += ["", ziel[0]]
+            bloecke.append({"knopf": ziel[1], "url": ziel[2]})
+        _senden(konto.email, betreff, "\n".join(zeilen) + _fusszeile(), _html(betreff, bloecke))
+
+
+def sammelmail_senden(liste):
+    """Mehrere Benachrichtigungen an dieselbe Person als eine Mail, in zeitlicher Reihenfolge."""
+    konto = liste[0].empfaenger.konto
+    with translation.override(konto.sprache):
+        betreff = f"[{_('Teamplaner')}] " + _("%(n)s neue Benachrichtigungen") % {"n": len(liste)}
+        posteingang = absolute_url(reverse("posteingang"))
+        zeilen, ereignisse = [], []
+        for b in liste:
+            zeit = formats.date_format(timezone.localtime(b.erstellt_am), "H:i")
+            ziel = _ziel(b)
+            zeilen.append(f"- {zeit} {b.text}")
+            if ziel:
+                zeilen.append(f"  {ziel[0]}")
+            ereignisse.append({"zeit": zeit, "text": b.text, "beschriftung": ziel[1] if ziel else "",
+                               "url": ziel[2] if ziel else ""})
+        zeilen += ["", _("Zum Posteingang: %(link)s") % {"link": posteingang}]
+        bloecke = [{"ereignisse": ereignisse}, {"knopf": _("Zum Posteingang"), "url": posteingang}]
+        _senden(konto.email, betreff, "\n".join(zeilen) + _fusszeile(), _html(betreff, bloecke))
 
 
 def offene_versenden(limit=50):
@@ -139,54 +191,84 @@ def _postausgang_versenden(limit):
     with transaction.atomic():
         for m in Postausgang.objects.select_for_update(skip_locked=True).filter(status=MailStatus.OFFEN)[:limit]:
             try:
-                _senden(m.empfaenger, m.betreff, m.text)
+                _senden(m.empfaenger, m.betreff, m.text, m.html)
             except Exception as fehler:  # noqa: BLE001 – SMTP-Fehler protokollieren, später erneut versuchen
                 m.versuche += 1
                 _protokoll_fehler(m.art, m.empfaenger, f"System-Mail {m.pk}", m.versuche, fehler)
                 if m.versuche >= MAX_VERSUCHE:
-                    m.status, m.text = MailStatus.FEHLER, ""
-                m.save(update_fields=["versuche", "status", "text"])
+                    m.status, m.text, m.html = MailStatus.FEHLER, "", ""
+                m.save(update_fields=["versuche", "status", "text", "html"])
                 continue
-            # Text enthält ggf. einen Passwort-Link – nach dem Versand nicht aufheben
-            m.status, m.text, m.gesendet_am = MailStatus.GESENDET, "", timezone.now()
-            m.save(update_fields=["status", "text", "gesendet_am"])
+            # Text und HTML enthalten ggf. einen Passwort-Link – nach dem Versand nicht aufheben
+            m.status, m.text, m.html, m.gesendet_am = MailStatus.GESENDET, "", "", timezone.now()
+            m.save(update_fields=["status", "text", "html", "gesendet_am"])
             _protokoll_verschickt(m.art, m.empfaenger, f"System-Mail {m.pk}")
             gesendet += 1
     return gesendet
 
 
+def _eintrag(liste):
+    if len(liste) == 1:
+        return f"Benachrichtigung {liste[0].pk}"
+    return "Benachrichtigungen " + ", ".join(str(b.pk) for b in liste)
+
+
 def _benachrichtigungen_versenden(limit):
+    """Je Person eine Mail: Alle offenen Benachrichtigungen einer Person gehen zusammen raus, sobald
+    die älteste ``TEAMPLANER_MAIL_SAMMELN_SEKUNDEN`` alt ist (0: sofort). ``limit`` zählt Personen."""
+    fenster = settings.TEAMPLANER_MAIL_SAMMELN_SEKUNDEN
+    bis = timezone.now() - timedelta(seconds=fenster)
     gesendet = 0
     with transaction.atomic():
         offen = list(
             Benachrichtigung.objects.select_for_update(skip_locked=True, of=("self",))
             .filter(mail_status=MailStatus.OFFEN)
-            .select_related("empfaenger__konto", "aufgabe")[:limit]
+            .select_related("empfaenger__konto", "aufgabe")
+            .order_by("empfaenger_id", "erstellt_am", "id")
         )
+        je_person = defaultdict(list)
         for b in offen:
             if b.empfaenger.archiviert or not hasattr(b.empfaenger, "konto"):
                 b.mail_status = MailStatus.KEINE
                 b.save(update_fields=["mail_status"])
                 continue
-            try:
-                benachrichtigung_senden(b)
-            except Exception as fehler:  # noqa: BLE001 – SMTP-Fehler protokollieren, später erneut versuchen
-                b.mail_versuche += 1
-                _protokoll_fehler(b.art, b.empfaenger.konto.email, f"Benachrichtigung {b.pk}", b.mail_versuche, fehler)
-                if b.mail_versuche >= MAX_VERSUCHE:
-                    b.mail_status = MailStatus.FEHLER
-                b.save(update_fields=["mail_versuche", "mail_status"])
-                continue
-            b.mail_status = MailStatus.GESENDET
-            b.gesendet_am = timezone.now()
-            b.save(update_fields=["mail_status", "gesendet_am"])
-            _protokoll_verschickt(b.art, b.empfaenger.konto.email, f"Benachrichtigung {b.pk}")
-            gesendet += 1
+            je_person[b.empfaenger_id].append(b)
+        faellig = [liste for liste in je_person.values() if fenster <= 0 or liste[0].erstellt_am <= bis]
+        for liste in faellig[:limit]:
+            if fenster <= 0:  # bisheriges Verhalten: jede einzeln
+                gesendet += sum(_mail_versenden([b]) for b in liste)
+            else:
+                gesendet += _mail_versenden(liste)
     return gesendet
 
 
-def _einreihen(art, empfaenger, betreff, text):
-    Postausgang.objects.create(art=art, empfaenger=empfaenger, betreff=betreff[:200], text=text)
+def _mail_versenden(liste):
+    """Eine Mail für ``liste`` (gleiche Person); Status und Versuche gelten für alle enthaltenen."""
+    email, art = liste[0].empfaenger.konto.email, liste[0].art if len(liste) == 1 else "sammelmail"
+    try:
+        if len(liste) == 1:
+            benachrichtigung_senden(liste[0])
+        else:
+            sammelmail_senden(liste)
+    except Exception as fehler:  # noqa: BLE001 – SMTP-Fehler protokollieren, später erneut versuchen
+        versuch = max(b.mail_versuche for b in liste) + 1
+        _protokoll_fehler(art, email, _eintrag(liste), versuch, fehler)
+        for b in liste:
+            b.mail_versuche += 1
+            if b.mail_versuche >= MAX_VERSUCHE:
+                b.mail_status = MailStatus.FEHLER
+            b.save(update_fields=["mail_versuche", "mail_status"])
+        return 0
+    jetzt = timezone.now()
+    for b in liste:
+        b.mail_status, b.gesendet_am = MailStatus.GESENDET, jetzt
+        b.save(update_fields=["mail_status", "gesendet_am"])
+    _protokoll_verschickt(art, email, _eintrag(liste))
+    return 1
+
+
+def _einreihen(art, empfaenger, betreff, text, html=""):
+    Postausgang.objects.create(art=art, empfaenger=empfaenger, betreff=betreff[:200], text=text, html=html)
 
 
 def einladung_senden(konto, link):
@@ -194,15 +276,15 @@ def einladung_senden(konto, link):
     if not mail_aktiv():
         return False
     with translation.override(konto.sprache):
-        text = "\n".join([
-            _("Guten Tag %(name)s,") % {"name": konto.person.anzeigename},
-            "",
-            _("für Sie wurde ein Konto im Teamplaner angelegt. Bitte legen Sie über diesen Link Ihr Passwort fest:"),
-            link,
-            "",
-            _("Der Link gilt einige Tage und nur einmal. Ihre Anmeldung ist Ihre E-Mail-Adresse: %(email)s") % {"email": konto.email},
-        ])
-        _einreihen(Postausgang.Art.EINLADUNG, konto.email, f"[{_('Teamplaner')}] " + _("Einladung"), text + _fusszeile())
+        gruss = _("Guten Tag %(name)s,") % {"name": konto.person.anzeigename}
+        bitte = _("für Sie wurde ein Konto im Teamplaner angelegt. Bitte legen Sie über diesen Link Ihr Passwort fest:")
+        gilt = _("Der Link gilt einige Tage und nur einmal. Ihre Anmeldung ist Ihre E-Mail-Adresse: %(email)s") % {
+            "email": konto.email}
+        text = "\n".join([gruss, "", bitte, link, "", gilt])
+        betreff = f"[{_('Teamplaner')}] " + _("Einladung")
+        html = _html(betreff, [{"absatz": gruss}, {"absatz": bitte}, {"knopf": _("Passwort festlegen"), "url": link},
+                               {"link": link}, {"absatz": gilt}])
+        _einreihen(Postausgang.Art.EINLADUNG, konto.email, betreff, text + _fusszeile(), html)
     return True
 
 
@@ -211,17 +293,15 @@ def reset_senden(konto, link):
     if not mail_aktiv():
         return False
     with translation.override(konto.sprache):
-        text = "\n".join([
-            _("Guten Tag %(name)s,") % {"name": konto.person.anzeigename},
-            "",
-            _("über diesen Link legen Sie ein neues Passwort fest:"),
-            link,
-            "",
-            _("Der Link gilt %(n)s Stunden und nur einmal.") % {"n": settings.TEAMPLANER_RESET_GUELTIG_STUNDEN},
-            _("Wenn Sie das nicht angefordert haben, können Sie diese E-Mail ignorieren."),
-        ])
-        _einreihen(Postausgang.Art.RESET, konto.email, f"[{_('Teamplaner')}] " + _("Passwort zurücksetzen"),
-                   text + _fusszeile())
+        gruss = _("Guten Tag %(name)s,") % {"name": konto.person.anzeigename}
+        bitte = _("über diesen Link legen Sie ein neues Passwort fest:")
+        gilt = _("Der Link gilt %(n)s Stunden und nur einmal.") % {"n": settings.TEAMPLANER_RESET_GUELTIG_STUNDEN}
+        ignorieren = _("Wenn Sie das nicht angefordert haben, können Sie diese E-Mail ignorieren.")
+        text = "\n".join([gruss, "", bitte, link, "", gilt, ignorieren])
+        betreff = f"[{_('Teamplaner')}] " + _("Passwort zurücksetzen")
+        html = _html(betreff, [{"absatz": gruss}, {"absatz": bitte}, {"knopf": _("Passwort festlegen"), "url": link},
+                               {"link": link}, {"absatz": gilt}, {"absatz": ignorieren}])
+        _einreihen(Postausgang.Art.RESET, konto.email, betreff, text + _fusszeile(), html)
     return True
 
 
@@ -243,12 +323,11 @@ def sicherheitshinweis(konto, anlass, an=None, **werte):
     if not mail_aktiv():
         return
     with translation.override(konto.sprache):
-        text = "\n".join([
-            _("Guten Tag %(name)s,") % {"name": konto.person.anzeigename},
-            "",
-            str(SICHERHEITSHINWEISE[anlass]) % werte,
-            "",
-            _("Waren Sie das nicht, wenden Sie sich bitte sofort an die Administration."),
-        ])
-        _einreihen(Postausgang.Art.SICHERHEIT, an or konto.email,
-                   f"[{_('Teamplaner')}] " + _("Sicherheitshinweis zu Ihrem Konto"), text + _fusszeile())
+        gruss = _("Guten Tag %(name)s,") % {"name": konto.person.anzeigename}
+        hinweis = str(SICHERHEITSHINWEISE[anlass]) % werte
+        warnung = _("Waren Sie das nicht, wenden Sie sich bitte sofort an die Administration.")
+        text = "\n".join([gruss, "", hinweis, "", warnung])
+        betreff = f"[{_('Teamplaner')}] " + _("Sicherheitshinweis zu Ihrem Konto")
+        html = _html(betreff, [{"absatz": gruss}, {"absatz": hinweis}, {"absatz": warnung, "wichtig": True},
+                               {"knopf": _("Zur Anmeldung"), "url": absolute_url(reverse("login"))}])
+        _einreihen(Postausgang.Art.SICHERHEIT, an or konto.email, betreff, text + _fusszeile(), html)

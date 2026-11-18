@@ -103,7 +103,8 @@ class Benachrichtigung(models.Model):
 
     Platzhalter erhalten keine Benachrichtigungen; Erwähnungen gehen an die anlegende
     Person. Hat die empfangende Person das Ereignis für E-Mail eingeschaltet, steht
-    ``mail_status`` auf „offen“ und der Dienst ``mails_versenden`` verschickt sie sofort.
+    ``mail_status`` auf „offen“ und der Dienst ``mails_versenden`` verschickt sie, mehrere innerhalb
+    von ``TEAMPLANER_MAIL_SAMMELN_SEKUNDEN`` zusammen in einer Mail.
     Der Text ist bereits in der Sprache der empfangenden Person gespeichert.
     """
 
@@ -138,7 +139,7 @@ class Benachrichtigung(models.Model):
 class Postausgang(models.Model):
     """System-Mails (Einladung, Passwort-Link, Sicherheitshinweis), verschickt vom Dienst
     ``mails_versenden`` – nicht während der Anfrage, damit Antwortzeit und SMTP-Fehler nichts über
-    Konten verraten. Nach dem Versand wird der Text geleert (er enthält Passwort-Links)."""
+    Konten verraten. Nach dem Versand werden Text und HTML geleert (sie enthalten Passwort-Links)."""
 
     class Art(models.TextChoices):
         EINLADUNG = "einladung", _("Einladung")
@@ -149,6 +150,7 @@ class Postausgang(models.Model):
     empfaenger = models.EmailField()
     betreff = models.CharField(max_length=200)
     text = models.TextField(blank=True)
+    html = models.TextField(blank=True)
     erstellt_am = models.DateTimeField(default=timezone.now)
     status = models.CharField(max_length=10, choices=MailStatus.choices, default=MailStatus.OFFEN, blank=True)
     versuche = models.PositiveSmallIntegerField(default=0)

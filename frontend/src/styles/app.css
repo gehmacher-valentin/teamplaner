@@ -681,6 +681,7 @@ legend { font-size: 13px; font-weight: 600; color: var(--text-2); padding: 0 4px
 .toast--fehler .toast__symbol, .toast--warning .toast__symbol { color: var(--toast-warn); }
 .toast--fehler { border-left: 3px solid var(--toast-warn); }
 .toast__text { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.toast__text a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .toast__aktion {
   border: 0; background: transparent; color: var(--toast-info); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
   padding: 4px 6px; border-radius: 4px;

@@ -213,6 +213,9 @@ DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "Teamplaner <teamplaner@localhost
 # Empfängeradressen im Protokoll des Versanddienstes (Journal). Das Journal hat eine eigene
 # Aufbewahrung, unabhängig von TEAMPLANER_AUFBEWAHRUNG_TAGE; mit 0 stehen Adressen dort gekürzt.
 TEAMPLANER_PROTOKOLL_EMPFAENGER = env_bool("TEAMPLANER_PROTOKOLL_EMPFAENGER", True)
+# Benachrichtigungen an dieselbe Person innerhalb dieses Fensters gehen als eine Mail raus
+# (gezählt ab der ältesten offenen); 0 verschickt jede sofort einzeln.
+TEAMPLANER_MAIL_SAMMELN_SEKUNDEN = int(env("TEAMPLANER_MAIL_SAMMELN_SEKUNDEN", "60"))
 # Öffentliche Adresse für Links in E-Mails
 TEAMPLANER_ADRESSE = env("TEAMPLANER_ADRESSE", "http://localhost:8000")
 

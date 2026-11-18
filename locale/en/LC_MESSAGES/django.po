@@ -3676,3 +3676,33 @@ msgstr "%(name)s is now a planner. The team planner only appears once they have 
 #: verwaltung/views.py
 msgid "Freigaben der Teamplaner-Ansichten"
 msgstr "Sharing settings of the team planner views"
+
+#: zusammenarbeit/mail.py
+msgid "Zur Aufgabe"
+msgstr "Go to task"
+
+#: zusammenarbeit/mail.py
+msgid "Zur Bestellliste"
+msgstr "Go to order list"
+
+#: zusammenarbeit/mail.py
+#, python-format
+msgid "%(n)s neue Benachrichtigungen"
+msgstr "%(n)s new notifications"
+
+#: zusammenarbeit/mail.py
+#, python-format
+msgid "Zum Posteingang: %(link)s"
+msgstr "Go to inbox: %(link)s"
+
+#: zusammenarbeit/mail.py
+msgid "Zum Posteingang"
+msgstr "Go to inbox"
+
+#: templates/mail/basis.html
+msgid "Falls der Knopf nicht funktioniert, diese Adresse im Browser öffnen:"
+msgstr "If the button does not work, open this address in your browser:"
+
+#: templates/mail/basis.html
+msgid "E-Mail-Einstellungen ändern"
+msgstr "Change email settings"
