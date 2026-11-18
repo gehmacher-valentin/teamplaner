@@ -39,6 +39,12 @@ def ohne_zwei_faktor_pflicht(settings):
 
 
 @pytest.fixture(autouse=True)
+def mails_sofort(settings):
+    """Benachrichtigungen ohne Sammelfenster; das Zusammenfassen prüft tests/test_mail_sammeln.py."""
+    settings.TEAMPLANER_MAIL_SAMMELN_SEKUNDEN = 0
+
+
+@pytest.fixture(autouse=True)
 def schneller_passwort_hasher(request, settings):
     """Argon2 kostet je Testkonto rund 0,1 s und damit den Großteil der Laufzeit. Tests, die das
     Verfahren selbst prüfen, tragen ``@pytest.mark.argon2`` und laufen mit der Betriebseinstellung."""
