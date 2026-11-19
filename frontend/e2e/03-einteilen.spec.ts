@@ -30,7 +30,7 @@ test("Einteilen: ziehen, verschieben, verlängern, rückgängig, live bei der zw
   const seite = await seiteFuer("planer");
   const zweite = await seiteFuer("leitung");
   for (const s of [seite, zweite]) {
-    await s.goto("/");
+    await s.goto("/teamplaner/");
     await expect(s.locator(".tp-raster")).toBeVisible();
     await expect(zeile(s, PERSON)).toBeVisible();
     await expect(balken(s, PERSON)).toHaveCount(0);

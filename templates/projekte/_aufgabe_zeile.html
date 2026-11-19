@@ -1,12 +1,13 @@
-{% load i18n teamplaner %}<div class="liste__zeile aufgabe-zeile{% if a.eltern_id %} aufgabe-zeile--unter{% endif %}" id="aufgabe-{{ a.pk }}"{% if zeile_oob %} hx-swap-oob="true"{% endif %}>
+{% load i18n teamplaner %}<div class="liste__zeile aufgabe-zeile{% if a.eltern_id %} aufgabe-zeile--unter{% endif %}" id="aufgabe-{{ a.pk }}"{% if zeile_oob %} hx-swap-oob="true"{% endif %} data-zeile{% if a.status.ist_erledigt %} data-erledigt{% endif %}>
   <div class="zeile" style="flex-wrap:nowrap; min-width:0; gap:8px">
     {% if darf_bearbeiten %}<span class="ziehgriff aufgabe-griff" aria-hidden="true"><svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor"><circle cx="2" cy="3" r="1.5"/><circle cx="8" cy="3" r="1.5"/><circle cx="2" cy="8" r="1.5"/><circle cx="8" cy="8" r="1.5"/><circle cx="2" cy="13" r="1.5"/><circle cx="8" cy="13" r="1.5"/></svg></span>{% endif %}
     {% if a.eltern_id %}<span class="unter-pfeil" aria-hidden="true">↳</span>{% endif %}
-    <form hx-post="{% url 'aufgabe_erledigt' a.pk %}" hx-target="closest .aufgabe-zeile" hx-swap="outerHTML" style="display:contents"
+    <form hx-post="{% url 'aufgabe_erledigt' a.pk %}" hx-target="closest .aufgabe-zeile" hx-swap="outerHTML" hx-sync="this:drop" style="display:contents"
       {% if a.unter_offen and not a.status.ist_erledigt %}data-unteraufgaben-offen="{{ a.unter_offen }}"{% endif %}>
       <input type="hidden" name="erledigt" value="{% if a.status.ist_erledigt %}0{% else %}1{% endif %}">
       <input type="hidden" name="zeile" value="1">
       <input type="hidden" name="unteraufgaben" value="">
+      {% if folge %}<input type="hidden" name="folge" value="{{ folge.pk }}">{% endif %}
       <button type="submit" class="haken{% if a.status.ist_erledigt %} haken--erledigt{% endif %}" {% if not darf_abschliessen %}disabled{% endif %}
         aria-label="{% if a.status.ist_erledigt %}{% translate 'Als offen markieren' %}{% else %}{% translate 'Als erledigt markieren' %}{% endif %}: {{ a.titel }}">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>
@@ -49,9 +50,9 @@
     {% if darf_bearbeiten and not a.unter_termine %}
       <form hx-post="{% url 'aufgabe_feld' a.pk %}" hx-trigger="change" hx-target="closest .aufgabe-zeile" hx-swap="outerHTML">
         <input type="hidden" name="feld" value="faellig_am"><input type="hidden" name="version" value="{{ a.version }}">
-        <input type="date" name="wert" value="{{ a.faellig_am|date:'Y-m-d' }}" class="inline-eingabe{% if a.faellig_am|ueberfaellig and not a.status.ist_erledigt %} faellig--ueberfaellig{% endif %}" aria-label="{% translate 'Fällig am' %}">
+        {% include "teile/datumswahl.html" with datum=a.faellig_am klasse="inline-eingabe" label=_("Fällig am") rot=a.faellig_am|ueberfaellig erledigt=a.status.ist_erledigt %}
       </form>
-    {% else %}<span class="{% if a.faellig_am|ueberfaellig and not a.status.ist_erledigt %}faellig--ueberfaellig{% endif %}">{{ a.faellig_am|date:"d.m."|default:"–" }}</span>{% endif %}
+    {% else %}<span class="{% if a.faellig_am|ueberfaellig and not a.status.ist_erledigt %}faellig--ueberfaellig{% endif %}">{% faellig a.faellig_am %}</span>{% endif %}
   </div>
   <div>
     {% if darf_bearbeiten %}
@@ -66,4 +67,5 @@
     {% else %}<span class="{{ a.status|status_klasse }}">{{ a.status }}</span>{% endif %}
   </div>
   {% if fehler %}<div class="fehlerliste" role="alert" style="grid-column: 1 / -1">{{ fehler }}</div>{% endif %}
+  {% if folge_html %}<template data-folgeaufgabe>{{ folge_html }}</template>{% endif %}
 </div>

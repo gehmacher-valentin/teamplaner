@@ -1,0 +1,23 @@
+{% load i18n teamplaner %}{# Zeile in „Mir zugewiesen“ bzw. „Platzhaltern zugewiesen“; nach dem Abhaken (HTMX) im erledigten Zustand: bleibt 5 s stehen und lässt sich so lange zurücknehmen (lib/abhaken.ts) #}<div class="liste__zeile zugewiesen__zeile{% if a.status.ist_erledigt %} zugewiesen__zeile--erledigt{% endif %}" id="meine-{{ a.pk }}" data-zeile{% if a.status.ist_erledigt %} data-erledigt{% endif %}>
+  <form method="post" action="{% url 'aufgabe_erledigt' a.pk %}" class="zugewiesen__haken"
+    hx-post="{% url 'aufgabe_erledigt' a.pk %}" hx-target="closest .zugewiesen__zeile" hx-swap="outerHTML" hx-sync="this:drop"
+    {% if a.unter_offen and not a.status.ist_erledigt %}data-unteraufgaben-offen="{{ a.unter_offen }}"{% endif %}>{% csrf_token %}
+    <input type="hidden" name="erledigt" value="{% if a.status.ist_erledigt %}0{% else %}1{% endif %}">
+    <input type="hidden" name="zeile" value="meine"><input type="hidden" name="weiter" value="{{ weiter }}">
+    <input type="hidden" name="unteraufgaben" value="">
+    {% if folge %}<input type="hidden" name="folge" value="{{ folge.pk }}">{% endif %}
+    <button type="submit" class="haken{% if a.status.ist_erledigt %} haken--erledigt{% endif %}" {% if not darf_abschliessen %}disabled{% endif %}
+      aria-label="{% if a.status.ist_erledigt %}{% translate 'Als offen markieren' %}{% else %}{% translate 'Als erledigt markieren' %}{% endif %}: {{ a.titel }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></button>
+  </form>
+  <div class="zugewiesen__titel">
+    <span><a class="aufgabe-titel{% if a.status.ist_erledigt %} aufgabe-titel--erledigt{% endif %}" href="{% url 'aufgabe' a.pk %}">{{ a.titel }}</a>{% if a.wiederholung %} <span class="wiederkehrend" title="{% translate 'Wiederkehrende Aufgabe' %}" aria-label="{% translate 'Wiederkehrende Aufgabe' %}">↻</span>{% endif %}</span>
+    <div class="zugewiesen__unter klein">
+      {% if a.verantwortlich_id != user.person.pk %}<span class="person zugewiesen__person">{% avatar a.verantwortlich "klein" %}<span class="zelle-text">{{ a.verantwortlich.anzeigename }}</span></span>{% endif %}
+      <a href="{% url 'projekt' a.projekt_id %}" class="zugewiesen__projekt pf-{{ a.projekt.farbe }}"><span class="farbpunkt"></span><span class="zelle-text">{{ a.projekt.name }}</span></a>
+      {% if a.eltern_id %}<a class="eltern-hinweis" href="{% url 'aufgabe' a.eltern_id %}" title="{% translate 'Unteraufgabe von' %} {{ a.eltern.titel }}">↳ {{ a.eltern.titel }}</a>{% endif %}
+    </div>
+  </div>
+  <div class="mono klein{% if a.faellig_am|ueberfaellig and not a.status.ist_erledigt %} faellig--ueberfaellig{% endif %}">{% faellig a.faellig_am %}</div>
+  <div class="zugewiesen__status"><span class="{{ a.status|status_klasse }}">{{ a.status }}</span></div>
+  {% if folge_html %}<template data-folgeaufgabe>{{ folge_html }}</template>{% endif %}
+</div>

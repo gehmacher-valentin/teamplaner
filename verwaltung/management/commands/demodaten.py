@@ -31,7 +31,7 @@ from planung.models import (
     Tagesfreigabe,
     TeamplanerAnsicht,
 )
-from projekte import termine
+from projekte import termine, wiederholung
 from projekte.models import Abhaengigkeit, Abschnitt, Aufgabe, Projekt, Status, Tag
 from zusammenarbeit.models import Kommentar
 
@@ -183,6 +183,9 @@ class Command(BaseCommand):
         Person.objects.create(anzeigename="Aushilfe Service", bereich=F, erstellt_von=p[8])
         alt = Person.objects.create(anzeigename="Saisonkraft Sommer", bereich=W, notiz="Juli–August", erstellt_von=p[0])
         alt.archivieren()
+        # Benachrichtigungen der beiden Platzhalter gehen an die Planerin (Meine Aufgaben zeigt sie mit)
+        ws.weiterleiten_an.add(p[5])
+        hl.weiterleiten_an.add(p[5])
 
         tags = {n: Tag.objects.create(name=n) for n in ["Produktion", "Entwicklung", "Service", "Kunde A", "Prototyp"]}
 
@@ -268,7 +271,15 @@ class Command(BaseCommand):
             "werkbank": aufgabe(D, None, "Werkbank Wartung", "Montage", 1, 6, "Eingeplant", p[2], h["wartung_d"]),
             "gelaender": aufgabe(D, d_ab["Einrichtung"], "Geländer Galerie", "Fertigung", 4, 9, "Eingeplant", p[3]),
             "filter": aufgabe(D, None, "Filter reinigen", None, 1, None, eltern=h["wartung_d"]),
+            "protokolle": aufgabe(B, b_ab["Tests"], "Prüfprotokolle ablegen", "Prüfung", 1, 8, "Offen", hl),
+            "wochencheck": aufgabe(D, d_ab["Wartung"], "Wochencheck Hebebühne", "Prüfung", None, 2, "Offen", p[1]),
+            # Ohne Abhängigkeiten: zweite Einteilung am selben Tag (Meine Aufgaben zeigt sie nebeneinander)
+            "schaltplan": aufgabe(D, d_ab["Einrichtung"], "Schaltplan prüfen", "Steuerung", 1, 9, "Eingeplant", p[5]),
+            "lager": aufgabe(D, d_ab["Einrichtung"], "Lager aufräumen", "Montage", 2, 9, "Eingeplant", ws),
         }
+        # Wiederkehrend: Abhaken legt die Folgeaufgabe für die nächste Woche an
+        t["wochencheck"].wiederholung = wiederholung.regel_bauen("woechentlich", 1, (), None, t["wochencheck"].faellig_am)
+        t["wochencheck"].save(update_fields=["wiederholung"])
         # Spätere Schritte, damit die Projekte im Gantt-Diagramm realistisch lang laufen
         t.update({
             "inbetriebnahme": aufgabe(A, None, "Inbetriebnahme Halle", "Prüfung", 4, 20, eltern=h["inbetrieb_a"]),
@@ -294,9 +305,9 @@ class Command(BaseCommand):
         weg(p[2], 0, 4); ein("werkbank", p[2], 6); ein("gehaeuse", p[2], 7, 9)  # noqa: E702
         ein("rahmen", p[3], 0, 4); ein("gelaender", p[3], 6, 9)  # noqa: E702
         ein("rahmen", p[4], 0, 1); ein("servicewagen", p[4], 2, 4); ein("regalsystem", p[4], 6, 9); ein("halterung", p[4], 3)  # noqa: E702
-        ein("steuerung", p[5], 0, 4); ein("sensoren", p[5], 7, 8)  # noqa: E702
+        ein("steuerung", p[5], 0, 4); ein("sensoren", p[5], 7, 8); ein("schaltplan", p[5], 7, 8)  # noqa: E702
         ein("materialbestellung", p[7], -4, -3); ein("zeichnungen", p[7], 0, 2); weg(p[7], 3, 4); ein("stuecklisten", p[7], 6, 7)  # noqa: E702
-        ein("hallenboden", ws, 1, 2); weg(ws, 3, 4); ein("bohrungen", ws, 6, 8)  # noqa: E702
+        ein("hallenboden", ws, 1, 2); weg(ws, 3, 4); ein("bohrungen", ws, 6, 8); ein("lager", ws, 6, 7); weg(ws, 9)  # noqa: E702
         weg(p[8], 0); ein("wartungseinsatz", p[8], 1, 4); ein("einsatzberichte", p[8], 6, 8)  # noqa: E702
         ein("wartungseinsatz", p[10], 1, 4); ein("geraete", p[10], 6); weg(p[10], 7, 9)  # noqa: E702
         ein("sensorik", p[11], 2, 3); ein("testreihe", p[11], 6, 9)  # noqa: E702
@@ -383,6 +394,8 @@ class Command(BaseCommand):
                   for i, name in enumerate(["Komplett", "Halle A", "Halle B"])}
         for spalte, stufe in [(0, "Komplett"), (1, "Halle A"), (2, "Halle A"), (3, "Komplett"), (6, "Halle B")]:
             Tagesfreigabe.objects.create(datum=tag(spalte), stufe=stufen[stufe], geaendert_von=p[5])
+        p[5].konto.darf_tagesfreigabe = True  # setzen darf nur, wer den Haken hat (nicht automatisch der Admin)
+        p[5].konto.save(update_fields=["darf_tagesfreigabe"])
         # Liefertermin in Tagen ab heute (negativ = überschritten), Prio
         for bedarf, tage, projekt_, bestellt, lieferant, st, wer, termin, prio in [
             ("Abdeckplatten 20 mm, 4 Stück 2000 × 1000", 9, "Prototyp Förderband", 6, "Handel Nord", "bestellt", p[7], 4, False),

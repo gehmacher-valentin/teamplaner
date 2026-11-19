@@ -14,7 +14,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils.http import url_has_allowed_host_and_scheme, urlencode
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 
@@ -196,11 +196,38 @@ def projekt(request, pk):
     })
 
 
-def _zeile_antwort(request, aufgabe, fehler=None):
+def _zeile_antwort(request, aufgabe, fehler=None, folge=None):
+    """Zeile der Projektliste. Mit ``folge`` (eben abgehakte wiederkehrende Aufgabe) liegt die Folgeaufgabe
+    als <template> bei; lib/abhaken.ts setzt sie erst nach Ablauf der Anzeige als erledigt ein."""
     aufgabe = zeilen_laden([aufgabe.pk])[0]
+    kontext = zeilen_kontext(request.user, aufgabe.projekt)
+    folge_html = render_to_string("projekte/_aufgabe_block.html", {"a": block_laden(folge.pk), **kontext},
+                                  request=request) if folge else ""
     return render(request, "projekte/_aufgabe_zeile.html", {
-        "a": aufgabe, "fehler": fehler, **zeilen_kontext(request.user, aufgabe.projekt),
+        "a": aufgabe, "fehler": fehler, "folge": folge, "folge_html": folge_html, **kontext,
     })
+
+
+def _meine_zeile_antwort(request, aufgabe, folge=None):
+    """Zeile in „Meine Aufgaben“ nach dem Abhaken bzw. Zurücknehmen (wie _zeile_antwort)."""
+    def laden(pk):
+        return (mit_unterzahlen(Aufgabe.objects.filter(pk=pk))
+                .select_related("projekt", "status", "eltern", "verantwortlich").get())
+    kontext = {"darf_abschliessen": rechte.darf_abschliessen_und_kommentieren(request.user),
+               "weiter": _weiter(request, reverse("meine_aufgaben"))}
+    folge_html = render_to_string("projekte/_meine_zeile.html", {"a": laden(folge.pk), **kontext},
+                                  request=request) if folge else ""
+    return render(request, "projekte/_meine_zeile.html", {
+        "a": laden(aufgabe.pk), "folge": folge, "folge_html": folge_html, **kontext,
+    })
+
+
+def _weiter(request, standard):
+    """Rücksprungadresse aus dem Formular, nur auf diese Seite."""
+    weiter = request.POST.get("weiter", "")
+    if not url_has_allowed_host_and_scheme(weiter, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+        return standard
+    return weiter
 
 
 def _block_antwort(request, aufgabe):
@@ -507,9 +534,29 @@ def aufgabe_erledigt(request, pk):
     war_erledigt = aufgabe.status.ist_erledigt
     # Rückfrage im Browser: offene Unteraufgaben mit erledigen („alle“) oder nicht („keine“)
     alle = request.POST.get("unteraufgaben") == "alle"
-    aufgabe = dienste.erledigt_setzen(request.user, aufgabe, request.POST.get("erledigt") == "1", unteraufgaben_mit=alle)
+    erledigt = request.POST.get("erledigt") == "1"
+    with transaction.atomic():
+        aufgabe = dienste.erledigt_setzen(request.user, aufgabe, erledigt, unteraufgaben_mit=alle)
+        if not erledigt and request.POST.get("folge"):
+            # Rückgängig in den Sekunden nach dem Abhaken: die eben angelegte Folgeaufgabe wieder weg
+            dienste.folgeaufgabe_zuruecknehmen(request.user, aufgabe, request.POST.get("folge"))
     feiern = request.user.feier_animation and aufgabe.status.ist_erledigt and not war_erledigt
     folge = getattr(aufgabe, "neue_folgeaufgabe", None)
+    zeile = request.POST.get("zeile")
+    if request.htmx and zeile == "meine":
+        # „Meine Aufgaben“: Zeile bleibt als erledigt stehen, Folgeaufgabe erscheint nach Ablauf (lib/abhaken.ts)
+        if folge:
+            _folge_melden(request, folge)
+        antwort = _meine_zeile_antwort(request, aufgabe, folge)
+        if feiern:
+            antwort["HX-Trigger"] = "feiern"
+        return antwort
+    if folge and request.htmx and zeile and not alle and not offene_seitenleiste(request):
+        _folge_melden(request, folge)
+        antwort = _geaendert_melden(_zeile_antwort(request, aufgabe, folge=folge), aufgabe)
+        if feiern:
+            antwort["HX-Trigger"] = "feiern"
+        return antwort
     if folge and request.htmx:
         return _neu_laden(request, folge, feiern)
     if folge:
@@ -534,10 +581,7 @@ def aufgabe_erledigt(request, pk):
         return antwort
     if feiern:
         request.session["feiern"] = True  # nach der Weiterleitung abgespielt
-    weiter = request.POST.get("weiter", "")
-    if not url_has_allowed_host_and_scheme(weiter, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
-        weiter = aufgabe.get_absolute_url()
-    return redirect(weiter)
+    return redirect(_weiter(request, aufgabe.get_absolute_url()))
 
 
 @require_POST
@@ -580,10 +624,8 @@ def unteraufgabe_anlegen(request, pk):
 
 # ---------- Meine Aufgaben ----------
 
-@login_required
-def meine_aufgaben(request):
-    person = request.user.person
-    heute = timezone.localdate()
+def _eingeteilt_tage(person, heute):
+    """Einteilungen, Abwesenheiten und freie Tage der nächsten zwei Arbeitswochen."""
     beginn = heute if heute.weekday() < 5 else montag(heute) + timedelta(days=7)
     tage = werktage(beginn, beginn + timedelta(days=13))[:10]
     frei = freie_tage(tage[0], tage[-1])
@@ -597,9 +639,13 @@ def meine_aufgaben(request):
         eintraege = [e for e in einteilungen if d in zaehlende_tage(e.von, e.bis, frei)]
         tagesliste.append({"datum": d, "frei": frei.get(d), "abwesend": d in abwesend, "einteilungen": eintraege,
                            "heute": d == heute})
+    return tagesliste
 
-    offene = list(mit_unterzahlen(Aufgabe.objects).filter(verantwortlich=person, status__ist_erledigt=False)
-                  .select_related("projekt", "status", "eltern").order_by("faellig_am", "titel"))
+
+def _offen_gruppiert(qs, heute):
+    """Offene Aufgaben nach Fälligkeit gruppiert (Überfällig, Diese Woche, Später, Ohne Termin)."""
+    offene = list(mit_unterzahlen(qs).filter(status__ist_erledigt=False)
+                  .select_related("projekt", "status", "eltern", "verantwortlich").order_by("faellig_am", "titel"))
     ende_woche = montag(heute) + timedelta(days=6)
     gruppen = [
         (_("Überfällig"), [a for a in offene if a.faellig_am and a.faellig_am < heute]),
@@ -607,12 +653,52 @@ def meine_aufgaben(request):
         (_("Später"), [a for a in offene if a.faellig_am and a.faellig_am > ende_woche]),
         (_("Ohne Termin"), [a for a in offene if not a.faellig_am]),
     ]
+    return [(t, liste) for t, liste in gruppen if liste], len(offene)
+
+
+def betreute_platzhalter(person):
+    """Platzhalter, deren Benachrichtigungen an diese Person weitergeleitet werden (ohne archivierte)."""
+    return list(Person.objects.platzhalter().aktiv().filter(weiterleiten_an=person).order_by("anzeigename", "id"))
+
+
+@login_required
+def meine_aufgaben(request):
+    """Eigene Einteilungen und Aufgaben; wer Platzhalter betreut, sieht auch deren Einteilungen (Auswahl)
+    und Zuweisungen (eigene Karte). Zustand in der URL: ``eingeteilt``, ``zugewiesen``, ``platzhalter``;
+    IDs nicht betreuter Personen werden ignoriert."""
+    person = request.user.person
+    heute = timezone.localdate()
+    betreute = betreute_platzhalter(person)
+    nach_id = {p.pk: p for p in betreute}
+    eingeteilt = nach_id.get(als_zahl(request.GET.get("eingeteilt")))
+    filter_platzhalter = nach_id.get(als_zahl(request.GET.get("platzhalter")))
+    zugewiesen = "platzhalter" if betreute and request.GET.get("zugewiesen") == "platzhalter" else "ich"
+
+    gruppen, anzahl_offen = _offen_gruppiert(Aufgabe.objects.filter(verantwortlich=person), heute)
+    platzhalter_gruppen, platzhalter_anzahl = [], 0
+    if betreute:
+        auswahl = [filter_platzhalter] if filter_platzhalter else betreute
+        platzhalter_gruppen, platzhalter_anzahl = _offen_gruppiert(
+            Aufgabe.objects.filter(verantwortlich__in=auswahl), heute)
     erledigt = (Aufgabe.objects.filter(verantwortlich=person, status__ist_erledigt=True)
                 .select_related("projekt", "status", "eltern").order_by("-erledigt_am")[:10])
+
+    def adresse(**aenderung):
+        """Diese Seite mit geändertem Zustand (Links ohne JS, Rücksprung nach dem Abhaken)."""
+        werte = {"eingeteilt": eingeteilt.pk if eingeteilt else None,
+                 "zugewiesen": "platzhalter" if zugewiesen == "platzhalter" else None,
+                 "platzhalter": filter_platzhalter.pk if filter_platzhalter else None, **aenderung}
+        teile = urlencode({k: v for k, v in werte.items() if v})
+        return reverse("meine_aufgaben") + (f"?{teile}" if teile else "")
+
     return render(request, "projekte/meine_aufgaben.html", {
-        "tage": tagesliste, "gruppen": [(t, liste) for t, liste in gruppen if liste], "erledigt": erledigt,
-        "anzahl_offen": len(offene), "aktiv": "meine", "heute": heute,
+        "tage": _eingeteilt_tage(eingeteilt or person, heute), "gruppen": gruppen, "erledigt": erledigt,
+        "anzahl_offen": anzahl_offen, "aktiv": "meine", "heute": heute,
         "darf_abschliessen": rechte.darf_abschliessen_und_kommentieren(request.user),
+        "betreute": betreute, "eingeteilt": eingeteilt, "filter_platzhalter": filter_platzhalter,
+        "zugewiesen": zugewiesen, "platzhalter_gruppen": platzhalter_gruppen,
+        "platzhalter_anzahl": platzhalter_anzahl, "weiter": request.get_full_path(),
+        "adresse_ich": adresse(zugewiesen=None), "adresse_platzhalter": adresse(zugewiesen="platzhalter"),
     })
 
 

@@ -12,6 +12,7 @@ import "@fontsource/ibm-plex-mono/latin-500.css";
 import "./styles/app.css";
 
 import htmx from "htmx.org";
+import { initAbhaken } from "./lib/abhaken";
 import { initAufgabenBaum } from "./lib/aufgabenbaum";
 import { initErwaehnungen } from "./lib/erwaehnungen";
 import { initFeiern } from "./lib/feiern";
@@ -94,6 +95,7 @@ function initKategorien(wurzel: ParentNode) {
 document.addEventListener("DOMContentLoaded", () => {
   initSeitenleiste();
   init(document);
+  initAbhaken();
   initFeiern();
   initInline();
   initListeneditor();

@@ -94,6 +94,8 @@ export interface Raster {
   heute: string;
   /** Info-Zeile bearbeiten (wer im Teamplaner planen darf) */
   info_bearbeitbar: boolean;
+  /** Tagesfreigabe setzen (eigener Haken am Konto, unabhängig von der Rolle) */
+  freigabe_bearbeitbar: boolean;
   /** Zeile „Tagesfreigabe“ anzeigen (globale Einstellung) */
   freigabe_zeile: boolean;
   /** Vom Admin gewählter Name der Zeile */

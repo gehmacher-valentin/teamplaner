@@ -122,7 +122,7 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 LOGIN_URL = "login"
-LOGIN_REDIRECT_URL = "/"
+LOGIN_REDIRECT_URL = "meine_aufgaben"
 LOGOUT_REDIRECT_URL = "login"
 # Gültigkeit von Einladungslinks; Links zum Zurücksetzen eines Passworts deutlich kürzer (kern.hilfen)
 PASSWORD_RESET_TIMEOUT = int(env("TEAMPLANER_LINK_GUELTIG_TAGE", "7")) * 24 * 3600

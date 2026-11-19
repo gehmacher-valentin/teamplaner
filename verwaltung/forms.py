@@ -4,8 +4,9 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.utils.translation import gettext_lazy as _
 
 from kern import rechte
-from kern.models import Bereich, Gewerk, Konto, Person, Rolle
+from kern.models import Bereich, Gewerk, Konto, Person, Rolle, Systemeinstellungen
 from planung.models import FreierTag, FreigabeStufe
+from projekte.forms import PersonenMehrfachAuswahl
 from projekte.models import Status
 
 
@@ -52,11 +53,16 @@ class KontoBearbeitenForm(forms.Form):
     bereich = forms.ModelChoiceField(Bereich.objects.all(), label=_("Bereich"))
     gewerke = GewerkeFeld()
     systemkonto = forms.BooleanField(label=Konto._meta.get_field("systemkonto").verbose_name, required=False)
+    darf_tagesfreigabe = forms.BooleanField(required=False)
 
     def __init__(self, *args, konto, ziel, **kwargs):
         super().__init__(*args, **kwargs)
         self.ziel = ziel
         self.fields["rolle"].choices = [(r.value, r.label) for r in rechte.vergebbare_rollen(konto)]
+        feld = self.fields["darf_tagesfreigabe"]
+        feld.label = _("Darf „%(name)s“ setzen") % {"name": Systemeinstellungen.laden().freigabe_bezeichnung}
+        # Die Freigabe gilt für alle: den Haken vergibt nur, wer die Systemeinstellungen verwaltet (Admin)
+        feld.disabled = not rechte.darf_systemeinstellungen(konto)
 
     def clean_email(self):
         email = self.cleaned_data["email"].lower()
@@ -70,12 +76,26 @@ class PlatzhalterForm(forms.ModelForm):
 
     class Meta:
         model = Person
-        fields = ["anzeigename", "bereich", "notiz", "gewerke"]
+        fields = ["anzeigename", "bereich", "notiz", "gewerke", "weiterleiten_an"]
         labels = {"anzeigename": _("Anzeigename (frei)"), "notiz": _("Notiz (optional)")}
         widgets = {
             "anzeigename": forms.TextInput(attrs={"placeholder": _("z. B. Aushilfe Montage")}),
             "notiz": forms.TextInput(attrs={"placeholder": _("z. B. ab November, 2 Tage pro Woche")}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Wie jede Personenauswahl: aktive Konten ohne Systemkonten, keine Platzhalter; bereits
+        # eingetragene bleiben sichtbar (z. B. archiviert), damit sie sich austragen lassen
+        konten = Person.objects.auswaehlbar().mit_konto()
+        if self.instance.pk:
+            konten = (konten | self.instance.weiterleiten_an.all()).distinct()
+        self.fields["weiterleiten_an"] = PersonenMehrfachAuswahl(
+            konten.select_related("konto", "bereich").order_by("anzeigename"), required=False,
+            label=_("Benachrichtigungen weiterleiten an"),
+            help_text=_("Diese Konten bekommen alle Benachrichtigungen des Platzhalters, z. B. Einteilungen, "
+                        "Zuweisungen und Erwähnungen."),
+        )
 
 
 class UmwandelnForm(forms.Form):

@@ -58,7 +58,7 @@
               </button>
             </form>
             <a href="{% url 'aufgabe' u.pk %}"{% if seitenleiste %} data-aufgabe-link="{{ u.pk }}"{% endif %} class="unteraufgaben__titel{% if u.status.ist_erledigt %} aufgabe-titel--erledigt{% endif %}">{{ u.titel }}</a>{% if u.wiederholung %}<span class="wiederkehrend" title="{% translate 'Wiederkehrende Aufgabe' %}" aria-label="{% translate 'Wiederkehrende Aufgabe' %}">↻</span>{% endif %}
-            {% if u.faellig_am %}<span class="mono klein{% if u.faellig_am|ueberfaellig and not u.status.ist_erledigt %} faellig--ueberfaellig{% endif %}">{{ u.faellig_am|date:"d.m." }}</span>{% endif %}
+            {% if u.faellig_am %}<span class="mono klein{% if u.faellig_am|ueberfaellig and not u.status.ist_erledigt %} faellig--ueberfaellig{% endif %}">{% faellig u.faellig_am %}</span>{% endif %}
             {% if u.verantwortlich %}<span class="person klein" title="{{ u.verantwortlich.anzeigename }}">{% avatar u.verantwortlich "klein" %}<span class="unteraufgaben__name">{{ u.verantwortlich.anzeigename }}</span></span>{% endif %}
             <span class="{{ u.status|status_klasse }} unteraufgaben__status">{{ u.status }}</span>
           </li>

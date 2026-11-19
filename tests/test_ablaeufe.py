@@ -149,8 +149,9 @@ def test_tests_laufen_mit_schnellem_hasher(konten):
 
 # --- Erwähnungen und Benachrichtigungen ---
 
-def test_erwaehnung_benachrichtigt_person_und_bei_platzhalter_die_anlegende_person(konten, aufgabe, platzhalter):
+def test_erwaehnung_benachrichtigt_person_und_bei_platzhalter_die_eingetragenen_konten(konten, aufgabe, platzhalter):
     erwaehnte = konten[M].person
+    platzhalter.weiterleiten_an.add(konten[L].person)
     angemeldet(konten[BL]).post(f"/aufgaben/{aufgabe.pk}/kommentare/", {
         "text": f"@{erwaehnte.anzeigename} und @{platzhalter.anzeigename} bitte prüfen",
         "erwaehnungen": f'{{"{erwaehnte.anzeigename}": {erwaehnte.pk}, "{platzhalter.anzeigename}": {platzhalter.pk}}}',
@@ -159,7 +160,9 @@ def test_erwaehnung_benachrichtigt_person_und_bei_platzhalter_die_anlegende_pers
     assert kommentar.text == f"@[{erwaehnte.pk}] und @[{platzhalter.pk}] bitte prüfen"
     assert set(Erwaehnung.objects.values_list("person_id", flat=True)) == {erwaehnte.pk, platzhalter.pk}
     empfaenger = set(Benachrichtigung.objects.values_list("empfaenger_id", flat=True))
-    assert empfaenger == {erwaehnte.pk, platzhalter.erstellt_von_id}
+    assert empfaenger == {erwaehnte.pk, konten[L].pk}  # nicht mehr an erstellt_von (alte Sonderregel)
+    weiter = Benachrichtigung.objects.get(empfaenger=konten[L].person)
+    assert weiter.art == "erwaehnung" and weiter.text.endswith("(für Platzhalter „Aushilfe Montage“)")
     seite = angemeldet(konten[L]).get(f"/aufgaben/{aufgabe.pk}/").content.decode()
     assert f"@{platzhalter.anzeigename}" in seite and "erwaehnung--platzhalter" in seite
 
@@ -175,9 +178,73 @@ def test_zuweisung_benachrichtigt(konten, aufgabe):
     assert Benachrichtigung.objects.get().empfaenger == konten[M].person
 
 
-def test_platzhalter_bekommt_keine_benachrichtigung(konten, aufgabe, platzhalter):
+def test_platzhalter_ohne_eintrag_benachrichtigt_niemanden(konten, aufgabe, platzhalter):
     dienste.aufgabe_speichern(konten[BL], aufgabe, {"verantwortlich": platzhalter}, aufgabe.version)
-    assert not Benachrichtigung.objects.exists()
+    assert not Benachrichtigung.objects.exists()  # auch nicht erstellt_von
+
+
+def test_platzhalter_leitet_an_ein_konto_weiter(konten, aufgabe, platzhalter):
+    platzhalter.weiterleiten_an.add(konten[M].person)
+    dienste.aufgabe_speichern(konten[BL], aufgabe, {"verantwortlich": platzhalter}, aufgabe.version)
+    b = Benachrichtigung.objects.get()
+    assert b.empfaenger == konten[M].person and b.art == "zuweisung"
+    assert b.text == f"{konten[BL].person.anzeigename} hat Ihnen „{aufgabe.titel}“ zugewiesen. (für Platzhalter „Aushilfe Montage“)"
+
+
+def test_platzhalter_leitet_an_mehrere_weiter_ohne_archivierte_und_ausloeser(konten, aufgabe, platzhalter):
+    from zusammenarbeit.dienste import benachrichtigen
+
+    platzhalter.weiterleiten_an.add(konten[M].person, konten[L].person, konten[P].person, konten[BL].person)
+    konten[L].person.archivieren()
+    ergebnis = benachrichtigen(platzhalter, "kommentar", "%(titel)s", {"titel": "X"}, ausloeser=konten[BL].person)
+    assert {b.empfaenger_id for b in ergebnis} == {konten[M].pk, konten[P].pk}
+    assert set(Benachrichtigung.objects.values_list("empfaenger_id", flat=True)) == {konten[M].pk, konten[P].pk}
+
+
+def test_weiterleitung_englisch_und_mail_nach_einstellung_der_empfangenden(konten, platzhalter, settings):
+    from zusammenarbeit.dienste import benachrichtigen
+    from zusammenarbeit.models import MailStatus
+
+    settings.EMAIL_HOST = "localhost"
+    m, l_ = konten[M], konten[L]
+    m.sprache, m.mail_einstellungen = "en", {"kommentar": True}
+    m.save(update_fields=["sprache", "mail_einstellungen"])
+    platzhalter.weiterleiten_an.add(m.person, l_.person)
+    benachrichtigen(platzhalter, "kommentar", "%(titel)s", {"titel": "X"})
+    bm = Benachrichtigung.objects.get(empfaenger=m.person)
+    assert bm.text == "X (for placeholder “Aushilfe Montage”)" and bm.mail_status == MailStatus.OFFEN
+    assert Benachrichtigung.objects.get(empfaenger=l_.person).mail_status == MailStatus.KEINE
+
+
+def test_weiterleitung_im_formular_standard_leer_und_protokoll(konten, platzhalter):
+    c = angemeldet(konten[P])
+    url = f"/einstellungen/personen/{platzhalter.pk}/"
+    seite = c.get(url).content.decode()
+    assert "Benachrichtigungen weiterleiten an" in seite
+    assert 'name="weiterleiten_an"' in seite and "checked" not in seite.split("weiterleiten_an")[1].split("</fieldset>")[0]
+    assert konten[A].person.anzeigename in seite  # Personenauswahl: aktive Konten …
+    assert f'value="{platzhalter.pk}"' not in seite.split("weiterleiten_an")[1].split("</fieldset>")[0]  # … ohne Platzhalter
+    antwort = c.post(url, {"anzeigename": platzhalter.anzeigename, "bereich": platzhalter.bereich_id, "notiz": "",
+                           "weiterleiten_an": [konten[M].pk, konten[L].pk]})
+    assert antwort.status_code == 302
+    assert set(platzhalter.weiterleiten_an.values_list("pk", flat=True)) == {konten[M].pk, konten[L].pk}
+    eintrag = Protokolleintrag.objects.get(objekt_typ="platzhalter", objekt_id=platzhalter.pk, aktion="geaendert")
+    assert eintrag.daten["weiterleiten_an"][1] == sorted([konten[M].person.anzeigename, konten[L].person.anzeigename])
+
+
+def test_neuer_platzhalter_ohne_weiterleitung(konten):
+    c = angemeldet(konten[P])
+    c.post("/einstellungen/personen/platzhalter/", {"anzeigename": "Aushilfe Neu", "bereich": konten[P].person.bereich_id})
+    neu = Person.objects.get(anzeigename="Aushilfe Neu")
+    assert not neu.weiterleiten_an.exists()
+
+
+def test_umwandeln_entfernt_weiterleitung(konten, platzhalter):
+    platzhalter.weiterleiten_an.add(konten[M].person)
+    angemeldet(konten[A]).post(f"/platzhalter/{platzhalter.pk}/umwandeln/",
+                               {"email": "aushilfe@example.test", "rolle": "mitarbeiter"})
+    platzhalter.refresh_from_db()
+    assert not platzhalter.ist_platzhalter and not platzhalter.weiterleiten_an.exists()
 
 
 # --- Konfliktschutz und Verlauf ---
@@ -320,6 +387,112 @@ def test_meine_aufgaben_zeigt_einteilung_und_zuweisung(konten, aufgabe, projekt,
                            verantwortlich=konten[M].person, faellig_am=date(2020, 1, 1))
     seite = angemeldet(konten[M]).get("/meine-aufgaben/").content.decode()
     assert "Hallenboden Nord" in seite and "Regal Lager" in seite and "Überfällig" in seite
+
+
+# --- Meine Aufgaben: betreute Platzhalter ---
+
+@pytest.fixture
+def betreut(konten, bereich_a):
+    """Zwei Platzhalter, deren Benachrichtigungen an die Mitarbeiterin gehen, und einer für jemand anderen."""
+    eins = Person.objects.create(anzeigename="Aushilfe Eins", bereich=bereich_a)
+    zwei = Person.objects.create(anzeigename="Aushilfe Zwei", bereich=bereich_a)
+    fremd = Person.objects.create(anzeigename="Aushilfe Fremd", bereich=bereich_a)
+    eins.weiterleiten_an.add(konten[M].person)
+    zwei.weiterleiten_an.add(konten[M].person)
+    fremd.weiterleiten_an.add(konten[L].person)
+    return eins, zwei, fremd
+
+
+def _werktag():
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    heute = timezone.localdate()
+    return heute if heute.weekday() < 5 else heute + timedelta(days=7 - heute.weekday())
+
+
+def test_meine_aufgaben_ohne_betreute_platzhalter_unveraendert(konten, aufgabe):
+    seite = angemeldet(konten[M]).get("/meine-aufgaben/").content.decode()
+    assert "Mir zugewiesen" in seite
+    for text in ("Platzhaltern zugewiesen", "eingeteilt-wahl", "meine-umschalter", "meine-raster--platzhalter"):
+        assert text not in seite
+
+
+def test_meine_aufgaben_dropdown_eingeteilt_mit_abwesenheit(konten, aufgabe, betreut):
+    from planung.models import Abwesenheit
+
+    eins, zwei, fremd = betreut
+    tag = _werktag()
+    Einteilung.objects.create(aufgabe=aufgabe, person=eins, von=tag, bis=tag)
+    Abwesenheit.objects.create(person=eins, von=tag, bis=tag)
+    c = angemeldet(konten[M])
+    seite = c.get("/meine-aufgaben/").content.decode()
+    assert 'id="eingeteilt-wahl"' in seite and "Aushilfe Eins" in seite and "Aushilfe Zwei" in seite
+    assert "Aushilfe Fremd" not in seite
+    assert "Hallenboden Nord" not in seite.split('id="karte-mir"')[0]  # „Ich“: nichts eingeteilt
+    seite = c.get(f"/meine-aufgaben/?eingeteilt={eins.pk}").content.decode()
+    karte = seite.split('id="karte-mir"')[0]
+    assert "Hallenboden Nord" in karte and "Abwesend" in karte
+    assert f'<option value="{eins.pk}" selected>' in karte
+    # Fremde Person-ID: keine Daten, zurück auf „Ich“
+    Einteilung.objects.create(aufgabe=aufgabe, person=fremd, von=tag, bis=tag)
+    karte = c.get(f"/meine-aufgaben/?eingeteilt={fremd.pk}").content.decode().split('id="karte-mir"')[0]
+    assert "Hallenboden Nord" not in karte and "Aushilfe Fremd" not in karte
+
+
+def test_meine_aufgaben_platzhaltern_zugewiesen_mit_filter(konten, projekt, abschnitt, betreut):
+    eins, zwei, fremd = betreut
+    for titel, person in [("Regal Eins", eins), ("Regal Zwei", zwei), ("Regal Fremd", fremd),
+                          ("Regal Ich", konten[M].person)]:
+        Aufgabe.objects.create(projekt=projekt, abschnitt=abschnitt, titel=titel, status=Status.standard_offen(),
+                               verantwortlich=person)
+    c = angemeldet(konten[M])
+    seite = c.get("/meine-aufgaben/").content.decode()
+    mir, platzhalter = seite.split('id="karte-mir"')[1].split('id="karte-platzhalter"')
+    assert "Regal Ich" in mir and "Regal Eins" not in mir
+    assert "Regal Eins" in platzhalter and "Regal Zwei" in platzhalter and "Regal Fremd" not in platzhalter
+    assert 'id="platzhalter-filter"' in platzhalter and "Aushilfe Eins" in platzhalter  # Avatar/Name je Zeile
+    assert 'data-zugewiesen="ich"' in seite
+    gefiltert = c.get(f"/meine-aufgaben/?zugewiesen=platzhalter&platzhalter={zwei.pk}").content.decode()
+    teil = gefiltert.split('id="karte-platzhalter"')[1]
+    assert "Regal Zwei" in teil and "Regal Eins" not in teil
+    assert 'data-zugewiesen="platzhalter"' in gefiltert
+    # Rücksprung nach dem Abhaken behält den Zustand
+    assert f'name="weiter" value="/meine-aufgaben/?zugewiesen=platzhalter&amp;platzhalter={zwei.pk}"' in gefiltert
+    # Fremder Filter: ignoriert, „Alle“
+    teil = c.get(f"/meine-aufgaben/?platzhalter={fremd.pk}").content.decode().split('id="karte-platzhalter"')[1]
+    assert "Regal Eins" in teil and "Regal Fremd" not in teil
+
+
+def test_meine_aufgaben_filter_erst_ab_zwei_platzhaltern(konten, betreut):
+    eins, zwei, _fremd = betreut
+    zwei.weiterleiten_an.clear()
+    seite = angemeldet(konten[M]).get("/meine-aufgaben/").content.decode()
+    assert "Platzhaltern zugewiesen" in seite and 'id="platzhalter-filter"' not in seite
+
+
+def test_meine_aufgaben_archivierte_platzhalter_nicht_betreut(konten, betreut):
+    eins, zwei, _fremd = betreut
+    eins.archivieren()
+    seite = angemeldet(konten[M]).get("/meine-aufgaben/").content.decode()
+    assert "Aushilfe Zwei" in seite and "Aushilfe Eins" not in seite
+
+
+def test_platzhalter_aufgabe_abhaken_wie_eigene(konten, projekt, abschnitt, betreut):
+    eins = betreut[0]
+    a = Aufgabe.objects.create(projekt=projekt, abschnitt=abschnitt, titel="Regal Eins", status=Status.standard_offen(),
+                               verantwortlich=eins)
+    antwort = angemeldet(konten[M]).post(f"/aufgaben/{a.pk}/erledigt/", {"erledigt": "1", "zeile": "meine"},
+                                         HTTP_HX_REQUEST="true")
+    assert antwort.status_code == 200 and "zugewiesen__zeile--erledigt" in antwort.content.decode()
+    a.refresh_from_db()
+    assert a.status.ist_erledigt
+    # Lesende dürfen nicht abhaken, auch nicht für betreute Platzhalter
+    eins.weiterleiten_an.add(konten[L].person)
+    b = Aufgabe.objects.create(projekt=projekt, abschnitt=abschnitt, titel="Regal B", status=Status.standard_offen(),
+                               verantwortlich=eins)
+    assert angemeldet(konten[L]).post(f"/aufgaben/{b.pk}/erledigt/", {"erledigt": "1"}).status_code == 403
 
 
 def test_suche_findet_aufgabe_projekt_und_kommentar(konten, aufgabe):

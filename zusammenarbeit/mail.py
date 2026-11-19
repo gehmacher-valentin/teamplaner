@@ -39,7 +39,6 @@ KATEGORIEN = [
     ]),
     ("kommentare", gettext_lazy("Kommentare & Erwähnungen"), [
         (A.ERWAEHNUNG, gettext_lazy("Ich werde in einem Kommentar erwähnt")),
-        (A.ERWAEHNUNG_PLATZHALTER, gettext_lazy("Ein von mir angelegter Platzhalter wird erwähnt")),
         (A.KOMMENTAR, gettext_lazy("Neuer Kommentar zu einer Aufgabe, für die ich verantwortlich bin")),
     ]),
     ("einteilung", gettext_lazy("Einteilung im Teamplaner"), [

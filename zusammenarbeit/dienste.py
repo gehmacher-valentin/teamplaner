@@ -22,13 +22,26 @@ def _zeitraum(von, bis):
 
 
 def benachrichtigen(empfaenger, art, vorlage, werte=None, *, aufgabe=None, ausloeser=None):
-    """Legt eine Benachrichtigung an – nicht für Platzhalter, Archivierte oder sich selbst.
+    """Legt Benachrichtigungen an und gibt sie als Liste zurück – nicht für Archivierte oder sich selbst.
 
     ``vorlage`` ist ein übersetzbarer Text mit %(name)s-Platzhaltern; Werte dürfen
     Funktionen sein, die erst in der Sprache der empfangenden Person ausgewertet werden
     (z. B. Datumsangaben).
+
+    Platzhalter haben kein Konto: Ihre Benachrichtigungen gehen an alle Konten, die beim Platzhalter
+    eingetragen sind (``Person.weiterleiten_an``, Standard niemand), mit Hinweis auf den Platzhalter.
+    Für die E-Mail gilt die Einstellung der empfangenden Person für dieselbe Art.
     """
-    if empfaenger is None or empfaenger.ist_platzhalter or empfaenger.archiviert:
+    if empfaenger is None or empfaenger.archiviert:
+        return []
+    if not empfaenger.ist_platzhalter:
+        return [b for b in [_anlegen(empfaenger, art, vorlage, werte, aufgabe, ausloeser)] if b]
+    return [b for person in empfaenger.weiterleiten_an.select_related("konto")
+            if (b := _anlegen(person, art, vorlage, werte, aufgabe, ausloeser, platzhalter=empfaenger))]
+
+
+def _anlegen(empfaenger, art, vorlage, werte, aufgabe, ausloeser, platzhalter=None):
+    if empfaenger.ist_platzhalter or empfaenger.archiviert:
         return None
     if ausloeser is not None and empfaenger.pk == ausloeser.pk:
         return None
@@ -36,6 +49,8 @@ def benachrichtigen(empfaenger, art, vorlage, werte=None, *, aufgabe=None, auslo
     with translation.override(konto.sprache):
         aufgeloest = {k: (v() if callable(v) else v) for k, v in (werte or {}).items()}
         text = str(vorlage) % aufgeloest
+        if platzhalter is not None:
+            text = f"{text} " + _("(für Platzhalter „%(name)s“)") % {"name": platzhalter.anzeigename}
     status = MailStatus.OFFEN if mail_erwuenscht(konto, art) and mail_aktiv() else MailStatus.KEINE
     return Benachrichtigung.objects.create(
         empfaenger=empfaenger, art=art, text=text[:500], aufgabe=aufgabe, ausloeser=ausloeser,
@@ -104,18 +119,12 @@ def projekt_aufgabe_benachrichtigen(konto, aufgabe):
 # --- Kommentare ---
 
 def erwaehnung_benachrichtigen(konto, kommentar, personen):
-    """Erwähnte Platzhalter: Benachrichtigung an die anlegende Person."""
+    """Erwähnte Personen; bei Platzhaltern geht es an die eingetragenen Konten (``benachrichtigen``)."""
     akteur = konto.person
     werte = {"akteur": akteur.anzeigename, "titel": kommentar.aufgabe.titel}
     for person in personen:
-        if person.ist_platzhalter:
-            benachrichtigen(person.erstellt_von, A.ERWAEHNUNG_PLATZHALTER,
-                            _("%(akteur)s hat den Platzhalter %(platzhalter)s bei „%(titel)s“ erwähnt."),
-                            {**werte, "platzhalter": person.anzeigename},
-                            aufgabe=kommentar.aufgabe, ausloeser=akteur)
-        else:
-            benachrichtigen(person, A.ERWAEHNUNG, _("%(akteur)s hat Sie bei „%(titel)s“ erwähnt."), werte,
-                            aufgabe=kommentar.aufgabe, ausloeser=akteur)
+        benachrichtigen(person, A.ERWAEHNUNG, _("%(akteur)s hat Sie bei „%(titel)s“ erwähnt."), werte,
+                        aufgabe=kommentar.aufgabe, ausloeser=akteur)
 
 
 def kommentar_benachrichtigen(konto, kommentar, erwaehnte):

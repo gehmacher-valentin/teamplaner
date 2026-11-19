@@ -148,13 +148,67 @@ def test_alle_wege_des_abhakens(client_fuer, konten, aufgabe, wiederkehrend, weg
     assert neu.eltern_id == ziel.eltern_id
 
 
-def test_htmx_haken_laedt_neu_und_meldet(client_fuer, konten, wiederkehrend):
+def test_htmx_haken_liefert_erledigte_zeile_mit_folgeaufgabe_und_meldet(client_fuer, konten, wiederkehrend):
+    """Kein Neuladen mehr: Die erledigte Zeile bleibt stehen, die Folgeaufgabe liegt als <template> bei und
+    erscheint erst nach Ablauf (lib/abhaken.ts); die Meldung kommt als Toast."""
+    import json
+
     c = client_fuer(konten[M])
     antwort = c.post(f"/aufgaben/{wiederkehrend.pk}/erledigt/", {"erledigt": "1", "zeile": "1"}, HTTP_HX_REQUEST="true")
-    assert antwort["HX-Refresh"] == "true"
+    assert antwort.status_code == 200 and "HX-Refresh" not in antwort
+    html = antwort.content.decode()
+    neu = folge(wiederkehrend)
+    assert f'id="aufgabe-{wiederkehrend.pk}"' in html and "data-erledigt" in html.split("<template")[0]
+    assert f'name="folge" value="{neu.pk}"' in html  # für „rückgängig“
+    assert "<template data-folgeaufgabe>" in html and f'id="aufgabe-block-{neu.pk}"' in html.split("<template")[1]
+    toasts = json.loads(antwort["HX-Trigger"])["toasts"]
+    assert toasts[0]["text"] == "Nächster Termin angelegt: Hallenboden Nord, 26.10.2026."
     seite = c.get(f"/projekte/{wiederkehrend.projekt_id}/").content.decode()
-    assert "Nächster Termin angelegt: Hallenboden Nord, 26.10.2026." in seite
     assert seite.count('class="wiederkehrend"') == 1  # nur die offene steht in der Liste (Filter „Offen“)
+
+
+def test_rueckgaengig_nimmt_unberuehrte_folgeaufgabe_zurueck(client_fuer, konten, wiederkehrend):
+    c = client_fuer(konten[M])
+    c.post(f"/aufgaben/{wiederkehrend.pk}/erledigt/", {"erledigt": "1", "zeile": "1"}, HTTP_HX_REQUEST="true")
+    neu = folge(wiederkehrend)
+    antwort = c.post(f"/aufgaben/{wiederkehrend.pk}/erledigt/", {"erledigt": "0", "zeile": "1", "folge": neu.pk},
+                     HTTP_HX_REQUEST="true")
+    assert antwort.status_code == 200 and "data-erledigt" not in antwort.content.decode()
+    wiederkehrend.refresh_from_db()
+    assert not wiederkehrend.status.ist_erledigt
+    assert not Aufgabe.objects.filter(pk=neu.pk).exists()
+    # Erneut abhaken legt wieder genau eine Folgeaufgabe an
+    c.post(f"/aufgaben/{wiederkehrend.pk}/erledigt/", {"erledigt": "1", "zeile": "1"}, HTTP_HX_REQUEST="true")
+    assert Aufgabe.objects.filter(titel="Hallenboden Nord").count() == 2
+
+
+def test_rueckgaengig_laesst_bearbeitete_oder_fremde_folgeaufgabe_stehen(client_fuer, konten, wiederkehrend, aufgabe):
+    c = client_fuer(konten[M])
+    dienste.erledigt_setzen(konten[M], wiederkehrend, True)
+    neu = folge(wiederkehrend)
+    dienste.aufgabe_speichern(konten[M], neu, {"titel": "Geändert"}, neu.version)
+    wiederkehrend.refresh_from_db()
+    c.post(f"/aufgaben/{wiederkehrend.pk}/erledigt/", {"erledigt": "0", "folge": neu.pk})
+    assert Aufgabe.objects.filter(pk=neu.pk).exists()  # schon bearbeitet: bleibt
+    # Fremde ID (keine Folgeaufgabe dieser Aufgabe) wird nie gelöscht
+    dienste.erledigt_setzen(konten[M], wiederkehrend, True)
+    wiederkehrend.refresh_from_db()
+    c.post(f"/aufgaben/{wiederkehrend.pk}/erledigt/", {"erledigt": "0", "folge": aufgabe.pk})
+    assert Aufgabe.objects.filter(pk=aufgabe.pk).exists()
+
+
+def test_meine_aufgaben_haken_liefert_zeile_mit_folgeaufgabe(client_fuer, konten, wiederkehrend):
+    wiederkehrend.verantwortlich = konten[M].person
+    wiederkehrend.save()
+    c = client_fuer(konten[M])
+    antwort = c.post(f"/aufgaben/{wiederkehrend.pk}/erledigt/", {
+        "erledigt": "1", "zeile": "meine", "weiter": "/meine-aufgaben/?zugewiesen=platzhalter"}, HTTP_HX_REQUEST="true")
+    html = antwort.content.decode()
+    neu = folge(wiederkehrend)
+    assert antwort.status_code == 200 and "HX-Refresh" not in antwort
+    assert f'id="meine-{wiederkehrend.pk}"' in html and "zugewiesen__zeile--erledigt" in html
+    assert f'id="meine-{neu.pk}"' in html.split("<template data-folgeaufgabe>")[1]
+    assert 'name="weiter" value="/meine-aufgaben/?zugewiesen=platzhalter"' in html
 
 
 def test_kein_doppeltes_anlegen_beim_wieder_oeffnen(konten, wiederkehrend):

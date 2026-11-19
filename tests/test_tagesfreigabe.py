@@ -1,4 +1,5 @@
-"""Zeile „Tagesfreigabe“: Stufen und Name stellt der Admin ein, Bearbeiten wie die Info-Zeile, global schaltbar."""
+"""Zeile „Tagesfreigabe“: Stufen und Name stellt der Admin ein, setzen nur mit eigenem Haken am Konto (und
+Zugang zum Teamplaner), global schaltbar."""
 
 import pytest
 
@@ -13,9 +14,16 @@ A, BL, P, M, L = Rolle.ADMIN, Rolle.BEREICHSLEITUNG, Rolle.PLANER, Rolle.MITARBE
 URL = "/einstellungen/allgemein/"
 
 
+def haken(*konten_):
+    for konto in konten_:
+        konto.darf_tagesfreigabe = True
+        konto.save(update_fields=["darf_tagesfreigabe"])
+
+
 @pytest.fixture
-def stufen(db):
+def stufen(db, konten):
     Systemeinstellungen.objects.update_or_create(pk=1, defaults={"freigabe_zeile": True})
+    haken(konten[A], konten[BL])  # Standard nach dem Update: niemand – hier Admin und Bereichsleitung
     return [FreigabeStufe.objects.create(name=name, sortierung=i * 10) for i, name in enumerate(["Komplett", "Halle A"])]
 
 
@@ -161,3 +169,93 @@ def test_zeitraum_ungueltig(client_fuer, konten, stufen, daten):
 def test_zeitraum_unbekannte_stufe(client_fuer, konten, stufen):
     assert zeitraum(client_fuer(konten[A]), MO, DI, "999999").json()["code"] == "ungueltig"
     assert not Tagesfreigabe.objects.exists()
+
+
+# --- Eigenes Recht: Haken „Darf Tagesfreigabe setzen“ in den Personeneinstellungen ---
+
+def test_ohne_haken_403_auch_fuer_admin_und_bereichsleitung(client_fuer, konten, stufen):
+    for konto in (konten[A], konten[BL]):
+        konto.darf_tagesfreigabe = False
+        konto.save(update_fields=["darf_tagesfreigabe"])
+        c = client_fuer(konto)
+        assert setzen(c, MO, stufen[0]).status_code == 403
+        assert zeitraum(c, MO, DI, stufen[0]).status_code == 403
+        assert raster(c)["freigabe_bearbeitbar"] is False
+    assert not Tagesfreigabe.objects.exists()
+
+
+def test_neue_konten_haben_keinen_haken(konten):
+    assert not any(k.darf_tagesfreigabe for k in konten.values())
+
+
+def test_mit_haken_und_teamplaner_auch_als_planer(client_fuer, konten, stufen):
+    from planung.models import AnsichtFreigabe, Recht, TeamplanerAnsicht
+
+    planer = konten[P]
+    haken(planer)
+    assert setzen(client_fuer(planer), MO, stufen[0]).status_code == 403  # sieht den Teamplaner noch nicht
+    ansicht = TeamplanerAnsicht.objects.create(name="Montage")
+    ansicht.personen.add(konten[M].person)
+    AnsichtFreigabe.objects.create(ansicht=ansicht, konto=planer, recht=Recht.BEARBEITEN)
+    c = client_fuer(planer)
+    assert setzen(c, MO, stufen[0]).status_code == 200
+    assert raster(c)["freigabe_bearbeitbar"] is True
+
+
+def test_haken_ohne_teamplaner_bleibt_wirkungslos(client_fuer, konten, stufen):
+    haken(konten[M], konten[L])
+    for rolle in (M, L):
+        c = client_fuer(konten[rolle])
+        assert setzen(c, MO, stufen[0]).status_code == 403
+        assert raster(c)["freigabe_bearbeitbar"] is False
+
+
+def test_raster_liefert_freigabe_bearbeitbar_getrennt_von_info(client_fuer, konten, stufen):
+    konten[BL].darf_tagesfreigabe = False
+    konten[BL].save(update_fields=["darf_tagesfreigabe"])
+    daten = raster(client_fuer(konten[BL]))
+    assert daten["info_bearbeitbar"] is True and daten["freigabe_bearbeitbar"] is False
+    assert raster(client_fuer(konten[A]))["freigabe_bearbeitbar"] is True
+
+
+def _formular(ziel, **aenderung):
+    daten = {"anzeigename": ziel.person.anzeigename, "email": ziel.email, "rolle": ziel.rolle,
+             "bereich": ziel.person.bereich_id}
+    if ziel.systemkonto:
+        daten["systemkonto"] = "on"
+    daten.update(aenderung)
+    return daten
+
+
+def test_nur_admin_setzt_den_haken_mit_protokoll(client_fuer, konten):
+    ziel = konten[M]
+    url = f"/einstellungen/personen/{ziel.pk}/"
+    # Bereichsleitung darf das Konto bearbeiten, aber den Haken nicht setzen (Feld deaktiviert)
+    seite = client_fuer(konten[BL]).get(url).content.decode()
+    assert 'name="darf_tagesfreigabe"' in seite and "disabled" in seite.split('name="darf_tagesfreigabe"')[1][:80]
+    assert client_fuer(konten[BL]).post(url, _formular(ziel, darf_tagesfreigabe="on")).status_code == 302
+    ziel.refresh_from_db()
+    assert ziel.darf_tagesfreigabe is False
+    # Admin setzt ihn; Protokoll wie beim Systemkonto
+    assert client_fuer(konten[A]).post(url, _formular(ziel, darf_tagesfreigabe="on")).status_code == 302
+    ziel.refresh_from_db()
+    assert ziel.darf_tagesfreigabe is True
+    eintrag = Protokolleintrag.objects.filter(objekt_typ="konto", objekt_id=ziel.pk, aktion="geaendert").latest("id")
+    assert "darf_tagesfreigabe" in eintrag.daten
+    # Bereichsleitung speichert andere Felder: der Haken bleibt
+    client_fuer(konten[BL]).post(url, _formular(ziel, anzeigename="Neu"))
+    ziel.refresh_from_db()
+    assert ziel.darf_tagesfreigabe is True and ziel.person.anzeigename == "Neu"
+
+
+def test_hinweise_beim_haken(client_fuer, konten):
+    ziel = konten[M]
+    url = f"/einstellungen/personen/{ziel.pk}/"
+    c = client_fuer(konten[A])
+    Systemeinstellungen.objects.update_or_create(pk=1, defaults={"freigabe_zeile": False, "freigabe_name": "Hallenfreigabe"})
+    seite = c.get(url).content.decode()
+    assert "Darf „Hallenfreigabe“ setzen" in seite
+    assert "unter Einstellungen → Allgemein ausgeschaltet" in seite
+    antwort = c.post(url, _formular(ziel, darf_tagesfreigabe="on"), follow=True)
+    inhalt = antwort.content.decode()
+    assert "sieht den Teamplaner nicht" in inhalt

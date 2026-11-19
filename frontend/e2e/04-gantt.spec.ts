@@ -87,7 +87,7 @@ test("Gantt: Einteilung verletzt Abhängigkeit, Warnzeichen statt rotem Pfeil, A
 
   // Abhilfe im Teamplaner: die zu frühe Einteilung entfernen
   const planer = await seiteFuer("planer");
-  await planer.goto("/");
+  await planer.goto("/teamplaner/");
   const eingeteilt = planer.locator(".tp-balken", { hasText: "Servicewagen ausrüsten" });
   await expect(eingeteilt.first()).toBeVisible();
   for (let n = await eingeteilt.count(); n > 0; n--) {

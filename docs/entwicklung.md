@@ -93,12 +93,12 @@ Für Rechteprüfung und Einteilungslogik sind automatische Tests Pflicht.
 | `tests/test_seiten_rechte.py` | serverseitige Abweisung je Rolle und Seite |
 | `tests/test_kalender.py` | Feiertage, zählende Tage, Doppelbelegung |
 | `tests/test_planung_api.py` | Einteilen, Verschieben, Konflikte, Feiertagsbestätigung, Protokoll |
-| `tests/test_ablaeufe.py` | Einladung, Sperre, Erwähnungen, Konfliktschutz, Platzhalter, Suche |
+| `tests/test_ablaeufe.py` | Einladung, Sperre, Erwähnungen, Konfliktschutz, Platzhalter (Weiterleitung der Benachrichtigungen), Meine Aufgaben mit betreuten Platzhaltern, Suche |
 | `tests/test_uebersetzung.py` | englische Übersetzung vollständig und kompiliert |
 | `tests/test_gantt.py` | Gantt-Freigaben, Termine, Abhängigkeiten, Ringschluss, Abgleich |
 | `tests/test_mail.py` | E-Mail-Einstellungen, Versand, Einladung, Passwort vergessen |
 | `tests/test_feiern.py`, `tests/test_foto.py` | Feieranimation, Profilfoto |
-| `tests/test_tagesfreigabe.py` | Zeile „Tagesfreigabe“: Rechte, Protokoll, Stufen, Name, Ein- und Ausschalten |
+| `tests/test_tagesfreigabe.py` | Zeile „Tagesfreigabe“: eigenes Recht (Haken am Konto, nur Admin vergibt ihn, nur mit Teamplaner-Zugang), Protokoll, Stufen, Name, Ein- und Ausschalten |
 | `tests/test_notizen.py`, `tests/test_bestellungen.py` | Notizen (Sichtbarkeit, Ordnerrechte, Markdown, Längengrenze und Frist der Umwandlung) und Bestellungen (Prio, Liefertermin und Warnung, „bestellt“ ausfüllen, Lieferanten-Vorschläge) |
 | `tests/test_heic.py` | HEIC-Fotos werden zu JPEG (Anhänge, Notiz-Anhänge, Profilfoto), Testbild in `tests/daten/` |
 | `tests/test_projektliste.py` | Projektpriorität, Navigation, Mitgliederauswahl, Protokoll „erledigt“, Posteingang im Kopf, Gesamtansicht |
@@ -115,7 +115,7 @@ Für Rechteprüfung und Einteilungslogik sind automatische Tests Pflicht.
 | `tests/test_wiederholung.py` | Wiederkehrende Aufgaben: Regel (Monatsende, Intervalle, Wochentage, Enddatum), Folgeaufgabe auf allen Wegen des Abhakens, kein Doppelanlegen, Unteraufgaben, nicht übernommene Daten, Eingabe im Detail |
 | `tests/test_vorlagen.py` | Vorlagen ohne mehrzeilige `{# #}`-Kommentare (erscheinen sonst als Text) |
 | `frontend/src/teamplaner/*.test.ts` | Rasterlogik und Übersetzung im Browser |
-| `frontend/src/editor/*.test.ts`, `frontend/src/lib/*.test.ts` | Markdown beim Einfügen, Editor-Rundlauf, Spaltenbreiten, Personenauswahl, Vorschläge, Restzeit der Admin-Sitzung, nur die jüngste Ladeanfrage zählt (`neueste.ts`) |
+| `frontend/src/editor/*.test.ts`, `frontend/src/lib/*.test.ts` | Markdown beim Einfügen, Editor-Rundlauf, Spaltenbreiten, Personenauswahl, Vorschläge, Restzeit der Admin-Sitzung, nur die jüngste Ladeanfrage zählt (`neueste.ts`), Stand vom Server nach dem Neuladen (`sofort.ts`), Zähler nach dem Abhaken (`offenzaehler.ts`) |
 | `frontend/src/gantt/logik.test.ts` | Zeitachse, Zeilen, Pfeile (rot nur bei verletzten geplanten Terminen), Warnzeichen je Zeile |
 
 | `frontend/e2e/01-rundgang.spec.ts` | alle Seiten der Navigation am Desktop und am Handy, Einstellungen, keine Vorlagenreste |
@@ -124,6 +124,9 @@ Für Rechteprüfung und Einteilungslogik sind automatische Tests Pflicht.
 | `frontend/e2e/04-gantt.spec.ts` | Gantt: Warnzeichen bei Verletzung durch Einteilungen, Hinweis klappt am unteren Rand nach oben, Balken ziehen und Nachziehen, schnelle Änderungen, Abhängigkeit anlegen und entfernen |
 | `frontend/e2e/05-aufgabe.spec.ts` | Aufgabe anlegen, Seitenleiste, direkt bearbeiten, Erwähnung, Anhang, Posteingang |
 | `frontend/e2e/06-notizen-bestellungen.spec.ts` | Notiz und Bestellung anlegen, bearbeiten, wiederfinden |
+| `frontend/e2e/07-notizen-gemeinsam.spec.ts` | Notiz gemeinsam bearbeiten |
+| `frontend/e2e/08-darstellung.spec.ts` | Farbschema mehrfach umstellen: Auswahl und `data-theme` stimmen nach jedem Neuladen |
+| `frontend/e2e/09-meine-aufgaben.spec.ts` | Abgehakte Aufgaben 5 s sichtbar, rückgängig, Folgeaufgabe danach (Meine Aufgaben, Projektliste); betreute Platzhalter in drei Breiten; Einteilungen nebeneinander |
 
 Dazu prüft `shellcheck` die Betriebs- und Bauskripte.
 

@@ -277,7 +277,7 @@ def tagesinfo_setzen(konto, datum, text, client_id=None):
 
 def _freigabestufe(konto, stufe_id):
     """Recht prüfen und Stufe laden; leer = „keine Freigabe“ (None)."""
-    if not rechte.hat_planungsansicht(konto):
+    if not rechte.darf_tagesfreigabe(konto):
         raise PlanungsFehler("keine_berechtigung", _("Sie dürfen die Tagesfreigabe nicht bearbeiten."), status=403)
     if not stufe_id:
         return None

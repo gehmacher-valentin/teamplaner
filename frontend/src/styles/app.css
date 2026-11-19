@@ -724,6 +724,7 @@ legend { font-size: 13px; font-weight: 600; color: var(--text-2); padding: 0 4px
 }
 .badge--platzhalter { background: var(--flaeche); border: 1px dashed var(--platzhalter-rand); }
 .badge--warn { background: var(--warn-bg); color: var(--warn-text); }
+.badge--gefahr { background: var(--gefahr-bg); color: var(--gefahr); }
 .st-grau { background: var(--st-grau-bg); color: var(--st-grau-fg); }
 .st-blau { background: var(--st-blau-bg); color: var(--st-blau-fg); }
 .st-gelb { background: var(--st-gelb-bg); color: var(--st-gelb-fg); }
@@ -829,7 +830,18 @@ legend { font-size: 13px; font-weight: 600; color: var(--text-2); padding: 0 4px
 .haken:disabled { cursor: default; }
 .aufgabe-titel { color: var(--text); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .aufgabe-titel--erledigt { color: var(--text-3); text-decoration: line-through; }
-.faellig--ueberfaellig { color: var(--warn-text); font-weight: 600; }
+.faellig--ueberfaellig { color: var(--gefahr); font-weight: 600; }
+/* Datumsfeld einer Fälligkeit: Wort („Heute“ …) und Feld liegen in derselben Rasterzelle. Solange das Feld
+   keinen Fokus hat, ist sein Text unsichtbar (das Kalendersymbol bleibt); beim Klicken erscheint das Datum. */
+.datumswahl { display: grid; align-items: center; min-width: 0; }
+.datumswahl > * { grid-area: 1 / 1; }
+.datumswahl__wort { padding-inline: 11px; pointer-events: none; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.datumswahl__feld--wort:not(:focus) { -webkit-text-fill-color: transparent; }
+.datumswahl__feld:focus + .datumswahl__wort { visibility: hidden; }
+/* schlägt die allgemeine Textfarbe von input[type="date"] */
+.faellig--ueberfaellig .datumswahl__feld { color: var(--gefahr); font-weight: 600; }
+.eigenschaften .detailfeld .datumswahl { max-width: 320px; }
+.eigenschaften .detailfeld .datumswahl__wort { margin-left: -11px; }
 .detail { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
 .detail__haupt { flex: 999 1 560px; min-width: 0; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
 .detail__seite { flex: 1 1 300px; max-width: 380px; display: flex; flex-direction: column; gap: 16px; }
@@ -939,23 +951,55 @@ a.eltern-hinweis:hover { text-decoration: underline; }
 }
 .unter-zaehler:hover { border-color: var(--rand-stark); }
 .aufgabe-block--zu > .aufgabe-zeile .unter-zaehler svg { transform: rotate(-90deg); }
-/* Meine Aufgaben: „Eingeteilt“ links, „Mir zugewiesen“ und „Zuletzt erledigt“ rechts */
+/* Meine Aufgaben: „Eingeteilt“ links, „Mir zugewiesen“ und „Zuletzt erledigt“ rechts. Wer Platzhalter betreut,
+   bekommt „Platzhaltern zugewiesen“: breit als dritte Spalte, sonst im Wechsel mit „Mir zugewiesen“ (Umschalter).
+   Die Grenzen richten sich nach der Breite des Inhalts (Container), nicht des Fensters. */
+.meine { container: meine / inline-size; }
 .meine-raster { display: grid; gap: 16px; align-items: start; }
 .meine-raster__spalte { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
-@media (min-width: 1180px) { .meine-raster { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+@container meine (min-width: 890px) { .meine-raster { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.meine-raster--platzhalter[data-zugewiesen="ich"] .meine-raster__platzhalter,
+.meine-raster--platzhalter[data-zugewiesen="platzhalter"] .meine-raster__mir { display: none; }
+.meine-raster .nur-dreispaltig { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.meine-umschalter { flex: 1 1 auto; max-width: max-content; }
+.meine-umschalter a { padding: 0 12px; white-space: nowrap; }
+@container meine (min-width: 1300px) {
+  .meine-raster--platzhalter { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); }
+  .meine-raster--platzhalter[data-zugewiesen] .meine-raster__mir,
+  .meine-raster--platzhalter[data-zugewiesen] .meine-raster__platzhalter { display: flex; }
+  .meine-raster .nur-dreispaltig { position: static; width: auto; height: auto; overflow: visible; clip-path: none; white-space: normal; }
+  .meine-umschalter { display: none; }
+}
+.karte__auswahl select { height: 32px; max-width: 220px; }
 .tageszeile { grid-template-columns: 120px minmax(0, 1fr); align-items: start; }
 .tageszeile--heute { background: var(--akzent-hell-2); }
 .tageszeile__tag { font-weight: 600; }
+.tageszeile__inhalt { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.tageszeile__hinweise { display: flex; flex-wrap: wrap; gap: 6px; }
 .stapel--eng { gap: 6px; }
 .stapel > .badge { align-self: flex-start; }
 .badge--feiertag { background: var(--feiertag); color: var(--feiertag-text); }
+/* Mehrere Einteilungen eines Tages nebeneinander, solange die Karte breit genug ist (sonst untereinander) */
+.tageskacheln { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 140px), 1fr)); gap: 6px; }
 .tageskarte {
-  display: flex; gap: 10px; align-items: center; text-decoration: none; color: var(--pf-fg); background: var(--pf-bg);
+  display: flex; flex-direction: column; gap: 2px; min-width: 0; text-decoration: none; color: var(--pf-fg); background: var(--pf-bg);
   border-left: 4px solid var(--pf-bar); border-radius: 5px; padding: 6px 10px;
 }
 .tageskarte:hover { color: var(--pf-fg); }
-.tageskarte__titel { font-weight: 600; flex: 1; }
-.tageskarte__projekt { opacity: 0.85; }
+.tageskarte__titel {
+  font-weight: 600; overflow-wrap: break-word; hyphens: auto;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden;
+}
+.tageskarte__projekt { opacity: 0.85; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Abgehakt: bleibt kurz sichtbar und klappt dann zu (lib/abhaken.ts); neue Folgeaufgabe kurz hervorgehoben */
+.zeile-weg { overflow: hidden; opacity: 0; padding-top: 0 !important; padding-bottom: 0 !important; border-bottom-width: 0 !important;
+  transition: height 0.3s ease, opacity 0.3s ease, padding 0.3s ease; }
+.zeile-neu { animation: zeile-neu 2.4s ease-out; }
+@keyframes zeile-neu { from { background: var(--akzent-hell); } to { background: transparent; } }
+@media (prefers-reduced-motion: reduce) {
+  .zeile-weg { transition: none; }
+  .zeile-neu { animation: none; box-shadow: inset 3px 0 0 var(--akzent); }
+}
 /* Ohne Kopfzeile: Projekt klein unter dem Titel, damit die halbe Breite reicht (keine Mindestbreite) */
 .zugewiesen { container-type: inline-size; }
 .zugewiesen .liste__gruppe .gedaempft { font-weight: 500; }
@@ -965,6 +1009,7 @@ a.eltern-hinweis:hover { text-decoration: underline; }
 .zugewiesen__unter { display: flex; gap: 10px; min-width: 0; color: var(--text-3); }
 .zugewiesen__projekt { display: inline-flex; gap: 6px; align-items: center; min-width: 0; color: inherit; text-decoration: none; }
 .zugewiesen__projekt:hover { color: var(--text); }
+.zugewiesen__person { gap: 5px; flex: none; max-width: 40%; color: var(--text-2); }
 @container (max-width: 400px) {
   .zugewiesen__zeile { grid-template-columns: auto minmax(0, 1fr) auto; }
   .zugewiesen__status { display: none; }

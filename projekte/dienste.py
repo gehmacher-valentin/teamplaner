@@ -2,10 +2,11 @@
 
 import nh3
 from django.db import transaction
-from django.db.models import F, Max
+from django.db.models import F, Max, Q
 from django.utils import timezone
 
 from kern.hilfen import als_zahl
+from kern.models import Protokolleintrag
 from kern.protokoll import aenderungen, protokollieren
 from planung.dienste import einteilungen_entfernt_melden
 from zusammenarbeit.dienste import (
@@ -308,6 +309,32 @@ def erledigt_setzen(konto, aufgabe, erledigt, unteraufgaben_mit=False):
         if aufgabe.status.ist_erledigt == erledigt:
             return aufgabe
         return aufgabe_speichern(konto, aufgabe, {"status": ziel}, None)
+
+
+# So lange nach dem Abhaken lässt sich eine unberührte Folgeaufgabe beim Wieder-Öffnen zurücknehmen
+FOLGE_ZURUECKNEHMEN_SEKUNDEN = 120
+
+
+def folgeaufgabe_zuruecknehmen(konto, aufgabe, folge_id):
+    """„Rückgängig“ direkt nach dem Abhaken einer wiederkehrenden Aufgabe: Die eben angelegte Folgeaufgabe
+    wird wieder gelöscht – nur, wenn sie (samt Unteraufgaben) noch unberührt ist: frisch, ohne Änderungen,
+    Einteilungen, Kommentare oder Anhänge. Sonst bleibt sie stehen. Gibt zurück, ob gelöscht wurde."""
+    folge = Aufgabe.objects.filter(pk=als_zahl(folge_id), wiederholt_von=aufgabe).first()
+    if folge is None or aufgabe.status.ist_erledigt:
+        return False
+    if (timezone.now() - folge.erstellt_am).total_seconds() > FOLGE_ZURUECKNEHMEN_SEKUNDEN:
+        return False
+    teil = [folge.pk, *nachkommen(folge.pk)]
+    beruehrt = (
+        Protokolleintrag.objects.filter(aufgabe_id__in=teil).exclude(aktion="angelegt").exists()
+        or Aufgabe.objects.filter(pk__in=teil).filter(
+            Q(einteilungen__isnull=False) | Q(kommentare__isnull=False) | Q(anhaenge__isnull=False)).exists()
+        or Aufgabe.objects.filter(wiederholt_von_id__in=teil).exists()
+    )
+    if beruehrt:
+        return False
+    aufgabe_loeschen(konto, folge)
+    return True
 
 
 def offene_unteraufgaben(aufgabe):

@@ -275,3 +275,33 @@ def test_person_wird_nicht_geloescht_sondern_deaktiviert(konten):
     client_fuer(konten[BL]).post(f"/personen/{konten[M].pk}/deaktivieren/")
     person = Person.objects.get(pk=konten[M].pk)
     assert person.archiviert and not Konto.objects.get(pk=person.pk).is_active
+
+
+# --- Startseite: für alle Rollen „Meine Aufgaben“ ---
+
+@pytest.mark.parametrize("rolle", ROLLEN)
+@pytest.mark.parametrize("url", ["/", "/start/"])
+def test_startseite_ist_meine_aufgaben(konten, rolle, url):
+    antwort = client_fuer(konten[rolle]).get(url)
+    assert antwort.status_code == 302 and antwort.url == "/meine-aufgaben/"
+
+
+def test_teamplaner_unter_eigenem_pfad_und_logo_zur_startseite(konten):
+    c = client_fuer(konten[BL])
+    seite = c.get("/teamplaner/")
+    assert seite.status_code == 200
+    inhalt = seite.content.decode()
+    assert 'class="kopf__marke" href="/"' in inhalt
+    assert 'href="/teamplaner/"' in inhalt  # Navigation
+
+
+@pytest.mark.parametrize("rolle", [P, M, L])
+def test_anmeldung_ohne_next_zu_meine_aufgaben_mit_next_zur_seite(konten, rolle):
+    from .conftest import TESTPASSWORT
+
+    konto = konten[rolle]
+    antwort = Client().post("/anmelden/", {"username": konto.email, "password": TESTPASSWORT})
+    assert antwort.status_code == 302 and antwort.url == "/meine-aufgaben/"
+    antwort = Client().post("/anmelden/?next=/projekte/", {"username": konto.email, "password": TESTPASSWORT,
+                                                            "next": "/projekte/"})
+    assert antwort.status_code == 302 and antwort.url == "/projekte/"

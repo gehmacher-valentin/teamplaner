@@ -5,7 +5,9 @@ from . import einstellungen as einst
 from . import views
 
 urlpatterns = [
-    path("start/", views.start, name="start"),
+    # Startseite für alle Rollen: „Meine Aufgaben“; /start/ für alte Lesezeichen
+    path("", views.start, name="start"),
+    path("start/", views.start),
     path("anmelden/", views.AnmeldenView.as_view(), name="login"),
     path("anmelden/code/", views.anmelden_code, name="anmelden_code"),
     path("passwort/vergessen/", views.passwort_vergessen, name="passwort_vergessen"),
