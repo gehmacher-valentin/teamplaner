@@ -35,13 +35,15 @@ interface RasterProps extends Gemeinsam {
   onInfo: (datum: string, text: string) => void;
   /** Tagesfreigabe je Tag, null = Zeile ausgeblendet */
   tagesfreigaben: Map<string, FreigabeTag> | null;
+  /** Tagesfreigabe setzen (eigenes Recht, nicht wie die Info-Zeile) */
+  freigabeBearbeitbar: boolean;
   freigabeName: string;
   freigabeStufen: { wert: string; name: string }[];
   onFreigabe: (datum: string, stufe: string) => void;
   onFreigabeZeitraum: () => void;
 }
 
-export function RasterAnsicht({ infos, infoBearbeitbar, onInfo, tagesfreigaben, freigabeName, freigabeStufen, onFreigabe, onFreigabeZeitraum, ...props }: RasterProps) {
+export function RasterAnsicht({ infos, infoBearbeitbar, onInfo, tagesfreigaben, freigabeBearbeitbar, freigabeName, freigabeStufen, onFreigabe, onFreigabeZeitraum, ...props }: RasterProps) {
   const { spalten, frei, heute, gruppen } = props;
   const [zugeklappt, setZugeklappt] = useState<Set<number>>(new Set());
   const n = spalten.length;
@@ -81,7 +83,7 @@ export function RasterAnsicht({ infos, infoBearbeitbar, onInfo, tagesfreigaben, 
         <div className="tp-infozeile tp-freigabezeile">
           <div className="tp-person tp-person--kopf tp-person--info">
             <span className="tp-freigabe__titel">{freigabeName}</span>
-            {infoBearbeitbar && (
+            {freigabeBearbeitbar && (
               <button type="button" className="tp-freigabe__zeitraum" onClick={onFreigabeZeitraum}
                 title={`${freigabeName}: ${t("zeitraum")}`} aria-label={`${freigabeName}: ${t("zeitraum")}`}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -93,7 +95,7 @@ export function RasterAnsicht({ infos, infoBearbeitbar, onInfo, tagesfreigaben, 
           <div className="tp-tage">
             {spalten.map((d, i) => (
               <FreigabeZelle key={d} datum={d} stufe={tagesfreigaben.get(d)?.stufe ?? ""} von={tagesfreigaben.get(d)?.von ?? ""} stufen={freigabeStufen} name={freigabeName}
-                bearbeitbar={infoBearbeitbar}
+                bearbeitbar={freigabeBearbeitbar}
                 wochenanfang={i > 0 && wochentag(d) === 0} onFreigabe={onFreigabe} />
             ))}
           </div>

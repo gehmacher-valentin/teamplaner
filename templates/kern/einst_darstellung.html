@@ -6,13 +6,13 @@
 <section class="karte einst-karte" aria-label="{% translate 'Darstellung' %}">
   <div class="einstellungszeile einstellungszeile--auswahl">
     <label for="sprache" class="luecke">{% translate "Sprache" %}</label>
-    <select id="sprache" name="wert" hx-post="{% url 'einst_darstellung_speichern' %}" hx-trigger="change" hx-swap="none" hx-vals='{"feld": "sprache"}'>
+    <select id="sprache" name="wert" autocomplete="off" hx-post="{% url 'einst_darstellung_speichern' %}" hx-trigger="change" hx-swap="none" hx-vals='{"feld": "sprache"}'>
       {% for code, name in sprachen %}<option value="{{ code }}"{% if code == user.sprache %} selected{% endif %}>{{ name }}</option>{% endfor %}
     </select>
   </div>
   <div class="einstellungszeile einstellungszeile--auswahl">
     <label for="farbschema" class="luecke">{% translate "Farbschema" %}</label>
-    <select id="farbschema" name="wert" hx-post="{% url 'einst_darstellung_speichern' %}" hx-trigger="change" hx-swap="none" hx-vals='{"feld": "farbschema"}'>
+    <select id="farbschema" name="wert" autocomplete="off" hx-post="{% url 'einst_darstellung_speichern' %}" hx-trigger="change" hx-swap="none" hx-vals='{"feld": "farbschema"}'>
       {% for wert, name in farbschemata %}<option value="{{ wert }}"{% if wert == user.farbschema %} selected{% endif %}>{{ name }}</option>{% endfor %}
     </select>
   </div>

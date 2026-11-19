@@ -9,5 +9,6 @@
     {% for option in feld %}<label class="personenauswahl__eintrag">{{ option.tag }}<span>{{ option.choice_label }}</span></label>{% endfor %}
   </div>
   <div class="personenauswahl__leer klein gedaempft" data-personenauswahl-leer hidden>{% translate "Keine Person gefunden." %}</div>
+  {% if feld.help_text %}<div class="hilfetext klein gedaempft">{{ feld.help_text }}</div>{% endif %}
   {% if feld.errors %}<ul class="fehlerliste">{% for f in feld.errors %}<li>{{ f }}</li>{% endfor %}</ul>{% endif %}
 </fieldset>

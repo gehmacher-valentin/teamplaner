@@ -25,6 +25,9 @@
       </div>
       {% include "teile/chips.html" with feld=form.gewerke %}
       {% include "teile/feld.html" with feld=form.systemkonto zeile=True %}
+      {% include "teile/feld.html" with feld=form.darf_tagesfreigabe zeile=True %}
+      {% if freigabe_zeile_aus %}<div class="meldung meldung--info klein">{% translate "Die Zeile ist unter Einstellungen → Allgemein ausgeschaltet; der Haken wirkt erst, wenn sie eingeschaltet ist." %}</div>{% endif %}
+      {% if freigabe_ohne_teamplaner %}<div class="meldung meldung--warning klein">{% translate "Diese Person sieht den Teamplaner nicht und kann die Freigabe deshalb trotz Haken nicht setzen." %}</div>{% endif %}
     </div>
     {% url 'einst_personen' as zurueck %}{% include "teile/speicherleiste.html" with abbrechen=zurueck %}
   </section>

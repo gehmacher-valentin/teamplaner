@@ -19,6 +19,7 @@
       </div>
       {% include "teile/feld.html" with feld=form.notiz %}
       {% include "teile/chips.html" with feld=form.gewerke %}
+      {% include "teile/personenauswahl.html" with feld=form.weiterleiten_an %}
     </div>
     {% url 'einst_personen' as zurueck %}{% include "teile/speicherleiste.html" with abbrechen=zurueck %}
   </section>

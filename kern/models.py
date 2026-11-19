@@ -90,6 +90,11 @@ class Person(models.Model):
     erstellt_von = models.ForeignKey(
         "self", on_delete=models.PROTECT, null=True, blank=True, related_name="+"
     )
+    # Nur für Platzhalter: Konten, an die alle Benachrichtigungen des Platzhalters gehen (Standard: niemand)
+    weiterleiten_an = models.ManyToManyField(
+        "self", symmetrical=False, blank=True, related_name="betreute_platzhalter",
+        verbose_name=_("Benachrichtigungen weiterleiten an"),
+    )
     erstellt_am = models.DateTimeField(auto_now_add=True)
 
     objects = PersonQuerySet.as_manager()
@@ -207,6 +212,8 @@ class Konto(AbstractBaseUser):
     gantt_unteraufgaben_offen = models.BooleanField(_("Unteraufgaben im Gantt aufgeklappt"), default=False)
     # Technisches Konto: behält alle Rechte seiner Rolle, steht aber in keiner Personenauswahl
     systemkonto = models.BooleanField(_("Systemkonto – nicht als Person auswählbar"), default=False)
+    # Tagesfreigabe im Teamplaner setzen: nur mit diesem Haken, unabhängig von der Rolle (auch Admin)
+    darf_tagesfreigabe = models.BooleanField(_("Darf die Tagesfreigabe setzen"), default=False)
     # Zwei-Faktor-Anmeldung (kern.zwei_faktor); leer = nicht eingerichtet
     totp_geheimnis = models.CharField(max_length=64, blank=True, editable=False)
     totp_seit = models.DateTimeField(null=True, blank=True, editable=False)

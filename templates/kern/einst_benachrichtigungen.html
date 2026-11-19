@@ -10,14 +10,14 @@
   <section class="karte einst-karte" aria-labelledby="kat-{{ k.schluessel }}">
     <div class="einstellungszeile einstellungszeile--kopf">
       <h3 id="kat-{{ k.schluessel }}" class="luecke">{{ k.titel }}</h3>
-      <input type="checkbox" role="switch" class="schalter" aria-label="{% blocktranslate with titel=k.titel %}{{ titel }}: alle{% endblocktranslate %}"
+      <input type="checkbox" role="switch" class="schalter" autocomplete="off" aria-label="{% blocktranslate with titel=k.titel %}{{ titel }}: alle{% endblocktranslate %}"
         name="an" value="1" data-kategorie="{{ k.schluessel }}" {% if k.alle %}checked{% endif %}{% if not mail_aktiv %} disabled{% endif %}
         hx-post="{% url 'einst_benachrichtigung' %}" hx-trigger="change" hx-swap="none" hx-vals='{"kategorie": "{{ k.schluessel }}"}'>
     </div>
     {% for e in k.ereignisse %}
       <div class="einstellungszeile">
         <label for="mail-{{ e.art }}" class="luecke">{{ e.beschreibung }}</label>
-        <input id="mail-{{ e.art }}" type="checkbox" role="switch" class="schalter" name="an" value="1" {% if e.an %}checked{% endif %}{% if not mail_aktiv %} disabled{% endif %}
+        <input id="mail-{{ e.art }}" type="checkbox" role="switch" class="schalter" name="an" value="1" autocomplete="off" {% if e.an %}checked{% endif %}{% if not mail_aktiv %} disabled{% endif %}
           hx-post="{% url 'einst_benachrichtigung' %}" hx-trigger="change" hx-swap="none" hx-vals='{"art": "{{ e.art }}"}'>
       </div>
     {% endfor %}

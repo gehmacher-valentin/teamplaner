@@ -1,0 +1,4 @@
+{% load i18n %}{# Umschalter „Mir zugewiesen“ / „Platzhaltern zugewiesen“ (unter drei Spalten sichtbar) #}<nav class="knopfgruppe meine-umschalter" aria-label="{% translate 'Zuweisungen' %}">
+  <a href="{{ adresse_ich }}" hx-get="{{ adresse_ich }}" hx-target="#meine-raster" hx-select="#meine-raster" hx-swap="outerHTML" hx-push-url="true"{% if zugewiesen == "ich" %} aria-current="true"{% endif %}>{% translate "Mir zugewiesen" %}</a>
+  <a href="{{ adresse_platzhalter }}" hx-get="{{ adresse_platzhalter }}" hx-target="#meine-raster" hx-select="#meine-raster" hx-swap="outerHTML" hx-push-url="true"{% if zugewiesen == "platzhalter" %} aria-current="true"{% endif %}>{% translate "Platzhaltern zugewiesen" %}</a>
+</nav>

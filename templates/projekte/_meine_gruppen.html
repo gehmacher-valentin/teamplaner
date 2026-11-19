@@ -1,0 +1,7 @@
+{% load i18n %}{# Offene Aufgaben nach Fälligkeit gruppiert; die Leer-Meldung steht immer da, damit sie nach dem Ausblenden der letzten Zeile erscheinen kann #}{% for titel, liste in gruppen %}
+  <div class="zugewiesen__gruppe" data-gruppe>
+    <div class="liste__gruppe">{{ titel }} <span class="gedaempft klein" data-gruppe-zahl>{{ liste|length }}</span></div>
+    {% for a in liste %}{% include "projekte/_meine_zeile.html" with folge=None folge_html="" %}{% endfor %}
+  </div>
+{% endfor %}
+<div class="leer" data-leer{% if gruppen %} hidden{% endif %}>{% if leertext %}{{ leertext }}{% else %}{% translate "Keine offenen Aufgaben – sehr gut." %}{% endif %}</div>

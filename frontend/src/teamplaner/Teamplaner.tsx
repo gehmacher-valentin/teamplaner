@@ -553,7 +553,7 @@ export function Teamplaner({ planen }: { planen: boolean }) {
                   konflikte={konflikte} aufgaben={raster.aufgaben} projekte={raster.projekte} planen={darfPlanen}
                   gedimmt={gedimmt} vorschau={vorschau} onOeffnen={oeffnen} onLoeschen={loeschen} onGroesse={groesse}
                   infos={infos} infoBearbeitbar={darfPlanen && raster.info_bearbeitbar} onInfo={infoSetzen}
-                  tagesfreigaben={tagesfreigaben}
+                  tagesfreigaben={tagesfreigaben} freigabeBearbeitbar={darfPlanen && raster.freigabe_bearbeitbar}
                   freigabeName={raster.freigabe_name}
                   freigabeStufen={raster.freigabe_stufen} onFreigabe={freigabeSetzen}
                   onFreigabeZeitraum={() => setDialog({ art: "freigabe-zeitraum" })}

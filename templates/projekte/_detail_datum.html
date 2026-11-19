@@ -4,4 +4,4 @@
     class="{% if ueberfaellig and not aufgabe.status.ist_erledigt %}faellig--ueberfaellig{% endif %}"
     aria-label="{% if feld == 'faellig_am' %}{% translate 'Fällig' %}{% else %}{% translate 'Geplanter Beginn' %}{% endif %}">
 </form>
-{% else %}<span class="mono{% if ueberfaellig and not aufgabe.status.ist_erledigt %} faellig--ueberfaellig{% endif %}">{{ datum|datum_lang|default:"–" }}</span>{% endif %}
+{% else %}<span class="mono{% if ueberfaellig and not aufgabe.status.ist_erledigt %} faellig--ueberfaellig{% endif %}">{% if feld == "faellig_am" %}{% faellig datum "D d.m.Y" %}{% else %}{{ datum|datum_lang|default:"–" }}{% endif %}</span>{% endif %}

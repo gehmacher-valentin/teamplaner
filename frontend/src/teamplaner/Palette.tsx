@@ -96,7 +96,7 @@ function Karte({ aufgabe, projekt, heute, onEinteilen }: { aufgabe: Aufgabe; pro
       </div>
       <div className="tp-karte__fuss">
         {aufgabe.gewerk && <span className="tag">{aufgabe.gewerk}</span>}
-        <span className={`tag${ueberfaellig ? " badge--warn" : ""}`}>
+        <span className={`tag${ueberfaellig ? " badge--gefahr" : ""}`}>
           {aufgabe.faellig_am ? t("faellig", { datum: kurzDatum(aufgabe.faellig_am) }) : t("ohne_termin")}
         </span>
         <span className="luecke" />

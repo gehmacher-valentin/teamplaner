@@ -3194,11 +3194,6 @@ msgstr "%(akteur)s changed “%(titel)s” (%(felder)s)."
 msgid "%(akteur)s hat im Projekt „%(projekt)s“ die Aufgabe „%(titel)s“ angelegt."
 msgstr "%(akteur)s created the task “%(titel)s” in project “%(projekt)s”."
 
-#: zusammenarbeit/dienste.py:113
-#, python-format
-msgid "%(akteur)s hat den Platzhalter %(platzhalter)s bei „%(titel)s“ erwähnt."
-msgstr "%(akteur)s mentioned the placeholder %(platzhalter)s on “%(titel)s”."
-
 #: zusammenarbeit/dienste.py:117
 #, python-format
 msgid "%(akteur)s hat Sie bei „%(titel)s“ erwähnt."
@@ -3232,10 +3227,6 @@ msgstr "Comments & mentions"
 #: zusammenarbeit/mail.py:38
 msgid "Ich werde in einem Kommentar erwähnt"
 msgstr "I am mentioned in a comment"
-
-#: zusammenarbeit/mail.py:39
-msgid "Ein von mir angelegter Platzhalter wird erwähnt"
-msgstr "A placeholder I created is mentioned"
 
 #: zusammenarbeit/mail.py:40
 msgid "Neuer Kommentar zu einer Aufgabe, für die ich verantwortlich bin"
@@ -3706,3 +3697,74 @@ msgstr "If the button does not work, open this address in your browser:"
 #: templates/mail/basis.html
 msgid "E-Mail-Einstellungen ändern"
 msgstr "Change email settings"
+
+#: kern/models.py
+msgid "Darf die Tagesfreigabe setzen"
+msgstr "May set the daily clearance"
+
+#: kern/models.py
+msgid "Benachrichtigungen weiterleiten an"
+msgstr "Forward notifications to"
+
+#: kern/templatetags/teamplaner.py
+msgid "Gestern"
+msgstr "Yesterday"
+
+#: kern/templatetags/teamplaner.py
+msgid "Heute"
+msgstr "Today"
+
+#: kern/templatetags/teamplaner.py
+msgid "Morgen"
+msgstr "Tomorrow"
+
+#: verwaltung/forms.py
+#, python-format
+msgid "Darf „%(name)s“ setzen"
+msgstr "May set “%(name)s”"
+
+#: verwaltung/forms.py
+msgid "Diese Konten bekommen alle Benachrichtigungen des Platzhalters, z. B. Einteilungen, Zuweisungen und Erwähnungen."
+msgstr "These accounts receive all notifications for the placeholder, e.g. scheduling, task assignments and mentions."
+
+#: verwaltung/views.py
+#, python-format
+msgid "%(name)s sieht den Teamplaner nicht und kann „%(freigabe)s“ deshalb nicht setzen. Dazu braucht es mindestens Planer:in und „Bearbeiten“ auf einer Teamplaner-Ansicht."
+msgstr "%(name)s cannot see the team planner and therefore cannot set “%(freigabe)s”. This requires at least the planner role and “Edit” on a team planner view."
+
+#: templates/kern/person_bearbeiten.html
+msgid "Die Zeile ist unter Einstellungen → Allgemein ausgeschaltet; der Haken wirkt erst, wenn sie eingeschaltet ist."
+msgstr "The row is switched off under Settings → General; the checkbox only takes effect once it is switched on."
+
+#: templates/kern/person_bearbeiten.html
+msgid "Diese Person sieht den Teamplaner nicht und kann die Freigabe deshalb trotz Haken nicht setzen."
+msgstr "This person cannot see the team planner and therefore cannot set the clearance despite the checkbox."
+
+#: zusammenarbeit/dienste.py
+#, python-format
+msgid "(für Platzhalter „%(name)s“)"
+msgstr "(for placeholder “%(name)s”)"
+
+#: templates/projekte/meine_aufgaben.html
+msgid "Einteilungen anzeigen für"
+msgstr "Show schedule for"
+
+#: templates/projekte/meine_aufgaben.html
+msgid "Ich"
+msgstr "Me"
+
+#: templates/projekte/meine_aufgaben.html
+msgid "Platzhaltern zugewiesen"
+msgstr "Assigned to placeholders"
+
+#: templates/projekte/meine_aufgaben.html
+msgid "Platzhalter filtern"
+msgstr "Filter placeholders"
+
+#: templates/projekte/meine_aufgaben.html
+msgid "Keine offenen Aufgaben für betreute Platzhalter."
+msgstr "No open tasks for the placeholders you look after."
+
+#: templates/projekte/_meine_umschalter.html
+msgid "Zuweisungen"
+msgstr "Assignments"

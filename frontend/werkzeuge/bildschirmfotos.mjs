@@ -31,7 +31,7 @@ async function foto(seite, name, pfad, warteAuf, vorher) {
 }
 
 const leitung = await anmelden("bereichsleitung@example.test");
-await foto(leitung, "teamplaner", "/", ".tp-raster");
+await foto(leitung, "teamplaner", "/teamplaner/", ".tp-raster");
 await foto(leitung, "projekt", "/projekte/1/", "main");
 await foto(leitung, "aufgabe", "/aufgaben/1/", "main");
 await foto(leitung, "gantt", "/gantt/", ".gt-zeit");
@@ -49,6 +49,6 @@ await foto(mitarbeit, "konto", "/einstellungen/benachrichtigungen/", "main");
 
 const handy = await anmelden("planer@example.test", HANDY);
 // Montag wählen, damit das Bild auch am Wochenende Einteilungen zeigt
-await foto(handy, "handy", "/", "button[aria-pressed]", (s) => s.locator("button[aria-pressed]").first().click());
+await foto(handy, "handy", "/teamplaner/", "button[aria-pressed]", (s) => s.locator("button[aria-pressed]").first().click());
 
 await browser.close();

@@ -179,8 +179,9 @@ def raster(konto, ansicht_id, von: date, bis: date, archivierte=False):
         "bis": bis.isoformat(),
         "heute": date.today().isoformat(),
         "info_bearbeitbar": rechte.hat_planungsansicht(konto),
-        # Tagesfreigabe: Zeile nur, wenn ein Admin sie eingeschaltet hat; Bearbeiten wie die Info-Zeile
+        # Tagesfreigabe: Zeile nur, wenn ein Admin sie eingeschaltet hat; bearbeiten nur mit eigenem Haken
         "freigabe_zeile": freigabe_zeile,
+        "freigabe_bearbeitbar": rechte.darf_tagesfreigabe(konto),
         "freigabe_name": einstellungen.freigabe_bezeichnung,
         "freigabe_stufen": [{"wert": str(s.pk), "name": s.name} for s in FreigabeStufe.objects.all()] if freigabe_zeile else [],
         "tage": [

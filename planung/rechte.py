@@ -79,5 +79,11 @@ def hat_planungsansicht(konto):
     return ids is None or bool(ids)
 
 
+def darf_tagesfreigabe(konto):
+    """Tagesfreigabe setzen: nur mit dem Haken am Konto und mit Zugang zum Teamplaner, ohne Sonderrecht
+    für Admin oder Bereichsleitung."""
+    return bool(getattr(konto, "darf_tagesfreigabe", False)) and hat_planungsansicht(konto)
+
+
 def sichtbare_ansichten(konto):
     return TeamplanerAnsicht.objects.filter(pk__in=list(freigaben(konto)))

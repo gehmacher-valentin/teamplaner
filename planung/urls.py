@@ -3,7 +3,7 @@ from django.urls import path
 from . import api, live, views
 
 urlpatterns = [
-    path("", views.teamplaner, name="teamplaner"),
+    path("teamplaner/", views.teamplaner, name="teamplaner"),
     path("kalender/", views.teamplaner, {"lesen": True}, name="kalender"),
     # Teamplaner-Ansichten im Einstellungsbereich
     path("einstellungen/ansichten/teamplaner/neu/", views.ansicht_bearbeiten, name="ansicht_neu"),

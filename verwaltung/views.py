@@ -35,6 +35,7 @@ from kern.models import (
     Protokolleintrag,
     Resetanfrage,
     Rolle,
+    Systemeinstellungen,
 )
 from kern.protokoll import aenderungen, protokollieren
 from notizen.models import NotizAnhang
@@ -284,7 +285,8 @@ class PasswortAendernView(auth_views.PasswordChangeView):
 
 @login_required
 def start(request):
-    return redirect("teamplaner" if hat_planungsansicht(request.user) else "meine_aufgaben")
+    """Startseite (/, Logo im Kopf): für alle Rollen „Meine Aufgaben“."""
+    return redirect("meine_aufgaben")
 
 
 # ---------- Personen & Rollen ----------
@@ -407,6 +409,18 @@ def _freigaben_der_person(ziel):
     return gruppen
 
 
+def _hinweis_freigabe_ohne_teamplaner(konto, ziel):
+    """Der Haken allein reicht nicht: Die Tagesfreigabe setzt nur, wer auch den Teamplaner sieht."""
+    name = Systemeinstellungen.laden().freigabe_bezeichnung
+    text = _("%(name)s sieht den Teamplaner nicht und kann „%(freigabe)s“ deshalb nicht setzen. Dazu braucht "
+             "es mindestens Planer:in und „Bearbeiten“ auf einer Teamplaner-Ansicht.") % {
+        "name": ziel.person.anzeigename, "freigabe": name}
+    if not arten()["teamplaner"][3](konto):
+        return text
+    return format_html('{} <a href="{}">{}</a>', text, reverse("einst_ansichten") + "?art=teamplaner",
+                       _("Freigaben der Teamplaner-Ansichten"))
+
+
 def _hinweis_planer_ohne_ansicht(konto, ziel):
     """Die Rolle allein zeigt den Teamplaner noch nicht: dazu braucht es „Bearbeiten“ auf einer Ansicht."""
     if arten()["teamplaner"][3](konto):
@@ -431,7 +445,8 @@ def person_bearbeiten(request, pk):
     form = KontoBearbeitenForm(
         request.POST or None, konto=konto, ziel=ziel,
         initial={"anzeigename": person.anzeigename, "email": ziel.email, "rolle": ziel.rolle, "bereich": person.bereich,
-                 "gewerke": person.gewerke.all(), "systemkonto": ziel.systemkonto},
+                 "gewerke": person.gewerke.all(), "systemkonto": ziel.systemkonto,
+                 "darf_tagesfreigabe": ziel.darf_tagesfreigabe},
     )
     if ziel.pk == konto.pk:
         form.fields["rolle"].disabled = True  # die eigene Rolle ändert eine höhere Rolle
@@ -440,15 +455,17 @@ def person_bearbeiten(request, pk):
         if not rechte.darf_rolle_vergeben(konto, ziel, d["rolle"]):
             raise PermissionDenied
         alt = {"anzeigename": person.anzeigename, "bereich": person.bereich, "email": ziel.email, "rolle": ziel.rolle,
-               "systemkonto": ziel.systemkonto}
+               "systemkonto": ziel.systemkonto, "darf_tagesfreigabe": ziel.darf_tagesfreigabe}
         with transaction.atomic():
             person.anzeigename, person.bereich = d["anzeigename"], d["bereich"]
             person.save(update_fields=["anzeigename", "bereich"])
             person.gewerke.set(d["gewerke"])
             ziel.email, ziel.rolle, ziel.systemkonto = d["email"], d["rolle"], d["systemkonto"]
-            ziel.save(update_fields=["email", "rolle", "systemkonto"])
+            ziel.darf_tagesfreigabe = d["darf_tagesfreigabe"]  # deaktiviertes Feld: bleibt beim alten Wert
+            ziel.save(update_fields=["email", "rolle", "systemkonto", "darf_tagesfreigabe"])
             diff = aenderungen(alt, {"anzeigename": person.anzeigename, "bereich": person.bereich, "email": ziel.email,
-                                     "rolle": ziel.rolle, "systemkonto": ziel.systemkonto})
+                                     "rolle": ziel.rolle, "systemkonto": ziel.systemkonto,
+                                     "darf_tagesfreigabe": ziel.darf_tagesfreigabe})
             if diff:
                 protokollieren(konto, "konto", ziel.pk, "geaendert", {"person": person, **diff})
             if "rolle" in diff:
@@ -459,11 +476,15 @@ def person_bearbeiten(request, pk):
         messages.success(request, _("Gespeichert."))
         if "rolle" in diff and ziel.rolle == Rolle.PLANER and not hat_planungsansicht(ziel):
             messages.info(request, _hinweis_planer_ohne_ansicht(konto, ziel))
+        elif ziel.darf_tagesfreigabe and not hat_planungsansicht(ziel) and (
+                "darf_tagesfreigabe" in diff or "rolle" in diff):
+            messages.info(request, _hinweis_freigabe_ohne_teamplaner(konto, ziel))
         return redirect("einst_person", pk=pk)
     darf_freigaben = {art: recht(konto) for art, (_a, _f, _t, recht, _u) in arten().items()}
     link = _link_abholen(request, ziel)
     return seite(request, "kern/person_bearbeiten.html", "personen",
-                 ziel=ziel, form=form, link=link, link_qr=link_qr_svg(link) if link else None, mail_aktiv=mail_aktiv(),
+                 ziel=ziel, form=form, freigabe_zeile_aus=not Systemeinstellungen.laden().freigabe_zeile,
+                 freigabe_ohne_teamplaner=ziel.darf_tagesfreigabe and not hat_planungsansicht(ziel), link=link, link_qr=link_qr_svg(link) if link else None, mail_aktiv=mail_aktiv(),
                  zwei_faktor_aktiv=zwei_faktor.aktiv(ziel),
                  immer_bearbeiten=rechte.sieht_alles_im_teamplaner(ziel), ab_planer=ziel.hat_mindestens(Rolle.PLANER),
                  freigaben=[g for g in _freigaben_der_person(ziel) if darf_freigaben[g["art"]]])
@@ -561,19 +582,25 @@ def platzhalter_neu(request):
 @erfordert(rechte.darf_platzhalter_verwalten)
 def platzhalter_bearbeiten(request, pk, umwandeln=None):
     person = get_object_or_404(Person.objects.platzhalter().select_related("bereich"), pk=pk)
-    alt = {"anzeigename": person.anzeigename, "bereich": person.bereich, "notiz": person.notiz}
+    alt = {"anzeigename": person.anzeigename, "bereich": person.bereich, "notiz": person.notiz,
+           "weiterleiten_an": _weiterleitung(person)}
     form = PlatzhalterForm(request.POST or None if umwandeln is None else None, instance=person)
     if umwandeln is None and rechte.darf_konten_verwalten(request.user):
         umwandeln = UmwandelnForm(konto=request.user)
     if request.method == "POST" and form.is_bound and form.is_valid():
         form.save()
         protokollieren(request.user, "platzhalter", person.pk, "geaendert",
-                       aenderungen(alt, {"anzeigename": person.anzeigename, "bereich": person.bereich, "notiz": person.notiz}))
+                       aenderungen(alt, {"anzeigename": person.anzeigename, "bereich": person.bereich, "notiz": person.notiz,
+                                         "weiterleiten_an": _weiterleitung(person)}))
         messages.success(request, _("Gespeichert."))
         return redirect("einst_person", pk=pk)
     eingeteilt_bis = person.einteilungen.aggregate(m=Max("bis"))["m"]
     return seite(request, "kern/platzhalter_bearbeiten.html", "personen",
                  person=person, form=form, umwandeln=umwandeln, eingeteilt_bis=eingeteilt_bis)
+
+
+def _weiterleitung(platzhalter):
+    return sorted(platzhalter.weiterleiten_an.values_list("anzeigename", flat=True))
 
 
 @require_POST
@@ -602,6 +629,7 @@ def platzhalter_umwandeln(request, pk):
         return platzhalter_bearbeiten(request, pk, umwandeln=form)
     neu = Konto.objects.anlegen(form.cleaned_data["email"], anzeigename=person.anzeigename,
                                 bereich=person.bereich, rolle=form.cleaned_data["rolle"], person=person)
+    person.weiterleiten_an.clear()  # mit eigenem Konto bekommt die Person ihre Benachrichtigungen selbst
     protokollieren(request.user, "konto", neu.pk, "aus_platzhalter", {"person": person, "rolle": neu.rolle})
     messages.success(request, _("„%(name)s“ hat jetzt ein Konto.") % {"name": person.anzeigename})
     return _nach_einladung(request, neu)

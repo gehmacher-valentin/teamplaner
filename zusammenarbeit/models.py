@@ -83,6 +83,8 @@ class Benachrichtigungsart(models.TextChoices):
     AUFGABE_ERLEDIGT = "aufgabe_erledigt", _("Aufgabe erledigt")
     PROJEKT_AUFGABE_NEU = "projekt_aufgabe_neu", _("Neue Aufgabe im Projekt")
     ERWAEHNUNG = "erwaehnung", _("Erwähnung")
+    # Nicht mehr erzeugt (Erwähnungen von Platzhaltern gehen als ERWAEHNUNG an die eingetragenen Konten);
+    # bleibt für bestehende Einträge lesbar
     ERWAEHNUNG_PLATZHALTER = "erwaehnung_platzhalter", _("Erwähnung eines Platzhalters")
     KOMMENTAR = "kommentar", _("Kommentar")
     EINTEILUNG_NEU = "einteilung_neu", _("Eingeteilt")
@@ -101,8 +103,8 @@ class MailStatus(models.TextChoices):
 class Benachrichtigung(models.Model):
     """Wird bei den Ereignissen in Benachrichtigungsart erzeugt (Posteingang).
 
-    Platzhalter erhalten keine Benachrichtigungen; Erwähnungen gehen an die anlegende
-    Person. Hat die empfangende Person das Ereignis für E-Mail eingeschaltet, steht
+    Benachrichtigungen eines Platzhalters gehen an die bei ihm eingetragenen Konten
+    (``Person.weiterleiten_an``), mit Hinweis auf den Platzhalter im Text. Hat die empfangende Person das Ereignis für E-Mail eingeschaltet, steht
     ``mail_status`` auf „offen“ und der Dienst ``mails_versenden`` verschickt sie, mehrere innerhalb
     von ``TEAMPLANER_MAIL_SAMMELN_SEKUNDEN`` zusammen in einer Mail.
     Der Text ist bereits in der Sprache der empfangenden Person gespeichert.

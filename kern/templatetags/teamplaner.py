@@ -1,9 +1,9 @@
 """Template-Helfer: Avatare, Status, Datumsangaben, Kommentartext mit Erwähnungen."""
 
 import re
-from datetime import date
 
 from django import template
+from django.utils import timezone
 from django.utils.formats import date_format
 from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
@@ -69,7 +69,26 @@ def datum_lang(wert):
 
 @register.filter
 def ueberfaellig(wert):
-    return bool(wert) and wert < date.today()
+    return bool(wert) and wert < timezone.localdate()
+
+
+@register.filter
+def tag_relativ(wert, format="d.m."):
+    """„Gestern“, „Heute“ oder „Morgen“, sonst das Datum im angegebenen Format (Zeitzone der Anwendung)."""
+    if not wert:
+        return ""
+    abstand = (wert - timezone.localdate()).days
+    woerter = {-1: _("Gestern"), 0: _("Heute"), 1: _("Morgen")}
+    return woerter.get(abstand) or date_format(wert, format)
+
+
+@register.simple_tag
+def faellig(wert, format="d.m.", leer="–"):
+    """Fälligkeit als <time>: Gestern/Heute/Morgen oder Datum, das genaue Datum als Tooltip."""
+    if not wert:
+        return leer
+    return format_html('<time datetime="{}" title="{}">{}</time>', wert.isoformat(),
+                       date_format(wert, "D d.m.Y"), tag_relativ(wert, format))
 
 
 @register.filter

@@ -13,6 +13,7 @@
     </div>
     {% include "teile/feld.html" with feld=form.notiz %}
     {% include "teile/chips.html" with feld=form.gewerke %}
+    {% include "teile/personenauswahl.html" with feld=form.weiterleiten_an %}
   </section>
   {% url 'einst_personen' as zurueck %}{% translate "Anlegen" as knopf %}{% include "teile/speicherleiste.html" with abbrechen=zurueck speichern=knopf %}
 </form>

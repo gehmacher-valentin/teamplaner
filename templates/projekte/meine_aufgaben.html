@@ -8,58 +8,59 @@
   </div>
 </div>
 
-<div class="meine-raster">
-<section class="karte" aria-label="{% translate 'Eingeteilt' %}">
-  <div class="karte__kopf"><h2>{% translate "Eingeteilt" %}</h2><span class="gedaempft klein">{% translate "nächste zwei Wochen" %}</span></div>
+{# Wer Platzhalter betreut: Auswahl bei „Eingeteilt“, eigene Karte „Platzhaltern zugewiesen“. Breit drei Spalten, #}
+{# sonst schaltet ein Umschalter zwischen den beiden Zuweisungs-Karten (CSS, data-zugewiesen). Alle Bedienelemente #}
+{# funktionieren als Links bzw. GET-Formulare auch ohne JS; mit HTMX wird nur dieser Bereich ersetzt. #}
+<div class="meine">
+<div class="meine-raster{% if betreute %} meine-raster--platzhalter{% endif %}" id="meine-raster" data-zugewiesen="{{ zugewiesen }}">
+<section class="karte eingeteilt" id="karte-eingeteilt" aria-labelledby="eingeteilt-titel">
+  <div class="karte__kopf">
+    <h2 id="eingeteilt-titel">{% translate "Eingeteilt" %}</h2>
+    {% if betreute %}
+      <form method="get" action="{% url 'meine_aufgaben' %}" class="karte__auswahl" hx-get="{% url 'meine_aufgaben' %}" hx-target="#meine-raster" hx-select="#meine-raster" hx-swap="outerHTML" hx-push-url="true">
+        {% if zugewiesen == "platzhalter" %}<input type="hidden" name="zugewiesen" value="platzhalter">{% endif %}
+        {% if filter_platzhalter %}<input type="hidden" name="platzhalter" value="{{ filter_platzhalter.pk }}">{% endif %}
+        <label class="sr-only" for="eingeteilt-wahl">{% translate "Einteilungen anzeigen für" %}</label>
+        <select id="eingeteilt-wahl" name="eingeteilt" data-auto-absenden autocomplete="off">
+          <option value="">{% translate "Ich" %}</option>
+          {% for p in betreute %}<option value="{{ p.pk }}"{% if eingeteilt.pk == p.pk %} selected{% endif %}>{{ p.anzeigename }}</option>{% endfor %}
+        </select>
+        <noscript><button type="submit" class="knopf knopf--klein">{% translate "Anzeigen" %}</button></noscript>
+      </form>
+    {% endif %}
+  </div>
   {% for t in tage %}
     <div class="liste__zeile tageszeile{% if t.heute %} tageszeile--heute{% endif %}">
       <div>
         <div class="tageszeile__tag">{{ t.datum|date:"l" }}{% if t.heute %} · {% translate "heute" %}{% endif %}</div>
         <div class="mono klein gedaempft">{{ t.datum|date:"d.m." }}</div>
       </div>
-      <div class="stapel stapel--eng">
-        {% if t.frei %}<span class="badge badge--feiertag">{{ t.frei }}</span>{% endif %}
-        {% if t.abwesend %}<span class="badge">{% translate "Abwesend" %}</span>{% endif %}
-        {% for e in t.einteilungen %}
-          <a href="{% url 'aufgabe' e.aufgabe.pk %}" class="tageskarte pf-{{ e.aufgabe.projekt.farbe }}">
-            <span class="tageskarte__titel zelle-text">{{ e.aufgabe.titel }}</span>
-            <span class="tageskarte__projekt klein">{{ e.aufgabe.projekt.name }}</span>
-          </a>
-        {% empty %}
-          {% if not t.frei and not t.abwesend %}<span class="gedaempft klein">–</span>{% endif %}
-        {% endfor %}
+      <div class="tageszeile__inhalt">
+        {% if t.frei or t.abwesend %}<div class="tageszeile__hinweise">
+          {% if t.frei %}<span class="badge badge--feiertag">{{ t.frei }}</span>{% endif %}
+          {% if t.abwesend %}<span class="badge">{% translate "Abwesend" %}</span>{% endif %}
+        </div>{% endif %}
+        {% if t.einteilungen %}<div class="tageskacheln">
+          {% for e in t.einteilungen %}
+            <a href="{% url 'aufgabe' e.aufgabe.pk %}" class="tageskarte pf-{{ e.aufgabe.projekt.farbe }}" title="{{ e.aufgabe.titel }} · {{ e.aufgabe.projekt.name }}">
+              <span class="tageskarte__titel">{{ e.aufgabe.titel }}</span>
+              <span class="tageskarte__projekt klein">{{ e.aufgabe.projekt.name }}</span>
+            </a>
+          {% endfor %}
+        </div>{% elif not t.frei and not t.abwesend %}<span class="gedaempft klein">–</span>{% endif %}
       </div>
     </div>
   {% endfor %}
 </section>
 
-<div class="meine-raster__spalte">
-<section class="karte zugewiesen" aria-label="{% translate 'Verantwortlich' %}">
-  <div class="karte__kopf"><h2>{% translate "Mir zugewiesen" %}</h2><span class="zaehler">{{ anzahl_offen }}</span></div>
-  {% for titel, liste in gruppen %}
-    <div class="liste__gruppe">{{ titel }} <span class="gedaempft klein">{{ liste|length }}</span></div>
-    {% for a in liste %}
-      <div class="liste__zeile zugewiesen__zeile">
-        <form method="post" action="{% url 'aufgabe_erledigt' a.pk %}" class="zugewiesen__haken"
-          {% if a.unter_offen %}data-unteraufgaben-offen="{{ a.unter_offen }}"{% endif %}>{% csrf_token %}
-          <input type="hidden" name="erledigt" value="1"><input type="hidden" name="weiter" value="{% url 'meine_aufgaben' %}">
-          <input type="hidden" name="unteraufgaben" value="">
-          <button type="submit" class="haken" {% if not darf_abschliessen %}disabled{% endif %} aria-label="{% translate 'Als erledigt markieren' %}: {{ a.titel }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></button>
-        </form>
-        <div class="zugewiesen__titel">
-          <a class="aufgabe-titel" href="{% url 'aufgabe' a.pk %}">{{ a.titel }}</a>{% if a.wiederholung %} <span class="wiederkehrend" title="{% translate 'Wiederkehrende Aufgabe' %}" aria-label="{% translate 'Wiederkehrende Aufgabe' %}">↻</span>{% endif %}
-          <div class="zugewiesen__unter klein">
-            <a href="{% url 'projekt' a.projekt_id %}" class="zugewiesen__projekt pf-{{ a.projekt.farbe }}"><span class="farbpunkt"></span><span class="zelle-text">{{ a.projekt.name }}</span></a>
-            {% if a.eltern_id %}<a class="eltern-hinweis" href="{% url 'aufgabe' a.eltern_id %}" title="{% translate 'Unteraufgabe von' %} {{ a.eltern.titel }}">↳ {{ a.eltern.titel }}</a>{% endif %}
-          </div>
-        </div>
-        <div class="mono klein{% if a.faellig_am|ueberfaellig %} faellig--ueberfaellig{% endif %}">{{ a.faellig_am|date:"d.m."|default:"–" }}</div>
-        <div class="zugewiesen__status"><span class="{{ a.status|status_klasse }}">{{ a.status }}</span></div>
-      </div>
-    {% endfor %}
-  {% empty %}
-    <div class="leer">{% translate "Keine offenen Aufgaben – sehr gut." %}</div>
-  {% endfor %}
+<div class="meine-raster__spalte meine-raster__mir">
+<section class="karte zugewiesen" id="karte-mir" aria-labelledby="mir-titel" data-nur-offen data-zaehlen>
+  <div class="karte__kopf">
+    <h2 id="mir-titel"{% if betreute %} class="nur-dreispaltig"{% endif %}>{% translate "Mir zugewiesen" %}</h2>
+    {% if betreute %}{% include "projekte/_meine_umschalter.html" %}{% endif %}
+    <span class="zaehler" data-zaehler>{{ anzahl_offen }}</span>
+  </div>
+  {% include "projekte/_meine_gruppen.html" with gruppen=gruppen %}
 </section>
 
 {% if erledigt %}
@@ -74,6 +75,33 @@
     </div>
   {% endfor %}
 </details>
+{% endif %}
+</div>
+
+{% if betreute %}
+<div class="meine-raster__spalte meine-raster__platzhalter">
+<section class="karte zugewiesen" id="karte-platzhalter" aria-labelledby="platzhalter-titel" data-nur-offen data-zaehlen>
+  <div class="karte__kopf">
+    <h2 id="platzhalter-titel" class="nur-dreispaltig">{% translate "Platzhaltern zugewiesen" %}</h2>
+    {% include "projekte/_meine_umschalter.html" %}
+    {% if betreute|length > 1 %}
+      <form method="get" action="{% url 'meine_aufgaben' %}" class="karte__auswahl" hx-get="{% url 'meine_aufgaben' %}" hx-target="#meine-raster" hx-select="#meine-raster" hx-swap="outerHTML" hx-push-url="true">
+        {% if eingeteilt %}<input type="hidden" name="eingeteilt" value="{{ eingeteilt.pk }}">{% endif %}
+        <input type="hidden" name="zugewiesen" value="platzhalter">
+        <label class="sr-only" for="platzhalter-filter">{% translate "Platzhalter filtern" %}</label>
+        <select id="platzhalter-filter" name="platzhalter" data-auto-absenden autocomplete="off">
+          <option value="">{% translate "Alle" %}</option>
+          {% for p in betreute %}<option value="{{ p.pk }}"{% if filter_platzhalter.pk == p.pk %} selected{% endif %}>{{ p.anzeigename }}</option>{% endfor %}
+        </select>
+        <noscript><button type="submit" class="knopf knopf--klein">{% translate "Anzeigen" %}</button></noscript>
+      </form>
+    {% endif %}
+    <span class="zaehler" data-zaehler>{{ platzhalter_anzahl }}</span>
+  </div>
+  {% translate "Keine offenen Aufgaben für betreute Platzhalter." as leertext %}
+  {% include "projekte/_meine_gruppen.html" with gruppen=platzhalter_gruppen leertext=leertext %}
+</section>
+</div>
 {% endif %}
 </div>
 </div>
