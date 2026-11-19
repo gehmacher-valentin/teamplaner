@@ -1,0 +1,5 @@
+{% load teamplaner %}{# Datumsfeld für eine Fälligkeit: zeigt „Gestern“, „Heute“ oder „Morgen“ über dem Datum, bis man ins Feld klickt; überschrittene Fälligkeiten (nicht erledigt) in Rot. Nach einem Eingabefehler (eingabe) steht der eingegebene Wert ohne Wort da. #}{% with wort=datum|relativer_tag %}<span class="datumswahl{% if rot and not erledigt %} faellig--ueberfaellig{% endif %}">
+  <input{% if eid %} id="{{ eid }}"{% endif %} type="date" name="wert" value="{% if eingabe is not None %}{{ eingabe }}{% else %}{{ datum|date:'Y-m-d' }}{% endif %}"
+    class="datumswahl__feld{% if klasse %} {{ klasse }}{% endif %}{% if wort and eingabe is None %} datumswahl__feld--wort{% endif %}" aria-label="{{ label }}">
+  {% if wort and eingabe is None %}<span class="datumswahl__wort" aria-hidden="true">{{ wort }}</span>{% endif %}
+</span>{% endwith %}

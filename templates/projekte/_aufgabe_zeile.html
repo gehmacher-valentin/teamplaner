@@ -50,7 +50,7 @@
     {% if darf_bearbeiten and not a.unter_termine %}
       <form hx-post="{% url 'aufgabe_feld' a.pk %}" hx-trigger="change" hx-target="closest .aufgabe-zeile" hx-swap="outerHTML">
         <input type="hidden" name="feld" value="faellig_am"><input type="hidden" name="version" value="{{ a.version }}">
-        <input type="date" name="wert" value="{{ a.faellig_am|date:'Y-m-d' }}" class="inline-eingabe{% if a.faellig_am|ueberfaellig and not a.status.ist_erledigt %} faellig--ueberfaellig{% endif %}" aria-label="{% translate 'Fällig am' %}">
+        {% include "teile/datumswahl.html" with datum=a.faellig_am klasse="inline-eingabe" label=_("Fällig am") rot=a.faellig_am|ueberfaellig erledigt=a.status.ist_erledigt %}
       </form>
     {% else %}<span class="{% if a.faellig_am|ueberfaellig and not a.status.ist_erledigt %}faellig--ueberfaellig{% endif %}">{% faellig a.faellig_am %}</span>{% endif %}
   </div>

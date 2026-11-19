@@ -73,13 +73,20 @@ def ueberfaellig(wert):
 
 
 @register.filter
-def tag_relativ(wert, format="d.m."):
-    """„Gestern“, „Heute“ oder „Morgen“, sonst das Datum im angegebenen Format (Zeitzone der Anwendung)."""
+def relativer_tag(wert):
+    """„Gestern“, „Heute“ oder „Morgen“, sonst leer (Zeitzone der Anwendung)."""
     if not wert:
         return ""
-    abstand = (wert - timezone.localdate()).days
     woerter = {-1: _("Gestern"), 0: _("Heute"), 1: _("Morgen")}
-    return woerter.get(abstand) or date_format(wert, format)
+    return woerter.get((wert - timezone.localdate()).days, "")
+
+
+@register.filter
+def tag_relativ(wert, format="d.m."):
+    """„Gestern“, „Heute“ oder „Morgen“, sonst das Datum im angegebenen Format."""
+    if not wert:
+        return ""
+    return relativer_tag(wert) or date_format(wert, format)
 
 
 @register.simple_tag

@@ -831,6 +831,17 @@ legend { font-size: 13px; font-weight: 600; color: var(--text-2); padding: 0 4px
 .aufgabe-titel { color: var(--text); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .aufgabe-titel--erledigt { color: var(--text-3); text-decoration: line-through; }
 .faellig--ueberfaellig { color: var(--gefahr); font-weight: 600; }
+/* Datumsfeld einer Fälligkeit: Wort („Heute“ …) und Feld liegen in derselben Rasterzelle. Solange das Feld
+   keinen Fokus hat, ist sein Text unsichtbar (das Kalendersymbol bleibt); beim Klicken erscheint das Datum. */
+.datumswahl { display: grid; align-items: center; min-width: 0; }
+.datumswahl > * { grid-area: 1 / 1; }
+.datumswahl__wort { padding-inline: 11px; pointer-events: none; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.datumswahl__feld--wort:not(:focus) { -webkit-text-fill-color: transparent; }
+.datumswahl__feld:focus + .datumswahl__wort { visibility: hidden; }
+/* schlägt die allgemeine Textfarbe von input[type="date"] */
+.faellig--ueberfaellig .datumswahl__feld { color: var(--gefahr); font-weight: 600; }
+.eigenschaften .detailfeld .datumswahl { max-width: 320px; }
+.eigenschaften .detailfeld .datumswahl__wort { margin-left: -11px; }
 .detail { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
 .detail__haupt { flex: 999 1 560px; min-width: 0; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
 .detail__seite { flex: 1 1 300px; max-width: 380px; display: flex; flex-direction: column; gap: 16px; }
