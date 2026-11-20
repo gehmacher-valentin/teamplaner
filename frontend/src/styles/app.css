@@ -1113,6 +1113,9 @@ form.inline { display: inline; }
 .notizliste__kopf > :last-child { text-align: right; }
 @media (max-width: 760px) {
   .notiz-ordner { max-width: none; }
+  /* Suche, Stift und „Neue Notiz“ in einer Zeile: die Suche nimmt den übrigen Platz */
+  .notizen__suche { flex: 1 1 120px; min-width: 0; }
+  .notizen__suche input[type="search"] { width: 100%; }
   .notizliste__kopf, .notiz-zeile { grid-template-columns: minmax(0, 1fr) auto; }
   .notiz-zeile__auszug { display: none; }
 }
