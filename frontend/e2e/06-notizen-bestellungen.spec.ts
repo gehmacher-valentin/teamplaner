@@ -95,6 +95,8 @@ test("Editor: Schriftfarbe, Marker und Überschrift bleiben nach dem Neuladen", 
   await seite.keyboard.press("Shift+Home");
   await seite.getByRole("button", { name: "Marker" }).click();
   await seite.getByRole("group", { name: "Marker" }).getByRole("button", { name: "Gelb" }).click();
+  // Die Auswahl bleibt nach dem Färben stehen: erst aufheben, dann eine Zeile hoch
+  await seite.keyboard.press("ArrowLeft");
   await seite.keyboard.press("ArrowUp");
   await seite.keyboard.press("End");
   await seite.keyboard.press("Shift+Home");
