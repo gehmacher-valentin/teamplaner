@@ -1204,6 +1204,9 @@ form.inline { display: inline; }
 dialog { border: 0; border-radius: var(--radius-gross); padding: 0; box-shadow: var(--schatten); max-width: min(560px, calc(100vw - 32px)); width: 100%; }
 dialog::backdrop { background: var(--backdrop); }
 .dialog__inhalt { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+/* Rückfrage und Eingabe statt Browser-Dialog (lib/dialog.ts) */
+.rueckfrage { max-width: min(460px, calc(100vw - 32px)); }
+.rueckfrage h2 { font-size: 16px; line-height: 1.4; overflow-wrap: anywhere; }
 
 /* Anmeldung */
 .anmeldung { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }

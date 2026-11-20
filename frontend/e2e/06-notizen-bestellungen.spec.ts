@@ -38,6 +38,44 @@ test("Notiz: anlegen, Text mit Markdown schreiben, über die Suche wiederfinden"
   await expect(andere.getByRole("link", { name: /Prüfplan Hebebühne/ })).toHaveCount(0);
 });
 
+test("Eigene Dialoge statt Browser-Dialog: Link im Editor, Notiz löschen", async ({ seiteFuer }) => {
+  const seite = await seiteFuer("planer");
+  seite.on("dialog", (d) => {
+    throw new Error(`Browser-Dialog aufgegangen: ${d.message()}`);
+  });
+  await seite.goto("/notizen/");
+  await seite.getByRole("link", { name: "Neue Notiz" }).click();
+  await seite.locator("#notiz-titel-eingabe").fill("Dialogprobe");
+  await seite.locator("#notiz-titel-eingabe").press("Tab");
+  const editor = seite.locator("[data-editor='notiz-text'] [contenteditable='true']");
+  await editor.click();
+  await seite.keyboard.type("Webseite");
+  await seite.keyboard.press("Shift+Home");
+
+  // Link: Adresse im eigenen Dialog
+  await seite.getByRole("button", { name: "Link", exact: true }).click();
+  const link = seite.getByRole("dialog", { name: "Adresse des Links (leer = entfernen)" });
+  await link.getByRole("textbox").fill("https://boku.ac.at");
+  await link.getByRole("button", { name: "Übernehmen" }).click();
+  await expect(link).toHaveCount(0);
+  await expect(editor.locator('a[href="https://boku.ac.at"]')).toHaveText("Webseite");
+  await expect(seite).toHaveURL(/\/notizen\/\d+\/$/);
+
+  // Löschen: Abbrechen lässt die Notiz stehen, Bestätigen löscht sie
+  await seite.getByRole("button", { name: "Löschen", exact: true }).click();
+  const frage = seite.getByRole("dialog", { name: "Notiz endgültig löschen?" });
+  await expect(frage.getByRole("button", { name: "Abbrechen" })).toBeFocused();
+  await frage.getByRole("button", { name: "Abbrechen" }).click();
+  await expect(frage).toHaveCount(0);
+  await expect(seite.locator("#notiz-titel-eingabe")).toHaveValue("Dialogprobe");
+
+  await seite.getByRole("button", { name: "Löschen", exact: true }).click();
+  await frage.getByRole("button", { name: "Löschen" }).click();
+  await expect(seite).not.toHaveURL(/\/notizen\/\d+\/$/);
+  await seite.goto("/notizen/?q=Dialogprobe");
+  await expect(seite.getByRole("link", { name: /Dialogprobe/ })).toHaveCount(0);
+});
+
 test("Bestellung: Zeile anlegen, Status ändern, für alle sichtbar", async ({ seiteFuer }) => {
   const seite = await seiteFuer("planer");
   await seite.goto("/bestellungen/");
