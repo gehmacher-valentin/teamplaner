@@ -3781,3 +3781,7 @@ msgstr "Please enter a text."
 #, python-format
 msgid "Der Text darf höchstens %(n)s Zeichen lang sein."
 msgstr "The text may be at most %(n)s characters long."
+
+#: templates/notizen/uebersicht.html
+msgid "Geändert"
+msgstr "Modified"

@@ -237,3 +237,25 @@ def test_frist_stoert_gewoehnliche_notizen_nicht():
     text = "# Titel\n\nAbsatz mit **fett** und [Link](https://example.org).\n\n- eins\n- zwei\n\n" * 300
     assert als_html(text).count("<h1>") == 300
     assert als_text(text).startswith("Titel · Absatz mit fett und Link. · eins · zwei")
+
+
+def test_ordneransicht_freigabe_als_avatare_und_liste_mit_kopf(konten, ordner):
+    Notiz.objects.create(ordner=ordner, titel="Prüfplan", text="Hydraulik", erstellt_von=konten[P].person)
+    seite = client_fuer(konten[P]).get(f"/notizen/ordner/{ordner.pk}/").content.decode()
+    assert 'role="group" aria-label="Freigegeben für"' in seite
+    for konto in (konten[P], konten[M], konten[L]):
+        name = konto.person.anzeigename
+        assert f'class="anwesend" tabindex="0" role="img" aria-label="{name}" data-name="{name}"' in seite
+    assert 'class="liste__kopf notizliste__kopf"' in seite and ">Geändert<" in seite
+    assert 'aria-label="Ordner bearbeiten"' in seite
+
+
+def test_avatarstapel_fasst_ab_sechs_personen_zusammen(bereich_a):
+    from kern.models import Person
+    from kern.templatetags.teamplaner import avatarstapel
+
+    personen = [Person.objects.create(anzeigename=f"Person 3{i}", bereich=bereich_a) for i in range(6)]
+    html = avatarstapel(personen)
+    assert html.count('class="anwesend"') == 5 and ">+2</span>" in html
+    assert 'data-name="Person 34, Person 35"' in html and "title=" not in html
+    assert avatarstapel(personen[:5]).count('class="anwesend"') == 5 and "+" not in avatarstapel(personen[:5])

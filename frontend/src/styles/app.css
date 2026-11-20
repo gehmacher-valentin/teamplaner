@@ -579,6 +579,9 @@ h3 { margin: 0; font-size: 15px; font-weight: 700; }
 .knopf--gefahr { color: var(--gefahr); border-color: var(--gefahr-rand); }
 .knopf--gefahr:hover { background: var(--gefahr-bg); color: var(--gefahr); }
 .knopf--klein { height: 32px; padding: 0 10px; font-size: 13px; }
+/* Nur Symbol (z. B. Stift für „Ordner bearbeiten“): quadratisch, Name als aria-label und title */
+.knopf--symbol { width: 36px; padding: 0; color: var(--text-2); }
+.knopf--klein.knopf--symbol { width: 32px; }
 .knopf--text { border-color: transparent; background: transparent; color: var(--text-3); padding: 0 6px; }
 .knopf--text:hover { background: transparent; color: var(--text); text-decoration: underline; }
 .knopf--icon { width: 36px; padding: 0; }
@@ -1094,14 +1097,23 @@ form.inline { display: inline; }
 .notiz-ordner__leer { padding: 5px 10px; }
 .notiz-ordner a.notiz-ordner__neu { color: var(--text-3); margin-top: 6px; border-top: 1px solid var(--linie); border-radius: 0 0 var(--radius) var(--radius); }
 .notizen__suche input[type="search"] { height: 32px; width: 180px; }
-.notizen__mitglieder { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--linie); }
-.notiz-zeile {
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 2fr) auto; color: var(--text); text-decoration: none;
-}
+/* „Freigegeben für“ im Kartenkopf: Avatar-Stapel wie „bearbeitet gerade“ bei einer Notiz (.anwesend) */
+/* Titel, Zähler und Freigabe bleiben zusammen; reicht der Platz nicht, rutschen Suche und Knöpfe in die nächste Zeile */
+.notizen__titel { flex: 1 0 auto; max-width: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.notizen__titel h2 { flex: none; max-width: 100%; }
+.notizen__freigabe { display: flex; align-items: center; gap: 8px; color: var(--text-3); }
+.avatarstapel { display: inline-flex; align-items: center; }
+/* Notizliste: Kopfzeile mit Spalten wie die übrigen Listen, damit sie sich vom Kartenkopf absetzt */
+/* Feste Breite der letzten Spalte: Kopf und Zeilen sind getrennte Raster und müssen gleich stehen */
+.notizliste__kopf, .notiz-zeile { grid-template-columns: minmax(0, 1.2fr) minmax(0, 2fr) 200px; }
+.notiz-zeile__stand { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.notiz-zeile { color: var(--text); text-decoration: none; }
 .notiz-zeile:hover { background: var(--flaeche-3); }
+.notiz-zeile__stand { text-align: right; }
+.notizliste__kopf > :last-child { text-align: right; }
 @media (max-width: 760px) {
   .notiz-ordner { max-width: none; }
-  .notiz-zeile { grid-template-columns: minmax(0, 1fr) auto; }
+  .notizliste__kopf, .notiz-zeile { grid-template-columns: minmax(0, 1fr) auto; }
   .notiz-zeile__auszug { display: none; }
 }
 .notiz-anhaenge { border-top: 1px solid var(--linie); }

@@ -5,7 +5,7 @@ import re
 from django import template
 from django.utils import timezone
 from django.utils.formats import date_format
-from django.utils.html import escape, format_html
+from django.utils.html import escape, format_html, format_html_join
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext as _
 
@@ -13,7 +13,7 @@ register = template.Library()
 
 
 @register.simple_tag
-def avatar(person, groesse=""):
+def avatar(person, groesse="", mit_titel=True):
     if person is None:
         return format_html('<span class="avatar avatar--leer{}" aria-hidden="true">–</span>',
                            f" avatar--{groesse}" if groesse else "")
@@ -27,10 +27,34 @@ def avatar(person, groesse=""):
     if person.archiviert:
         klassen.append("avatar--archiviert")
     titel = person.anzeigename + (_(" · Platzhalter") if person.ist_platzhalter else "")
+    titel = format_html(' title="{}"', titel) if mit_titel else ""
     if person.foto:
-        return format_html('<img class="{} avatar--foto" src="{}" alt="" title="{}">',
-                           " ".join(klassen), person.foto_url, titel)
-    return format_html('<span class="{}" title="{}" aria-hidden="true">{}</span>', " ".join(klassen), titel, person.initialen)
+        return format_html('<img class="{} avatar--foto" src="{}" alt=""{}>', " ".join(klassen), person.foto_url, titel)
+    return format_html('<span class="{}"{} aria-hidden="true">{}</span>', " ".join(klassen), titel, person.initialen)
+
+
+# Wie ANWESEND_HOECHSTENS in frontend/src/editor/gemeinsam.ts
+STAPEL_HOECHSTENS = 5
+
+
+@register.simple_tag
+def avatarstapel(personen):
+    """Überlappende runde Avatare wie „bearbeitet gerade“ bei Notizen (editor/gemeinsam.ts): der Name
+    erscheint beim Zeigen oder Antippen, ab mehr als STAPEL_HOECHSTENS Personen fasst „+N“ den Rest zusammen."""
+    personen = list(personen)
+    zeigen = personen if len(personen) <= STAPEL_HOECHSTENS else personen[:STAPEL_HOECHSTENS - 1]
+
+    def huelle(name, inhalt):
+        return format_html('<span class="anwesend" tabindex="0" role="img" aria-label="{0}" data-name="{0}">{1}</span>',
+                           name, inhalt)
+
+    teile = [huelle(p.anzeigename, avatar(p, "klein", mit_titel=False)) for p in zeigen]
+    rest = personen[len(zeigen):]
+    if rest:
+        teile.append(huelle(", ".join(p.anzeigename for p in rest),
+                            format_html('<span class="avatar avatar--klein avatar--mehr" aria-hidden="true">+{}</span>',
+                                        len(rest))))
+    return format_html('<span class="avatarstapel">{}</span>', format_html_join("", "{}", ((t,) for t in teile)))
 
 
 @register.simple_tag
