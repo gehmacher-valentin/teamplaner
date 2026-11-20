@@ -5,6 +5,7 @@ from django.db import transaction
 from django.db.models import F, Max, Q
 from django.utils import timezone
 
+from kern import textfarben
 from kern.hilfen import als_zahl
 from kern.models import Protokolleintrag
 from kern.protokoll import aenderungen, protokollieren
@@ -18,8 +19,8 @@ from zusammenarbeit.dienste import (
 from . import termine, wiederholung
 from .models import UNTERAUFGABEN_EBENEN, Aufgabe, Status
 
-ERLAUBTE_TAGS = {"p", "br", "strong", "b", "em", "i", "u", "s", "ul", "ol", "li", "h3", "a", "blockquote", "code", "pre",
-                 "hr"}
+ERLAUBTE_TAGS = {"p", "br", "strong", "b", "em", "i", "u", "s", "ul", "ol", "li", "h1", "h2", "h3", "a", "blockquote", "code", "pre",
+                 "hr", *textfarben.TAGS}
 
 VERLAUF_FELDER = ["titel", "abschnitt", "verantwortlich", "gewerk", "beginn_am", "faellig_am", "wiederholung", "status",
                   "schaetzung_personentage", "beschreibung"]
@@ -62,7 +63,7 @@ def darf_unteraufgaben_haben(aufgabe):
 
 def html_bereinigen(html):
     return nh3.clean(html or "", tags=ERLAUBTE_TAGS, attributes={"a": {"href"}},
-                     link_rel="noopener noreferrer nofollow").strip()
+                     tag_attribute_values=textfarben.ATTRIBUTWERTE, link_rel="noopener noreferrer nofollow").strip()
 
 
 def _schnappschuss(aufgabe):

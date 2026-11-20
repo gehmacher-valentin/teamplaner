@@ -54,9 +54,9 @@ describe("Notizen: Markdown hinein und heraus", () => {
 });
 
 describe("Beschreibung: HTML", () => {
-  test("eingefügtes Markdown wird zu Formatierung, Überschriften zu h3", () => {
+  test("eingefügtes Markdown wird zu Formatierung, Überschriften H1 bis H3", () => {
     const e = new Editor({ content: "", contentType: "html", extensions: erweiterungen(false, "") });
-    e.commands.insertContent("# Ablauf\n\n- **Verkleidung** stellen\n- Beton", { contentType: "markdown" });
-    expect(e.getHTML()).toMatch(/^<h3>Ablauf<\/h3><ul><li><p><strong>Verkleidung<\/strong> stellen<\/p><\/li><li><p>Beton<\/p><\/li><\/ul>/);
+    e.commands.insertContent("# Ablauf\n\n- **Verkleidung** stellen\n- Beton\n\n## Teil\n\n### Schritt", { contentType: "markdown" });
+    expect(e.getHTML()).toMatch(/^<h1>Ablauf<\/h1><ul><li><p><strong>Verkleidung<\/strong> stellen<\/p><\/li><li><p>Beton<\/p><\/li><\/ul><h2>Teil<\/h2><h3>Schritt<\/h3>/);
   });
 });

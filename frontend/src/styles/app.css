@@ -80,6 +80,9 @@
   --prio-1-bg: #f6dcd3; --prio-1-fg: #5a2010; --prio-1-rand: #e3a995;
   --prio-2-bg: #fbe3d2; --prio-2-fg: #8a3b0c; --prio-2-rand: #f0c7aa;
   --prio-3-bg: #fbebc8; --prio-3-fg: #6b4a06; --prio-3-rand: #ead39c;
+  /* Schriftfarbe und Marker im Editor (editor/farben.ts) */
+  --tf-rot: #c62828; --tf-orange: #b85300; --tf-gruen: #2e7d32; --tf-blau: #1565c0; --tf-violett: #7b3fa0; --tf-grau: #687069;
+  --mk-gelb: #fff0a0; --mk-gruen: #d4efbf; --mk-blau: #cfe4f8; --mk-rosa: #f8d3e4;
   /* Projektfarben (Okabe-Ito, auch bei Farbsehschwäche unterscheidbar): Fläche, Balken, Schrift */
   --pf-bernstein-bg: #fbe7bf; --pf-bernstein-bar: #e69f00; --pf-bernstein-fg: #5a3d00;
   --pf-blau-bg: #cfe3f2;      --pf-blau-bar: #0072b2;      --pf-blau-fg: #003a5c;
@@ -189,6 +192,8 @@
     --prio-1-bg: #4a1f16; --prio-1-fg: #ffbaa3; --prio-1-rand: #7a3524;
     --prio-2-bg: #3d2414; --prio-2-fg: #f5b48a; --prio-2-rand: #6e3d1d;
     --prio-3-bg: #3d3010; --prio-3-fg: #f0d27f; --prio-3-rand: #6b5520;
+    --tf-rot: #ff8a80; --tf-orange: #ffb45c; --tf-gruen: #8fd694; --tf-blau: #85bbf5; --tf-violett: #d0a6ee; --tf-grau: #a5aca7;
+    --mk-gelb: #5e5110; --mk-gruen: #2d4a1f; --mk-blau: #1e3b59; --mk-rosa: #592841;
     /* Kräftige Flächen mit dunkler Schrift – nur abgedunkelt wirken die hellen Farben braun */
     --pf-bernstein-bg: #d99a2b; --pf-bernstein-bar: #f2c46e; --pf-bernstein-fg: #2a1a00;
     --pf-blau-bg: #4a95d6;      --pf-blau-bar: #9cc8ef;      --pf-blau-fg: #04192b;
@@ -291,6 +296,8 @@
     --prio-1-bg: #4a1f16; --prio-1-fg: #ffbaa3; --prio-1-rand: #7a3524;
     --prio-2-bg: #3d2414; --prio-2-fg: #f5b48a; --prio-2-rand: #6e3d1d;
     --prio-3-bg: #3d3010; --prio-3-fg: #f0d27f; --prio-3-rand: #6b5520;
+    --tf-rot: #ff8a80; --tf-orange: #ffb45c; --tf-gruen: #8fd694; --tf-blau: #85bbf5; --tf-violett: #d0a6ee; --tf-grau: #a5aca7;
+    --mk-gelb: #5e5110; --mk-gruen: #2d4a1f; --mk-blau: #1e3b59; --mk-rosa: #592841;
     /* Kräftige Flächen mit dunkler Schrift – nur abgedunkelt wirken die hellen Farben braun */
     --pf-bernstein-bg: #d99a2b; --pf-bernstein-bar: #f2c46e; --pf-bernstein-fg: #2a1a00;
     --pf-blau-bg: #4a95d6;      --pf-blau-bar: #9cc8ef;      --pf-blau-fg: #04192b;
@@ -891,7 +898,12 @@ legend { font-size: 13px; font-weight: 600; color: var(--text-2); padding: 0 4px
 .beschreibung { font-size: 15px; line-height: 1.55; color: var(--text-beschreibung); border: 1px solid var(--linie); border-radius: var(--radius); padding: 12px 14px; }
 .beschreibung p { margin: 0 0 0.6em; } .beschreibung p:last-child { margin-bottom: 0; }
 .beschreibung ul, .beschreibung ol { margin: 0 0 0.6em; padding-left: 1.4em; }
-.beschreibung h3, .editor__flaeche .ProseMirror h3 { margin: 0.8em 0 0.4em; }
+.beschreibung :is(h1, h2, h3), .editor__flaeche .ProseMirror :is(h1, h2, h3) { margin: 0.8em 0 0.4em; }
+.beschreibung > :first-child, .editor__flaeche .ProseMirror > :first-child { margin-top: 0; }
+/* Überschriften der Beschreibungen abgestuft, kleiner als die der Seite (Notizen: .markdown) */
+.beschreibung h1, .editor__flaeche:not(.markdown) .ProseMirror h1 { font-size: 20px; }
+.beschreibung h2, .editor__flaeche:not(.markdown) .ProseMirror h2 { font-size: 17px; }
+.beschreibung h3, .editor__flaeche:not(.markdown) .ProseMirror h3 { font-size: 15px; }
 .beschreibung blockquote, .editor__flaeche .ProseMirror blockquote { margin: 0 0 0.6em; border-left: 3px solid var(--rand-stark); padding-left: 12px; color: var(--text-2); }
 .beschreibung code, .editor__flaeche .ProseMirror code { font-family: var(--mono); font-size: 0.9em; background: var(--grau-bg); border-radius: 4px; padding: 1px 4px; }
 .beschreibung pre, .editor__flaeche .ProseMirror pre { background: var(--flaeche-3); border: 1px solid var(--linie); border-radius: var(--radius); padding: 10px 12px; overflow-x: auto; }
@@ -1196,6 +1208,26 @@ form.inline { display: inline; }
 .editor__leiste { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; border-bottom: 1px solid var(--linie); }
 .editor__leiste button { height: 28px; min-width: 28px; border: 0; background: transparent; border-radius: 4px; cursor: pointer; font: inherit; font-size: 13px; }
 .editor__leiste button[aria-pressed="true"] { background: var(--akzent-hell); color: var(--akzent); }
+/* Schriftfarbe und Marker: Knöpfe, Farbauswahl und die Farben im Text (auch in gespeicherten Texten) */
+.editor__leiste { position: relative; }
+.editor__leiste .editor__knopf--schriftfarbe { font-weight: 700; text-decoration: underline 3px var(--tf-rot); text-underline-offset: 3px; }
+.editor__leiste .editor__knopf--marker { background-image: linear-gradient(transparent 58%, var(--mk-gelb) 58%); background-size: 60% 100%; background-position: center; background-repeat: no-repeat; }
+.editor__farbwahl { position: absolute; top: calc(100% + 4px); z-index: 20; display: flex; align-items: center; gap: 4px; padding: 6px; background: var(--flaeche); border: 1px solid var(--rand); border-radius: var(--radius); box-shadow: var(--schatten); }
+.editor__leiste .editor__farbwahl button { width: 28px; padding: 0; border: 1px solid var(--rand); font-weight: 700; }
+.editor__leiste .editor__farbwahl .editor__farbe-keine { width: auto; padding: 0 8px; font-weight: 500; }
+.editor__leiste .editor__farbwahl button[aria-pressed="true"] { outline: 2px solid var(--akzent); outline-offset: 1px; }
+.editor__leiste .editor__farbwahl--schriftfarbe button[aria-pressed="true"] { background: transparent; }
+span[data-farbe="rot"], .editor__leiste .editor__farbwahl--schriftfarbe [data-farbe="rot"] { color: var(--tf-rot); }
+span[data-farbe="orange"], .editor__leiste .editor__farbwahl--schriftfarbe [data-farbe="orange"] { color: var(--tf-orange); }
+span[data-farbe="gruen"], .editor__leiste .editor__farbwahl--schriftfarbe [data-farbe="gruen"] { color: var(--tf-gruen); }
+span[data-farbe="blau"], .editor__leiste .editor__farbwahl--schriftfarbe [data-farbe="blau"] { color: var(--tf-blau); }
+span[data-farbe="violett"], .editor__leiste .editor__farbwahl--schriftfarbe [data-farbe="violett"] { color: var(--tf-violett); }
+span[data-farbe="grau"], .editor__leiste .editor__farbwahl--schriftfarbe [data-farbe="grau"] { color: var(--tf-grau); }
+mark[data-farbe] { color: inherit; border-radius: 2px; padding: 0 1px; }
+mark[data-farbe="gelb"], .editor__leiste .editor__farbwahl--marker [data-farbe="gelb"] { background: var(--mk-gelb); }
+mark[data-farbe="gruen"], .editor__leiste .editor__farbwahl--marker [data-farbe="gruen"] { background: var(--mk-gruen); }
+mark[data-farbe="blau"], .editor__leiste .editor__farbwahl--marker [data-farbe="blau"] { background: var(--mk-blau); }
+mark[data-farbe="rosa"], .editor__leiste .editor__farbwahl--marker [data-farbe="rosa"] { background: var(--mk-rosa); }
 .editor__flaeche .ProseMirror { min-height: 120px; padding: 10px 12px; outline: none; font-size: 15px; line-height: 1.55; }
 .editor__flaeche .ProseMirror p { margin: 0 0 0.6em; }
 .editor__flaeche .ProseMirror p.is-editor-empty:first-child::before { content: attr(data-placeholder); color: var(--symbol); float: left; height: 0; pointer-events: none; }

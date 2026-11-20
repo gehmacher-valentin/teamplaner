@@ -12,6 +12,7 @@ import { eingeben } from "../lib/dialog";
 import { t } from "../lib/texte";
 import Collaboration from "@tiptap/extension-collaboration";
 import { erweiterungen } from "./erweiterungen";
+import { MARKERFARBEN, SCHRIFTFARBEN } from "./farben";
 import { gemeinsamVorbereiten } from "./gemeinsam";
 import { hatFormatierung, siehtNachMarkdownAus } from "./markdown";
 
@@ -21,15 +22,87 @@ const PAUSE_MS = 3000;
 interface Knopf {
   label: string;
   titel: string;
-  aktion: (e: Editor) => void;
+  aktion: (e: Editor, knopf: HTMLButtonElement) => void;
   aktiv: (e: Editor) => boolean;
+  klasse?: string;
 }
 
-function knoepfe(ebene: 2 | 3): Knopf[] {
+type FarbArt = "schriftfarbe" | "marker";
+
+/** Kleine Farbauswahl unter dem Knopf; Klick daneben oder Esc schließt sie. */
+function farbwahl(e: Editor, knopf: HTMLButtonElement, art: FarbArt) {
+  const leiste = knopf.parentElement!;
+  const offen = leiste.querySelector<HTMLElement>(".editor__farbwahl");
+  offen?.dispatchEvent(new Event("schliessen"));
+  if (offen?.dataset.art === art) return;
+
+  const farben = art === "schriftfarbe" ? SCHRIFTFARBEN : MARKERFARBEN;
+  const aktuell = e.getAttributes(art).farbe as string | undefined;
+  const wahl = document.createElement("div");
+  wahl.className = `editor__farbwahl editor__farbwahl--${art}`;
+  wahl.dataset.art = art;
+  wahl.setAttribute("role", "group");
+  wahl.setAttribute("aria-label", t(art));
+  wahl.style.left = `${knopf.offsetLeft}px`;
+  const setzen = (farbe: string | null) => {
+    schliessen();
+    if (art === "schriftfarbe") e.commands.schriftfarbeSetzen(farbe);
+    else e.commands.markerSetzen(farbe);
+  };
+  for (const farbe of farben) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "editor__farbfeld";
+    b.dataset.farbe = farbe;
+    b.title = t(`farbe_${farbe}`);
+    b.setAttribute("aria-label", t(`farbe_${farbe}`));
+    b.setAttribute("aria-pressed", String(farbe === aktuell));
+    b.textContent = art === "schriftfarbe" ? "A" : "";
+    b.addEventListener("click", () => setzen(farbe));
+    wahl.append(b);
+  }
+  const keine = document.createElement("button");
+  keine.type = "button";
+  keine.className = "editor__farbe-keine";
+  keine.textContent = t("farbe_keine");
+  keine.addEventListener("click", () => setzen(null));
+  wahl.append(keine);
+
+  const draussen = (ev: MouseEvent) => {
+    if (!wahl.contains(ev.target as Node) && ev.target !== knopf) schliessen();
+  };
+  const taste = (ev: KeyboardEvent) => {
+    if (ev.key !== "Escape") return;
+    ev.stopPropagation();
+    schliessen();
+    knopf.focus();
+  };
+  function schliessen() {
+    wahl.remove();
+    knopf.setAttribute("aria-expanded", "false");
+    document.removeEventListener("mousedown", draussen, true);
+    wahl.removeEventListener("keydown", taste);
+  }
+  wahl.addEventListener("schliessen", schliessen);
+  wahl.addEventListener("keydown", taste);
+  document.addEventListener("mousedown", draussen, true);
+  leiste.append(wahl);
+  knopf.setAttribute("aria-expanded", "true");
+  wahl.querySelector<HTMLButtonElement>('[aria-pressed="true"]')?.focus() ?? wahl.querySelector("button")!.focus();
+}
+
+function knoepfe(): Knopf[] {
   return [
     { label: "B", titel: t("fett"), aktion: (e) => e.chain().focus().toggleBold().run(), aktiv: (e) => e.isActive("bold") },
     { label: "I", titel: t("kursiv"), aktion: (e) => e.chain().focus().toggleItalic().run(), aktiv: (e) => e.isActive("italic") },
-    { label: "H", titel: t("zwischenueberschrift"), aktion: (e) => e.chain().focus().toggleHeading({ level: ebene }).run(), aktiv: (e) => e.isActive("heading") },
+    { label: "A", titel: t("schriftfarbe"), klasse: "editor__knopf--schriftfarbe", aktion: (e, k) => farbwahl(e, k, "schriftfarbe"), aktiv: (e) => e.isActive("schriftfarbe") },
+    { label: "ab", titel: t("marker"), klasse: "editor__knopf--marker", aktion: (e, k) => farbwahl(e, k, "marker"), aktiv: (e) => e.isActive("marker") },
+    ...([1, 2, 3] as const).map((level): Knopf => ({
+      label: `H${level}`,
+      titel: t("ueberschrift", { n: level }),
+      aktion: (e) => e.chain().focus().toggleHeading({ level }).run(),
+      aktiv: (e) => e.isActive("heading", { level }),
+    })),
     { label: t("liste"), titel: t("aufzaehlung"), aktion: (e) => e.chain().focus().toggleBulletList().run(), aktiv: (e) => e.isActive("bulletList") },
     { label: t("nummern"), titel: t("nummerierte_liste"), aktion: (e) => e.chain().focus().toggleOrderedList().run(), aktiv: (e) => e.isActive("orderedList") },
     {
@@ -111,12 +184,18 @@ function einrichten(halter: HTMLElement) {
   });
   if (!editor.isEditable) leiste.hidden = true;
 
-  const liste = knoepfe(markdown ? 2 : 3).map((k) => {
+  const liste = knoepfe().map((k) => {
     const b = document.createElement("button");
     b.type = "button";
     b.textContent = k.label;
     b.title = k.titel;
-    b.addEventListener("click", () => k.aktion(editor));
+    if (k.klasse) {
+      b.className = k.klasse;
+      b.setAttribute("aria-label", k.titel);
+      b.setAttribute("aria-haspopup", "true");
+      b.setAttribute("aria-expanded", "false");
+    }
+    b.addEventListener("click", () => k.aktion(editor, b));
     leiste.append(b);
     return { b, k };
   });

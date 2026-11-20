@@ -76,6 +76,43 @@ test("Eigene Dialoge statt Browser-Dialog: Link im Editor, Notiz löschen", asyn
   await expect(seite.getByRole("link", { name: /Dialogprobe/ })).toHaveCount(0);
 });
 
+test("Editor: Schriftfarbe, Marker und Überschrift bleiben nach dem Neuladen", async ({ seiteFuer }) => {
+  const seite = await seiteFuer("planer");
+  await seite.goto("/notizen/");
+  await seite.getByRole("link", { name: "Neue Notiz" }).click();
+  await seite.locator("#notiz-titel-eingabe").fill("Farbprobe");
+  await seite.locator("#notiz-titel-eingabe").press("Tab");
+  const editor = seite.locator("[data-editor='notiz-text'] [contenteditable='true']");
+  await editor.click();
+  // Erst den Text, dann formatieren (Farben setzen sich sonst in der nächsten Zeile fort);
+  // Wörter per Doppelklick auswählen, das ist stabiler als Pfeiltasten. Der Absatz ist so breit wie
+  // der Editor: auf das Wort am Zeilenanfang klicken, nicht in die Mitte
+  for (const [i, zeile] of ["Achtung", "wichtig", "Ablauf"].entries()) {
+    if (i) await seite.keyboard.press("Enter");
+    await seite.keyboard.type(zeile);
+  }
+  const wort = { position: { x: 12, y: 8 } };
+  await seite.locator('.editor__leiste button[title="Überschrift 3"]').click();
+  await editor.getByText("wichtig", { exact: true }).dblclick(wort);
+  await seite.getByRole("button", { name: "Marker" }).click();
+  await seite.getByRole("group", { name: "Marker" }).getByRole("button", { name: "Gelb" }).click();
+  await editor.getByText("Achtung", { exact: true }).dblclick(wort);
+  await seite.getByRole("button", { name: "Schriftfarbe" }).click();
+  await seite.getByRole("group", { name: "Schriftfarbe" }).getByRole("button", { name: "Rot" }).click();
+  await expect(editor.locator('span[data-farbe="rot"]')).toHaveText("Achtung");
+  await expect(editor.locator('mark[data-farbe="gelb"]')).toHaveText("wichtig");
+  await expect(editor.locator("h3")).toHaveText("Ablauf");
+  await expect(seite).toHaveURL(/\/notizen\/\d+\/$/);
+  // Gespeichert wird laufend; im Textfeld der Seite steht das Markdown (HTML-maskiert)
+  await expect.poll(async () => (await seite.request.get(seite.url())).text()).toMatch(/mark data-farbe=(&quot;|&#34;|")gelb/);
+
+  await seite.reload();
+  const neu = seite.locator("[data-editor='notiz-text'] [contenteditable='true']");
+  await expect(neu.locator('span[data-farbe="rot"]')).toHaveText("Achtung");
+  await expect(neu.locator('mark[data-farbe="gelb"]')).toHaveText("wichtig");
+  await expect(neu.locator("h3")).toHaveText("Ablauf");
+});
+
 test("Bestellung: Zeile anlegen, Status ändern, für alle sichtbar", async ({ seiteFuer }) => {
   const seite = await seiteFuer("planer");
   await seite.goto("/bestellungen/");
