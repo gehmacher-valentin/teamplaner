@@ -117,6 +117,7 @@
   background: var(--vorschau-bg); pointer-events: none;
 }
 .tp-vorschau--abwesenheit { border-color: var(--text-3); background: var(--vorschau-abw-bg); }
+.tp-vorschau--freitext { border-color: var(--info-gelb-rand); background: var(--info-hover); }
 
 .tp-spuren { grid-row: 1; grid-column: 1 / -1; position: relative; display: flex; flex-direction: column; gap: 4px; padding: 6px 0; z-index: 2; }
 .tp-spur { min-height: 40px; }
@@ -132,6 +133,11 @@ a.tp-balken:hover { color: var(--pf-fg); filter: brightness(0.97); }
 .tp-balken--abwesend {
   background: repeating-linear-gradient(135deg, var(--abwesend-1) 0 6px, var(--abwesend-2) 6px 12px); color: var(--abwesend-text); border-left: 0;
   --pf-bar: var(--abwesend-bar);
+}
+/* Freitext: gelb wie die Info-Zeile, gestrichelter Rand – ein Hinweis, keine Einteilung */
+.tp-balken--freitext {
+  background: var(--info-bg); color: var(--info-gelb-text); border: 1px dashed var(--info-gelb-rand); border-left: 4px solid var(--info-gelb-rand);
+  --pf-bar: var(--info-gelb-rand);
 }
 .tp-balken--bearbeitbar { cursor: grab; touch-action: none; }
 .tp-balken--bearbeitbar:focus-visible { outline: 2px solid var(--akzent); outline-offset: 1px; }
@@ -167,6 +173,7 @@ a.tp-balken:hover { color: var(--pf-fg); filter: brightness(0.97); }
 .tp-legende { padding: 12px 14px; border-top: 1px solid var(--rand); background: var(--flaeche-2); position: sticky; left: 0; }
 .tp-legende__projekt { background: var(--pf-bg); border-left: 3px solid var(--pf-bar); width: 14px !important; height: 10px !important; border-radius: 2px !important; }
 .tp-legende__abwesend { background: repeating-linear-gradient(135deg, var(--abwesend-1) 0 4px, var(--abwesend-2) 4px 8px); }
+.tp-legende__freitext { background: var(--info-bg); border: 1px dashed var(--info-gelb-rand); border-left: 3px solid var(--info-gelb-rand); }
 .tp-legende__frei { background: repeating-linear-gradient(135deg, var(--frei-schraffur-1) 0 3px, var(--frei-schraffur-2) 3px 6px); }
 .tp-legende__konflikt { background: repeating-linear-gradient(45deg, var(--warn-bg) 0 3px, var(--konflikt-hell) 3px 5px); box-shadow: inset 0 2px 0 var(--konflikt); }
 .tp-legende__platzhalter { border: 1.5px dashed var(--platzhalter-rand); border-radius: 50% !important; }
@@ -179,6 +186,7 @@ a.tp-balken:hover { color: var(--pf-fg); filter: brightness(0.97); }
   flex: 1; font-size: 14px; font-weight: 600; padding: 9px 12px; border-radius: 6px; text-align: center; cursor: grab;
   background: repeating-linear-gradient(135deg, var(--abwesend-1) 0 6px, var(--abwesend-2) 6px 12px); border: 1px solid var(--rand-stark); touch-action: none;
 }
+.tp-freitext-chip { background: var(--info-bg); color: var(--info-gelb-text); border: 1px dashed var(--info-gelb-rand); }
 .tp-filter { display: flex; align-items: center; gap: 8px; border: 1px solid var(--rand-stark); border-radius: 6px; padding: 0 10px; height: 34px; }
 .tp-filter input { border: 0; height: 32px; flex: 1; padding: 0; outline: none; }
 .tp-filter:focus-within { outline: 2px solid var(--akzent); }

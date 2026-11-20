@@ -3,13 +3,13 @@ import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { kalenderwoche, kurzDatum, kurzTag, langDatum, position, spuren, wochentag, zeitraumText, type Frei, type Position } from "./logik";
 import { Avatar } from "./Avatar";
 import { t } from "./texte";
-import type { Aufgabe, FreigabeTag, Eintrag, Person, Projekt } from "./typen";
+import type { Aufgabe, FreigabeTag, Eintrag, EintragArt, Person, Projekt } from "./typen";
 
 export interface Vorschau {
   personId: number;
   start: number;
   ende: number;
-  art: "einteilung" | "abwesenheit";
+  art: EintragArt;
 }
 
 interface Gemeinsam {
@@ -325,11 +325,12 @@ function Balken({ eintrag, pos, bearbeitbar, spalten, frei, aufgaben, projekte, 
   const span = ende - start + 1;
   const aufgabe = eintrag.art === "einteilung" ? aufgaben[eintrag.aufgabe_id] : undefined;
   const projekt = aufgabe ? projekte[aufgabe.projekt_id] : undefined;
-  const titel = eintrag.art === "abwesenheit" ? t("abwesend") : aufgabe?.titel ?? "…";
-  const anzahlTage = eintrag.art === "abwesenheit"
+  const titel = eintrag.art === "abwesenheit" ? t("abwesend") : eintrag.art === "freitext" ? eintrag.text : aufgabe?.titel ?? "…";
+  const ohneAufgabe = eintrag.art !== "einteilung";
+  const anzahlTage = ohneAufgabe
     ? spalten.slice(start, ende + 1).length
     : 0;
-  const unterzeile = eintrag.art === "abwesenheit"
+  const unterzeile = ohneAufgabe
     ? t(anzahlTage === 1 ? "tag_anzahl" : "tage_anzahl", { n: anzahlTage })
     : [projekt?.name, aufgabe?.eltern].filter(Boolean).join(" › ");
   // Unteraufgaben mit Pfad der Zugehörigkeit („Projekt › Hauptaufgabe › Unteraufgabe“)
@@ -379,7 +380,7 @@ function Balken({ eintrag, pos, bearbeitbar, spalten, frei, aufgaben, projekte, 
 
   const klassen = [
     "tp-balken",
-    eintrag.art === "abwesenheit" ? "tp-balken--abwesend" : `pf-${projekt?.farbe ?? "grau"}`,
+    eintrag.art === "abwesenheit" ? "tp-balken--abwesend" : eintrag.art === "freitext" ? "tp-balken--freitext" : `pf-${projekt?.farbe ?? "grau"}`,
     pos.linksAbgeschnitten ? "tp-balken--links-offen" : "",
     pos.rechtsAbgeschnitten ? "tp-balken--rechts-offen" : "",
     isDragging ? "tp-balken--zieht" : "",

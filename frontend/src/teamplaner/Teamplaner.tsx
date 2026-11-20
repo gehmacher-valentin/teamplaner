@@ -30,7 +30,7 @@ import { Palette } from "./Palette";
 import { RasterAnsicht, type Vorschau } from "./Raster";
 import { Tagesansicht } from "./Tagesansicht";
 import { t } from "./texte";
-import type { Aufgabe, FreigabeTag, Eintrag, Optionen, PaletteDaten, Person, Projekt, Raster } from "./typen";
+import type { Aufgabe, FreigabeTag, Eintrag, EintragArt, Optionen, PaletteDaten, Person, Projekt, Raster } from "./typen";
 
 interface Einstellungen {
   ansicht: string;
@@ -46,13 +46,17 @@ interface Einstellungen {
 type Ziehdaten =
   | { typ: "neu-einteilung"; aufgabe: Aufgabe; projekt?: Projekt }
   | { typ: "neu-abwesenheit" }
-  | { typ: "einteilung" | "abwesenheit"; eintrag: Eintrag; position: Position; griff: { current: number } };
+  | { typ: "neu-freitext" }
+  | { typ: EintragArt; eintrag: Eintrag; position: Position; griff: { current: number } };
 
 type DialogZustand =
   | { art: "bearbeiten"; eintrag: Eintrag }
   | { art: "neu-einteilung"; aufgabe: Aufgabe; projekt?: Projekt }
-  | { art: "neu-abwesenheit" }
+  // Nach dem Ziehen des Chips „Freitext“: Text fehlt noch, Person und Tag sind vorgegeben
+  | { art: "neu-freitext"; personId: number; datum: string }
   | { art: "freigabe-zeitraum" };
+
+type Werte = { person_id?: number; von?: string; bis?: string; text?: string };
 
 function heuteLokal() {
   const d = new Date();
@@ -223,6 +227,7 @@ export function Teamplaner({ planen }: { planen: boolean }) {
     };
     raster?.einteilungen.forEach((x) => hinzu(x.person_id, { art: "einteilung", ...x }));
     raster?.abwesenheiten.forEach((x) => hinzu(x.person_id, { art: "abwesenheit", ...x }));
+    raster?.freitexte.forEach((x) => hinzu(x.person_id, { art: "freitext", ...x }));
     return karte;
   }, [raster]);
   const konflikte = useMemo(
@@ -296,20 +301,31 @@ export function Teamplaner({ planen }: { planen: boolean }) {
       await api.abwesenheitAnlegen({ person_id: personId, von, bis: bis_ });
     });
 
-  const aendern = (eintrag: Eintrag, werte: { person_id?: number; von?: string; bis?: string }) =>
+  const freitextAnlegen = (personId: number, von: string, bis_: string, text: string) =>
     speichern(async () => {
+      lokal((r) => ({ ...r, freitexte: [...r.freitexte, { id: -Date.now(), person_id: personId, von, bis: bis_, text, version: 0 }] }));
+      await api.freitextAnlegen({ person_id: personId, von, bis: bis_, text });
+    });
+
+  const aendern = (eintrag: Eintrag, werte: Werte) =>
+    speichern(async () => {
+      const { text, ...zeitraum } = werte;
       lokal((r) =>
         eintrag.art === "einteilung"
-          ? { ...r, einteilungen: r.einteilungen.map((x) => (x.id === eintrag.id ? { ...x, ...werte } : x)) }
-          : { ...r, abwesenheiten: r.abwesenheiten.map((x) => (x.id === eintrag.id ? { ...x, ...werte } : x)) },
+          ? { ...r, einteilungen: r.einteilungen.map((x) => (x.id === eintrag.id ? { ...x, ...zeitraum } : x)) }
+          : eintrag.art === "abwesenheit"
+            ? { ...r, abwesenheiten: r.abwesenheiten.map((x) => (x.id === eintrag.id ? { ...x, ...zeitraum } : x)) }
+            : { ...r, freitexte: r.freitexte.map((x) => (x.id === eintrag.id ? { ...x, ...werte } : x)) },
       );
       if (eintrag.art === "einteilung") {
-        const von = werte.von ?? eintrag.von;
-        const bis_ = werte.bis ?? eintrag.bis;
+        const von = zeitraum.von ?? eintrag.von;
+        const bis_ = zeitraum.bis ?? eintrag.bis;
         const datumGeaendert = von !== eintrag.von || bis_ !== eintrag.bis;
-        await mitFeiertag((b) => api.einteilungAendern(eintrag.id, { version: eintrag.version, ...werte, feiertag_bestaetigt: b }), von, bis_, datumGeaendert);
+        await mitFeiertag((b) => api.einteilungAendern(eintrag.id, { version: eintrag.version, ...zeitraum, feiertag_bestaetigt: b }), von, bis_, datumGeaendert);
+      } else if (eintrag.art === "abwesenheit") {
+        await api.abwesenheitAendern(eintrag.id, { version: eintrag.version, ...zeitraum });
       } else {
-        await api.abwesenheitAendern(eintrag.id, { version: eintrag.version, ...werte });
+        await api.freitextAendern(eintrag.id, { version: eintrag.version, ...zeitraum, ...(text !== undefined ? { text } : {}) });
       }
     });
 
@@ -319,7 +335,9 @@ export function Teamplaner({ planen }: { planen: boolean }) {
         lokal((r) =>
           eintrag.art === "einteilung"
             ? { ...r, einteilungen: r.einteilungen.filter((x) => x.id !== eintrag.id) }
-            : { ...r, abwesenheiten: r.abwesenheiten.filter((x) => x.id !== eintrag.id) },
+            : eintrag.art === "abwesenheit"
+              ? { ...r, abwesenheiten: r.abwesenheiten.filter((x) => x.id !== eintrag.id) }
+              : { ...r, freitexte: r.freitexte.filter((x) => x.id !== eintrag.id) },
         );
         if (eintrag.art === "einteilung") {
           const aufgabe = raster?.aufgaben[eintrag.aufgabe_id];
@@ -328,9 +346,12 @@ export function Teamplaner({ planen }: { planen: boolean }) {
           if (aufgabe) {
             zeige(t("entfernt", { titel: aufgabe.titel }), "info", () => einteilen(aufgabe, projekt, eintrag.person_id, eintrag.von, eintrag.bis, true));
           }
-        } else {
+        } else if (eintrag.art === "abwesenheit") {
           await api.abwesenheitLoeschen(eintrag.id, eintrag.version);
           zeige(t("abwesenheit_entfernt"), "info", () => abwesenheitAnlegen(eintrag.person_id, eintrag.von, eintrag.bis));
+        } else {
+          await api.freitextLoeschen(eintrag.id, eintrag.version);
+          zeige(t("freitext_entfernt"), "info", () => freitextAnlegen(eintrag.person_id, eintrag.von, eintrag.bis, eintrag.text));
         }
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -367,7 +388,7 @@ export function Teamplaner({ planen }: { planen: boolean }) {
   const sensoren = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   const zielBereich = (daten: Ziehdaten, griffSpalte: number, spalte: number) => {
-    if (daten.typ === "neu-einteilung" || daten.typ === "neu-abwesenheit") {
+    if (!("eintrag" in daten)) {
       return { von: spalten[spalte], bis: spalten[spalte] };
     }
     return verschieben(daten.eintrag.von, daten.eintrag.bis, spalte - griffSpalte);
@@ -376,7 +397,7 @@ export function Teamplaner({ planen }: { planen: boolean }) {
   const beimStart = (ev: DragStartEvent) => {
     const daten = ev.active.data.current as Ziehdaten;
     let griffSpalte = 0;
-    if (daten.typ === "einteilung" || daten.typ === "abwesenheit") {
+    if ("eintrag" in daten) {
       griffSpalte = daten.position.start + daten.griff.current;
     }
     setZiehen({ daten, griffSpalte });
@@ -390,7 +411,9 @@ export function Teamplaner({ planen }: { planen: boolean }) {
     const { personId, spalte } = ev.over.data.current as { personId: number; spalte: number };
     const { von, bis: b } = zielBereich(ziehen.daten, ziehen.griffSpalte, spalte);
     const pos = position(von, b, spalten);
-    const art = ziehen.daten.typ === "abwesenheit" || ziehen.daten.typ === "neu-abwesenheit" ? "abwesenheit" : "einteilung";
+    const typ = ziehen.daten.typ;
+    const art: EintragArt = typ === "neu-abwesenheit" ? "abwesenheit" : typ === "neu-freitext" ? "freitext"
+      : typ === "neu-einteilung" ? "einteilung" : typ;
     setVorschau(pos ? { personId, start: pos.start, ende: pos.ende, art } : null);
   };
 
@@ -405,9 +428,11 @@ export function Teamplaner({ planen }: { planen: boolean }) {
       einteilen(z.daten.aufgabe, z.daten.projekt, personId, von, b);
     } else if (z.daten.typ === "neu-abwesenheit") {
       abwesenheitAnlegen(personId, von, b);
+    } else if (z.daten.typ === "neu-freitext") {
+      setDialog({ art: "neu-freitext", personId, datum: von });
     } else {
       const eintrag = z.daten.eintrag;
-      const werte: { person_id?: number; von?: string; bis?: string } = {};
+      const werte: Werte = {};
       if (personId !== eintrag.person_id) werte.person_id = personId;
       if (von !== eintrag.von || b !== eintrag.bis) Object.assign(werte, { von, bis: b });
       if (Object.keys(werte).length) aendern(eintrag, werte);
@@ -434,7 +459,10 @@ export function Teamplaner({ planen }: { planen: boolean }) {
     const d = ziehen?.daten;
     if (!d) return "";
     if (d.typ === "neu-einteilung") return d.aufgabe.titel;
-    if (d.typ === "neu-abwesenheit" || d.eintrag.art === "abwesenheit") return t("abwesend");
+    if (d.typ === "neu-abwesenheit") return t("abwesend");
+    if (d.typ === "neu-freitext") return t("freitext");
+    if (d.eintrag.art === "abwesenheit") return t("abwesend");
+    if (d.eintrag.art === "freitext") return d.eintrag.text;
     return raster?.aufgaben[d.eintrag.aufgabe_id]?.titel ?? "";
   })();
 
@@ -569,7 +597,6 @@ export function Teamplaner({ planen }: { planen: boolean }) {
                 onProjekt={(id) => setE({ paletteProjekt: id })}
                 onSuche={setSuche}
                 onEinteilen={(aufgabe) => setDialog({ art: "neu-einteilung", aufgabe, projekt: palette?.projekte[aufgabe.projekt_id] })}
-                onAbwesenheit={() => setDialog({ art: "neu-abwesenheit" })}
               />
             )}
           </div>
@@ -592,22 +619,25 @@ export function Teamplaner({ planen }: { planen: boolean }) {
         <BearbeitenDialog
           eintrag={bearbeitenEintrag}
           aufgabe={dialogAufgabe}
+          freitext={dialog.art === "neu-freitext"}
           personen={einteilbarePersonen(einteilbar, bearbeitenEintrag, raster.personen)}
-          vorgabeDatum={spalten.includes(heute) ? heute : spalten[0]}
+          vorgabePerson={dialog.art === "neu-freitext" ? dialog.personId : undefined}
+          vorgabeDatum={dialog.art === "neu-freitext" ? dialog.datum : spalten.includes(heute) ? heute : spalten[0]}
           onSchliessen={() => setDialog(null)}
           onLoeschen={bearbeitenEintrag ? () => { loeschen(bearbeitenEintrag); setDialog(null); } : undefined}
           onSpeichern={(werte) => {
             setDialog(null);
             if (dialog.art === "bearbeiten") {
               const x = dialog.eintrag;
-              const aenderung: { person_id?: number; von?: string; bis?: string } = {};
+              const aenderung: Werte = {};
               if (werte.person_id !== x.person_id) aenderung.person_id = werte.person_id;
               if (werte.von !== x.von || werte.bis !== x.bis) Object.assign(aenderung, { von: werte.von, bis: werte.bis });
+              if (x.art === "freitext" && werte.text !== x.text) aenderung.text = werte.text;
               if (Object.keys(aenderung).length) aendern(x, aenderung);
             } else if (dialog.art === "neu-einteilung") {
               einteilen(dialog.aufgabe, dialog.projekt, werte.person_id, werte.von, werte.bis);
             } else {
-              abwesenheitAnlegen(werte.person_id, werte.von, werte.bis);
+              freitextAnlegen(werte.person_id, werte.von, werte.bis, werte.text);
             }
           }}
         />
@@ -630,6 +660,7 @@ function Legende({ projekte }: { projekte: Projekt[] }) {
         <span key={p.id} className={`pf-${p.farbe}`}><i className="tp-legende__projekt" />{p.name}</span>
       ))}
       <span><i className="tp-legende__abwesend" />{t("abwesend")}</span>
+      <span><i className="tp-legende__freitext" />{t("freitext")}</span>
       <span><i style={{ background: "var(--feiertag)" }} />{t("feiertag")}</span>
       <span><i className="tp-legende__frei" />{t("feiertag_im_balken")}</span>
       <span><i className="tp-legende__konflikt" />{t("doppelt_belegt")}</span>

@@ -120,7 +120,7 @@ Für Rechteprüfung und Einteilungslogik sind automatische Tests Pflicht.
 
 | `frontend/e2e/01-rundgang.spec.ts` | alle Seiten der Navigation am Desktop und am Handy, Einstellungen, keine Vorlagenreste |
 | `frontend/e2e/02-einladen.spec.ts` | Konto einladen, auch in der eigenen Rolle: Link erscheint einmal und funktioniert |
-| `frontend/e2e/03-einteilen.spec.ts` | Teamplaner: aus der Palette ziehen, verschieben, verlängern, rückgängig, live bei einer zweiten Person |
+| `frontend/e2e/03-einteilen.spec.ts` | Teamplaner: aus der Palette ziehen, verschieben, verlängern, rückgängig, live bei einer zweiten Person; Freitext-Chip ziehen, Text eingeben und ändern |
 | `frontend/e2e/04-gantt.spec.ts` | Gantt: Warnzeichen bei Verletzung durch Einteilungen, Hinweis klappt am unteren Rand nach oben, Balken ziehen und Nachziehen, schnelle Änderungen, Abhängigkeit anlegen und entfernen |
 | `frontend/e2e/05-aufgabe.spec.ts` | Aufgabe anlegen, Seitenleiste, direkt bearbeiten, Erwähnung, Anhang, Posteingang |
 | `frontend/e2e/06-notizen-bestellungen.spec.ts` | Notiz und Bestellung anlegen, bearbeiten, wiederfinden |
@@ -136,7 +136,7 @@ Dazu prüft `shellcheck` die Betriebs- und Bauskripte.
 | --- | --- |
 | `kern/` | Basis für alle anderen Apps: Person, Konto, Rolle, Bereich, Gewerk (angezeigt als „Gruppe“), Protokoll; `rechte.py` = zentrale Rechteprüfung, `middleware.py` (Sitzung, Zwei-Faktor, CSP, Abweisen von NUL-Zeichen), `hilfen.py` (`als_zahl`, `TEXT_MAX_ZEICHEN`, `einstellungsseite`), `freigaben.py` (Freigaben je Ansicht), `zwei_faktor.py`, Profilfotos |
 | `projekte/` | Projekte, Abschnitte, Status, Aufgaben (Unteraufgaben = Aufgaben mit `eltern`); Projekt-Tags nur noch im Datenmodell, nicht in der Oberfläche; `dienste.py` (Schreiben mit Verlauf, Folgeaufgabe wiederkehrender Aufgaben), `wiederholung.py` (Regel, nächster Termin), `ansicht.py` (Aufgaben für Liste und Detail laden und aufbereiten), `seitenleiste.py` (Aufgabendetail neben der Liste) |
-| `planung/` | Einteilung, Abwesenheit, freie Tage, Ansichten; `kalender.py` (Feiertage, Regeln), `dienste.py` (Schreiben mit Prüfungen), `api.py`, `live.py` (SSE) |
+| `planung/` | Einteilung, Abwesenheit, Freitext, freie Tage, Ansichten; `kalender.py` (Feiertage, Regeln), `dienste.py` (Schreiben mit Prüfungen), `api.py`, `live.py` (SSE) |
 | `zusammenarbeit/` | Kommentare, Erwähnungen, Anhänge, Benachrichtigungen mit Posteingang; `mail.py` (E-Mail-Kategorien und Versand, je E-Mail eine Protokollzeile), `mailverlauf.py` (Versandverlauf für Befehl und Einstellungsseite), `verlauf.py` (Kommentare und Änderungen als lesbare Einträge), `anhaenge.py` (Inhaltstyp, Anzeige im Browser) |
 | `gantt/` | Gantt-Ansichten mit Freigaben; `daten.py` (Abgleich, Verletzungen), `dienste.py` (Termine, Abhängigkeiten, neue Projekte in Gesamtansichten) |
 | `notizen/` | Persönliche Notizen und freigegebene Gruppenordner; `rechte.py`, `markdown.py` (Markdown → bereinigtes HTML, mit Frist gegen aufwendige Eingaben) |

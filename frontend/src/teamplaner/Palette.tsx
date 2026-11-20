@@ -14,16 +14,18 @@ interface Props {
   onProjekt: (id: number | null) => void;
   onSuche: (text: string) => void;
   onEinteilen: (aufgabe: Aufgabe) => void;
-  onAbwesenheit: () => void;
 }
 
-export function Palette({ daten, heute, modus, projektId, suche, projekte, onModus, onProjekt, onSuche, onEinteilen, onAbwesenheit }: Props) {
+export function Palette({ daten, heute, modus, projektId, suche, projekte, onModus, onProjekt, onSuche, onEinteilen }: Props) {
   const aufgaben = daten?.aufgaben ?? [];
   return (
     <aside className="tp-palette karte" aria-label={t("einteilen")}>
       <div className="tp-palette__abschnitt">
-        <h2>{t("abwesenheit")}</h2>
-        <AbwesenheitChip onAbwesenheit={onAbwesenheit} />
+        <h2>{t("eintraege_ziehen")}</h2>
+        <div className="zeile">
+          <EintragChip typ="neu-abwesenheit" text={t("abwesend")} label={t("abwesend_ziehen")} klasse="" />
+          <EintragChip typ="neu-freitext" text={t("freitext")} label={t("freitext_ziehen")} klasse="tp-freitext-chip" />
+        </div>
       </div>
       <div className="tp-palette__abschnitt">
         <div className="zeile">
@@ -62,14 +64,12 @@ export function Palette({ daten, heute, modus, projektId, suche, projekte, onMod
   );
 }
 
-function AbwesenheitChip({ onAbwesenheit }: { onAbwesenheit: () => void }) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: "abwesenheit-neu", data: { typ: "neu-abwesenheit" } });
+/** Ziehbarer Chip für einen neuen Eintrag ohne Aufgabe. Dauer und Text danach per Klick auf den Balken. */
+function EintragChip({ typ, text, label, klasse }: { typ: "neu-abwesenheit" | "neu-freitext"; text: string; label: string; klasse: string }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: typ, data: { typ } });
   return (
-    <div className="zeile">
-      <div ref={setNodeRef} {...attributes} {...listeners} className={`tp-abwesend-chip${isDragging ? " tp-balken--zieht" : ""}`}
-        role="button" aria-label={t("abwesend_ziehen")}>{t("abwesend")}</div>
-      <button type="button" className="knopf knopf--klein" onClick={onAbwesenheit}>{t("eintragen")}</button>
-    </div>
+    <div ref={setNodeRef} {...attributes} {...listeners} className={`tp-abwesend-chip ${klasse}${isDragging ? " tp-balken--zieht" : ""}`}
+      role="button" aria-label={label}>{text}</div>
   );
 }
 

@@ -441,6 +441,15 @@ def test_meine_aufgaben_dropdown_eingeteilt_mit_abwesenheit(konten, aufgabe, bet
     assert "Hallenboden Nord" not in karte and "Aushilfe Fremd" not in karte
 
 
+def test_meine_aufgaben_zeigt_freitext(konten, aufgabe):
+    from planung.models import Freitext
+
+    tag = _werktag()
+    Freitext.objects.create(person=konten[M].person, von=tag, bis=tag, text="Schulung <Kran>")
+    karte = angemeldet(konten[M]).get("/meine-aufgaben/").content.decode().split('id="karte-mir"')[0]
+    assert '<span class="badge badge--freitext">Schulung &lt;Kran&gt;</span>' in karte
+
+
 def test_meine_aufgaben_platzhaltern_zugewiesen_mit_filter(konten, projekt, abschnitt, betreut):
     eins, zwei, fremd = betreut
     for titel, person in [("Regal Eins", eins), ("Regal Zwei", zwei), ("Regal Fremd", fremd),

@@ -1,6 +1,6 @@
 import { csrfToken, zurAnmeldung } from "../lib/csrf";
 import { t } from "./texte";
-import type { Abwesenheit, Einteilung, Optionen, PaletteDaten, Raster } from "./typen";
+import type { Abwesenheit, Einteilung, Freitext, Optionen, PaletteDaten, Raster } from "./typen";
 
 /** Kennung dieses Browser-Tabs – eigene Änderungen werden im Live-Stream ignoriert. */
 export const CLIENT_ID = Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -85,6 +85,13 @@ export const api = {
     anfrage<Abwesenheit>("PATCH", `/api/planung/abwesenheiten/${id}`, daten),
   abwesenheitLoeschen: (id: number, version: number) =>
     anfrage<void>("DELETE", `/api/planung/abwesenheiten/${id}?version=${version}`),
+
+  freitextAnlegen: (daten: { person_id: number; von: string; bis: string; text: string }) =>
+    anfrage<Freitext>("POST", "/api/planung/freitexte", daten),
+  freitextAendern: (id: number, daten: { version: number; person_id?: number; von?: string; bis?: string; text?: string }) =>
+    anfrage<Freitext>("PATCH", `/api/planung/freitexte/${id}`, daten),
+  freitextLoeschen: (id: number, version: number) =>
+    anfrage<void>("DELETE", `/api/planung/freitexte/${id}?version=${version}`),
 
   tagesinfo: (datum: string, text: string) =>
     anfrage<{ datum: string; text: string }>("PUT", `/api/planung/tagesinfo/${datum}`, { text }),

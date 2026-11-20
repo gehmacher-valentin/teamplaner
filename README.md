@@ -13,7 +13,7 @@ Live-Aktualisierung für alle. Oberfläche auf Deutsch und Englisch, zum Selbsth
 **Teamplaner**
 - Aufgabe auf Person und Tag ziehen, Balken verschieben, verlängern, kürzen, alles rückgängig machbar
 - Eine Aufgabe beliebig oft einteilen: mehrere Personen parallel, auch mit Unterbrechungen
-- Österreichische Feiertage automatisch, zusätzliche freie Tage, Abwesenheiten ohne Grund;
+- Österreichische Feiertage automatisch, zusätzliche freie Tage, Abwesenheiten ohne Grund, Freitext-Einträge je Person (z. B. „Schulung“, nur als Hinweis);
   Wochenenden sichtbar und wie Feiertage behandelt
 - Info-Zeile je Tag für alle sichtbar, optional eine Zeile „Tagesfreigabe“ mit frei wählbarem Namen und
   eigenen Stufen

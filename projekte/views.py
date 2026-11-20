@@ -25,7 +25,7 @@ from kern.models import Gewerk, Person
 from kern.protokoll import protokollieren
 from planung import rechte as planungsrechte
 from planung.kalender import freie_tage, montag, werktage, zaehlende_tage
-from planung.models import Abwesenheit, Einteilung
+from planung.models import Abwesenheit, Einteilung, Freitext
 from zusammenarbeit.models import Kommentar
 
 from . import dienste, termine, wiederholung
@@ -625,7 +625,7 @@ def unteraufgabe_anlegen(request, pk):
 # ---------- Meine Aufgaben ----------
 
 def _eingeteilt_tage(person, heute):
-    """Einteilungen, Abwesenheiten und freie Tage der nächsten zwei Arbeitswochen."""
+    """Einteilungen, Abwesenheiten, Freitexte und freie Tage der nächsten zwei Arbeitswochen."""
     beginn = heute if heute.weekday() < 5 else montag(heute) + timedelta(days=7)
     tage = werktage(beginn, beginn + timedelta(days=13))[:10]
     frei = freie_tage(tage[0], tage[-1])
@@ -634,11 +634,12 @@ def _eingeteilt_tage(person, heute):
     abwesend = set()
     for a in Abwesenheit.objects.filter(person=person, von__lte=tage[-1], bis__gte=tage[0]):
         abwesend.update(d for d in werktage(a.von, a.bis))
+    freitexte = list(Freitext.objects.filter(person=person, von__lte=tage[-1], bis__gte=tage[0]))
     tagesliste = []
     for d in tage:
         eintraege = [e for e in einteilungen if d in zaehlende_tage(e.von, e.bis, frei)]
         tagesliste.append({"datum": d, "frei": frei.get(d), "abwesend": d in abwesend, "einteilungen": eintraege,
-                           "heute": d == heute})
+                           "freitexte": [f.text for f in freitexte if f.von <= d <= f.bis], "heute": d == heute})
     return tagesliste
 
 

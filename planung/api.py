@@ -168,6 +168,37 @@ def abwesenheit(request, pk):
     return Response(dienste.als_dict(objekt))
 
 
+@api_view(["POST"])
+def freitext_anlegen(request):
+    d = request.data
+    try:
+        freitext = dienste.freitext_anlegen(
+            request.user,
+            person=_lade_person(d.get("person_id")),
+            von=_datum(d.get("von"), "von"),
+            bis=_datum(d.get("bis"), "bis"),
+            text=d.get("text"),
+            client_id=_client_id(request),
+        )
+    except dienste.PlanungsFehler as fehler:
+        return _fehler(fehler)
+    return Response(dienste.als_dict(freitext), status=201)
+
+
+@api_view(["PATCH", "DELETE"])
+def freitext(request, pk):
+    try:
+        if request.method == "DELETE":
+            dienste.freitext_loeschen(request.user, pk, version=request.GET.get("version"),
+                                      client_id=_client_id(request))
+            return Response(status=204)
+        objekt = dienste.freitext_aendern(request.user, pk, **_aenderungen(request.data),
+                                          text=request.data.get("text"), client_id=_client_id(request))
+    except dienste.PlanungsFehler as fehler:
+        return _fehler(fehler)
+    return Response(dienste.als_dict(objekt))
+
+
 @api_view(["PUT"])
 def tagesinfo(request, datum):
     try:
