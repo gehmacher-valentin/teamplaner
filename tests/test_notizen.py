@@ -247,7 +247,10 @@ def test_ordneransicht_freigabe_als_avatare_und_liste_mit_kopf(konten, ordner):
         name = konto.person.anzeigename
         assert f'class="anwesend" tabindex="0" role="img" aria-label="{name}" data-name="{name}"' in seite
     assert 'class="liste__kopf notizliste__kopf"' in seite and ">Geändert<" in seite
-    assert 'aria-label="Ordner bearbeiten"' in seite
+    assert 'aria-label="Ordner bearbeiten"' in seite and 'aria-label="Neue Notiz"' in seite
+    # Schmale Bildschirme: Personen hinter dem Symbol mit Anzahl, beim Antippen als Liste mit Namen
+    assert '<details class="notizen__freigabe--schmal aufklappfeld">' in seite
+    assert '<span class="mono">3</span></summary>' in seite
 
 
 def test_avatarstapel_fasst_ab_sechs_personen_zusammen(bereich_a):

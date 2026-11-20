@@ -118,6 +118,11 @@ function mitteilungenSchliessen() {
   knopf.setAttribute("aria-expanded", "false");
 }
 document.addEventListener("keydown", (event) => {
+  const aufgeklappt = event.key === "Escape" ? document.querySelector<HTMLDetailsElement>("details.aufklappfeld[open]") : null;
+  if (aufgeklappt) {
+    aufgeklappt.open = false;
+    aufgeklappt.querySelector("summary")?.focus();
+  }
   if (event.key === "Escape" && !document.getElementById("mitteilungen-feld")?.hidden) {
     mitteilungenSchliessen();
     document.querySelector<HTMLButtonElement>(".mitteilungen__knopf")?.focus();
@@ -169,6 +174,10 @@ document.addEventListener("click", (event) => {
     return;
   }
   if (!ziel.closest("[data-mitteilungen]")) mitteilungenSchliessen();
+  // Aufklappfelder (z. B. „Freigegeben für“ am Handy) schließen bei Klick daneben
+  document.querySelectorAll<HTMLDetailsElement>("details.aufklappfeld[open]").forEach((d) => {
+    if (!d.contains(ziel)) d.open = false;
+  });
   const menue = ziel.closest<HTMLButtonElement>("[data-menue]");
   if (menue) {
     const nav = document.getElementById(menue.dataset.menue!);

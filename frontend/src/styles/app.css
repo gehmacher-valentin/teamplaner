@@ -580,7 +580,8 @@ h3 { margin: 0; font-size: 15px; font-weight: 700; }
 .knopf--gefahr:hover { background: var(--gefahr-bg); color: var(--gefahr); }
 .knopf--klein { height: 32px; padding: 0 10px; font-size: 13px; }
 /* Nur Symbol (z. B. Stift für „Ordner bearbeiten“): quadratisch, Name als aria-label und title */
-.knopf--symbol { width: 36px; padding: 0; color: var(--text-2); }
+.knopf--symbol { width: 36px; padding: 0; }
+.knopf--symbol:not(.knopf--primaer) { color: var(--text-2); }
 .knopf--klein.knopf--symbol { width: 32px; }
 .knopf--text { border-color: transparent; background: transparent; color: var(--text-3); padding: 0 6px; }
 .knopf--text:hover { background: transparent; color: var(--text); text-decoration: underline; }
@@ -1103,6 +1104,17 @@ form.inline { display: inline; }
 .notizen__titel h2 { flex: none; max-width: 100%; }
 .notizen__freigabe { display: flex; align-items: center; gap: 8px; color: var(--text-3); }
 .avatarstapel { display: inline-flex; align-items: center; }
+/* Schmale Bildschirme: nur Personen-Symbol mit Anzahl, die Personen klappen beim Antippen auf */
+.notizen__freigabe--schmal { display: none; position: relative; }
+.aufklappfeld > summary { list-style: none; gap: 6px; color: var(--text-2); }
+.aufklappfeld > summary::-webkit-details-marker { display: none; }
+.aufklappfeld[open] > summary { background: var(--flaeche-3); }
+.aufklappfeld__inhalt {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 30; min-width: 200px; max-width: calc(100vw - 48px);
+  padding: 10px 12px; background: var(--flaeche); border: 1px solid var(--rand); border-radius: var(--radius); box-shadow: var(--schatten);
+}
+.personenliste { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
+.personenliste li { display: flex; align-items: center; gap: 8px; min-width: 0; }
 /* Notizliste: Kopfzeile mit Spalten wie die übrigen Listen, damit sie sich vom Kartenkopf absetzt */
 /* Feste Breite der letzten Spalte: Kopf und Zeilen sind getrennte Raster und müssen gleich stehen */
 .notizliste__kopf, .notiz-zeile { grid-template-columns: minmax(0, 1.2fr) minmax(0, 2fr) 200px; }
@@ -1113,8 +1125,13 @@ form.inline { display: inline; }
 .notizliste__kopf > :last-child { text-align: right; }
 @media (max-width: 760px) {
   .notiz-ordner { max-width: none; }
-  /* Suche, Stift und „Neue Notiz“ in einer Zeile: die Suche nimmt den übrigen Platz */
-  .notizen__suche { flex: 1 1 120px; min-width: 0; }
+  /* Kopf in zwei Zeilen: Titel, Zähler, Freigabe, Stift und Plus; darunter die Suche über die ganze Breite */
+  .notizen__haupt > .karte__kopf { gap: 8px; padding: 12px; }
+  .notizen__titel { flex: 1 1 0; min-width: 0; flex-wrap: nowrap; gap: 8px; }
+  .notizen__titel h2 { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .notizen__freigabe--breit { display: none; }
+  .notizen__freigabe--schmal { display: block; }
+  .notizen__suche { order: 10; flex: 1 1 100%; }
   .notizen__suche input[type="search"] { width: 100%; }
   .notizliste__kopf, .notiz-zeile { grid-template-columns: minmax(0, 1fr) auto; }
   .notiz-zeile__auszug { display: none; }

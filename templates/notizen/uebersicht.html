@@ -16,10 +16,18 @@
         <span class="zaehler">{{ notizen|length }}</span>
         {% if ordner %}
           {# Wie „bearbeitet gerade“ bei einer Notiz: Avatare neben dem Titel, Name beim Zeigen #}
-          <div class="notizen__freigabe" role="group" aria-label="{% translate 'Freigegeben für' %}" title="{% translate 'Freigegeben für' %}">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <div class="notizen__freigabe notizen__freigabe--breit" role="group" aria-label="{% translate 'Freigegeben für' %}" title="{% translate 'Freigegeben für' %}">
+            {% include "teile/personen.html" %}
             {% avatarstapel mitglieder_personen %}
           </div>
+          {# Schmale Bildschirme: nur Symbol und Anzahl, die Personen klappen beim Antippen auf #}
+          <details class="notizen__freigabe--schmal aufklappfeld">
+            <summary class="knopf knopf--klein" aria-label="{% translate 'Freigegeben für' %}" title="{% translate 'Freigegeben für' %}">{% include "teile/personen.html" %}<span class="mono">{{ mitglieder_personen|length }}</span></summary>
+            <div class="aufklappfeld__inhalt">
+              <div class="klein gedaempft">{% translate "Freigegeben für" %}</div>
+              <ul class="personenliste">{% for p in mitglieder_personen %}<li>{% avatar p "klein" False %}<span>{{ p.anzeigename }}</span></li>{% endfor %}</ul>
+            </div>
+          </details>
         {% endif %}
       </div>
       <form method="get" class="notizen__suche" role="search">
@@ -27,7 +35,7 @@
         <input id="notiz-suche" type="search" name="q" value="{{ suche }}" placeholder="{% translate 'Durchsuchen …' %}">
       </form>
       {% if darf_verwalten %}<a class="knopf knopf--klein knopf--symbol" href="{% url 'notizordner_bearbeiten' ordner.pk %}" aria-label="{% translate 'Ordner bearbeiten' %}" title="{% translate 'Ordner bearbeiten' %}">{% include "teile/stift.html" %}</a>{% endif %}
-      {% if darf_schreiben %}<a class="knopf knopf--klein knopf--primaer" href="{% url 'notiz_neu' %}{% if ordner %}?ordner={{ ordner.pk }}{% endif %}">{% translate "Neue Notiz" %}</a>{% endif %}
+      {% if darf_schreiben %}<a class="knopf knopf--klein knopf--symbol knopf--primaer" href="{% url 'notiz_neu' %}{% if ordner %}?ordner={{ ordner.pk }}{% endif %}" aria-label="{% translate 'Neue Notiz' %}" title="{% translate 'Neue Notiz' %}">{% include "teile/plus.html" %}</a>{% endif %}
     </div>
     <div class="liste notizliste">
       {% if notizen %}
