@@ -3,7 +3,7 @@
 import pytest
 
 from kern.models import Protokolleintrag, Rolle
-from planung.models import Abwesenheit, Einteilung, FreierTag, Recht
+from planung.models import Abwesenheit, Einteilung, FreierTag, Freitext, Recht
 from projekte.models import Aufgabe, Status
 from zusammenarbeit.models import Benachrichtigung
 
@@ -218,6 +218,57 @@ def test_abwesenheit_auf_feiertag_ohne_bestaetigung_und_protokoll_ohne_grund(cli
     eintrag = Protokolleintrag.objects.filter(objekt_typ="abwesenheit").order_by("id").first()
     assert set(eintrag.daten) == {"person", "von", "bis"}
     assert not Abwesenheit.objects.exists()
+
+
+# --- Freitexte ---
+
+FT = "/api/planung/freitexte"
+
+
+def freitext(client, person, von, bis, text="Schulung"):
+    return client.post(FT, {"person_id": person.pk, "von": von.isoformat(), "bis": bis.isoformat(), "text": text},
+                       format="json")
+
+
+@pytest.mark.parametrize("rolle, status", [(A, 201), (BL, 201), (P, 403), (M, 403), (L, 403)])
+def test_freitext_rechte(client_fuer, konten, person_a, rolle, status):
+    assert freitext(client_fuer(konten[rolle]), person_a, MO, FR).status_code == status
+
+
+def test_freitext_text_pflicht_und_hoechstlaenge(client_fuer, konten, person_a):
+    client = client_fuer(konten[BL])
+    assert freitext(client, person_a, MO, MO, text="   ").json()["code"] == "text_fehlt"
+    assert freitext(client, person_a, MO, MO, text="x" * 121).json()["code"] == "zu_lang"
+    antwort = freitext(client, person_a, MO, MO, text="  Messe   Wels ")
+    assert antwort.status_code == 201 and antwort.json()["text"] == "Messe Wels"
+    pk = antwort.json()["id"]
+    assert client.patch(f"{FT}/{pk}", {"text": "", "version": 1}, format="json").json()["code"] == "text_fehlt"
+
+
+def test_freitext_aendern_loeschen_protokoll(client_fuer, konten, person_a, platzhalter):
+    client = client_fuer(konten[BL])
+    pk = freitext(client, person_a, FEIERTAG, FEIERTAG).json()["id"]  # Feiertag ohne Rückfrage
+    antwort = client.patch(f"{FT}/{pk}", {"text": "Messe", "bis": MI2.isoformat(), "person_id": platzhalter.pk,
+                                          "version": 1}, format="json")
+    assert antwort.status_code == 200 and antwort.json()["version"] == 2
+    f = Freitext.objects.get(pk=pk)
+    assert (f.person, f.von, f.bis, f.text) == (platzhalter, FEIERTAG, MI2, "Messe")
+    assert client.patch(f"{FT}/{pk}", {"text": "alt", "version": 1}, format="json").json()["code"] == "konflikt"
+    assert client.delete(f"{FT}/{pk}?version=2").status_code == 204
+    eintraege = list(Protokolleintrag.objects.filter(objekt_typ="freitext", objekt_id=pk).order_by("id"))
+    assert [e.aktion for e in eintraege] == ["angelegt", "geaendert", "geloescht"]
+    assert eintraege[0].daten["text"] == "Schulung"
+    assert eintraege[1].daten["text"] == ["Schulung", "Messe"]
+    assert not Freitext.objects.exists()
+
+
+def test_freitext_im_raster_ohne_doppelbelegung(client_fuer, konten, aufgabe, person_a, ansicht_a):
+    einteilung(aufgabe, person_a, MO, MI)
+    Freitext.objects.create(person=person_a, von=DI, bis=DO, text="Schulung")
+    daten = raster(client_fuer(konten[BL]), ansicht_a.pk).json()
+    assert [(f["person_id"], f["text"], f["von"], f["bis"]) for f in daten["freitexte"]] == [
+        (person_a.pk, "Schulung", DI.isoformat(), DO.isoformat())]
+    assert daten["doppelbelegungen"] == []  # nur ein Hinweis, die Person bleibt einteilbar
 
 
 # --- Raster und Palette ---

@@ -3768,3 +3768,20 @@ msgstr "No open tasks for the placeholders you look after."
 #: templates/projekte/_meine_umschalter.html
 msgid "Zuweisungen"
 msgstr "Assignments"
+
+#: planung/models.py verwaltung/templatetags/verwaltung.py
+msgid "Freitext"
+msgstr "Note"
+
+#: planung/models.py
+msgid "Freitexte"
+msgstr "Notes"
+
+#: planung/dienste.py
+msgid "Bitte einen Text eingeben."
+msgstr "Please enter a text."
+
+#: planung/dienste.py
+#, python-format
+msgid "Der Text darf höchstens %(n)s Zeichen lang sein."
+msgstr "The text may be at most %(n)s characters long."

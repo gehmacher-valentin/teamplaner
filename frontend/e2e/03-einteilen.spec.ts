@@ -1,6 +1,6 @@
 // Ablauf 3: Einteilen im Teamplaner. Aufgabe aus der Palette auf Person und Tag ziehen, Balken
 // verschieben und verlängern, entfernen und rückgängig machen. Eine zweite Person mit derselben
-// Ansicht sieht jede Änderung ohne Neuladen (Live-Verbindung).
+// Ansicht sieht jede Änderung ohne Neuladen (Live-Verbindung). Dazu der Freitext-Chip neben „Abwesend“.
 import type { Locator, Page } from "@playwright/test";
 import { expect, mitte, test, ziehen } from "./hilfen";
 
@@ -76,4 +76,45 @@ test("Einteilen: ziehen, verschieben, verlängern, rückgängig, live bei der zw
   await expect(balken(seite, PERSON)).toHaveCount(1);
   await expect(balken(zweite, PERSON)).toHaveCount(1);
   await expect.poll(() => zeitraum(balken(seite, PERSON))).toBe(verlaengert);
+});
+
+test("Freitext: Chip ziehen, Text eingeben, ändern, entfernen und rückgängig, live bei der zweiten Person", async ({ seiteFuer }) => {
+  const seite = await seiteFuer("planer");
+  const zweite = await seiteFuer("leitung");
+  const hinweis = (s: Page, text: string) => zeile(s, PERSON).locator(".tp-balken--freitext", { hasText: text });
+  for (const s of [seite, zweite]) {
+    await s.goto("/teamplaner/");
+    await expect(zeile(s, PERSON)).toBeVisible();
+  }
+  // Den Knopf „Eintragen …“ gibt es nicht mehr – Dauer und Text kommen per Klick auf den Balken
+  await expect(seite.locator(".tp-palette").getByRole("button", { name: "Eintragen …" })).toHaveCount(0);
+
+  // 1. Chip auf Person und Tag ziehen: Dialog fragt nach dem Text
+  const chip = seite.getByRole("button", { name: "Freitext – auf Person und Tag ziehen" });
+  await ziehen(seite, await mitte(chip), await mitte(zeile(seite, PERSON).locator(".tp-zelle").nth(2)));
+  const dialog = seite.getByRole("dialog", { name: "Freitext eintragen" });
+  await expect(dialog).toBeVisible();
+  await dialog.getByLabel("Text", { exact: true }).fill("Schulung Kran");
+  await dialog.getByRole("button", { name: "Speichern" }).click();
+  await expect(hinweis(seite, "Schulung Kran")).toHaveCount(1);
+  await expect(hinweis(zweite, "Schulung Kran"), "zweite Person sieht den Freitext ohne Neuladen").toHaveCount(1);
+
+  // 2. Klick auf den Balken: Text und Dauer ändern
+  await hinweis(seite, "Schulung Kran").click();
+  const bearbeiten = seite.getByRole("dialog", { name: "Freitext bearbeiten" });
+  await bearbeiten.getByLabel("Text", { exact: true }).fill("Messe Wels");
+  await bearbeiten.getByRole("button", { name: "Speichern" }).click();
+  await expect(hinweis(seite, "Messe Wels")).toHaveCount(1);
+  await expect(hinweis(zweite, "Messe Wels")).toHaveCount(1);
+  await seite.reload();
+  await expect(hinweis(seite, "Messe Wels")).toHaveCount(1);
+
+  // 3. Entfernen und rückgängig machen
+  await hinweis(seite, "Messe Wels").hover();
+  await hinweis(seite, "Messe Wels").locator(".tp-balken__x").click();
+  await expect(hinweis(seite, "Messe Wels")).toHaveCount(0);
+  await expect(hinweis(zweite, "Messe Wels")).toHaveCount(0);
+  await seite.locator(".toast").getByRole("button", { name: "Rückgängig" }).click();
+  await expect(hinweis(seite, "Messe Wels")).toHaveCount(1);
+  await expect(hinweis(zweite, "Messe Wels")).toHaveCount(1);
 });

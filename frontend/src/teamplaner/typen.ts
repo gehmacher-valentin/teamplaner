@@ -63,6 +63,16 @@ export interface Abwesenheit {
   version: number;
 }
 
+/** Freitext-Balken: nur ein Hinweis, zählt nicht als Belegung */
+export interface Freitext {
+  id: number;
+  person_id: number;
+  von: string;
+  bis: string;
+  text: string;
+  version: number;
+}
+
 export interface Aufgabe {
   id: number;
   titel: string;
@@ -106,6 +116,7 @@ export interface Raster {
   personen: Person[];
   einteilungen: Einteilung[];
   abwesenheiten: Abwesenheit[];
+  freitexte: Freitext[];
   aufgaben: Record<string, Aufgabe>;
   projekte: Record<string, Projekt>;
   doppelbelegungen: { person_id: number; datum: string }[];
@@ -124,7 +135,10 @@ export interface PaletteDaten {
   projekte: Record<string, Projekt>;
 }
 
-/** Ein Balken im Raster – Einteilung oder Abwesenheit. */
+/** Ein Balken im Raster – Einteilung, Abwesenheit oder Freitext. */
 export type Eintrag =
   | ({ art: "einteilung" } & Einteilung)
-  | ({ art: "abwesenheit" } & Abwesenheit);
+  | ({ art: "abwesenheit" } & Abwesenheit)
+  | ({ art: "freitext" } & Freitext);
+
+export type EintragArt = Eintrag["art"];

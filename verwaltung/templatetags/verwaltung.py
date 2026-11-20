@@ -10,7 +10,7 @@ register = template.Library()
 
 
 OBJEKTE = {
-    "konto": gettext_lazy("Konto"), "abwesenheit": gettext_lazy("Abwesenheit"), "platzhalter": gettext_lazy("Platzhalter"),
+    "konto": gettext_lazy("Konto"), "abwesenheit": gettext_lazy("Abwesenheit"), "freitext": gettext_lazy("Freitext"), "platzhalter": gettext_lazy("Platzhalter"),
     "ansicht": gettext_lazy("Teamplaner-Ansicht"), "gantt_ansicht": gettext_lazy("Gantt-Ansicht"), "projekt": gettext_lazy("Projekt"), "status": gettext_lazy("Status"),
     "gewerk": gettext_lazy("Gruppe"), "bereich": gettext_lazy("Bereich"), "freiertag": gettext_lazy("Freier Tag"), "tag": gettext_lazy("Tag"),
     "notizordner": gettext_lazy("Notizordner"), "tagesfreigabe": gettext_lazy("Tagesfreigabe"), "freigabestufe": gettext_lazy("Freigabestufe"),
@@ -51,6 +51,8 @@ def protokoll_text(eintrag):
     kopf = f"{OBJEKTE.get(eintrag.objekt_typ, eintrag.objekt_typ)} {AKTIONEN.get(eintrag.aktion, eintrag.aktion)}"
     if eintrag.objekt_typ == "abwesenheit" and eintrag.aktion != "geaendert":
         return f"{kopf}: {wert_text(d.get('person'))}, {zeitraum_text(d)}"
+    if eintrag.objekt_typ == "freitext" and eintrag.aktion != "geaendert":
+        return f"{kopf}: {wert_text(d.get('person'))}, {zeitraum_text(d)}, „{d.get('text', '')}“"
     teile = []
     for schluessel, wert in d.items():
         if isinstance(wert, list) and len(wert) == 2 and eintrag.aktion == "geaendert":

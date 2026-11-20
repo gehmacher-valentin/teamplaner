@@ -36,9 +36,10 @@
         <div class="mono klein gedaempft">{{ t.datum|date:"d.m." }}</div>
       </div>
       <div class="tageszeile__inhalt">
-        {% if t.frei or t.abwesend %}<div class="tageszeile__hinweise">
+        {% if t.frei or t.abwesend or t.freitexte %}<div class="tageszeile__hinweise">
           {% if t.frei %}<span class="badge badge--feiertag">{{ t.frei }}</span>{% endif %}
           {% if t.abwesend %}<span class="badge">{% translate "Abwesend" %}</span>{% endif %}
+          {% for text in t.freitexte %}<span class="badge badge--freitext">{{ text }}</span>{% endfor %}
         </div>{% endif %}
         {% if t.einteilungen %}<div class="tageskacheln">
           {% for e in t.einteilungen %}
@@ -47,7 +48,7 @@
               <span class="tageskarte__projekt klein">{{ e.aufgabe.projekt.name }}</span>
             </a>
           {% endfor %}
-        </div>{% elif not t.frei and not t.abwesend %}<span class="gedaempft klein">–</span>{% endif %}
+        </div>{% elif not t.frei and not t.abwesend and not t.freitexte %}<span class="gedaempft klein">–</span>{% endif %}
       </div>
     </div>
   {% endfor %}

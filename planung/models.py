@@ -1,4 +1,4 @@
-"""Einteilungen, Abwesenheiten, freie Tage, Tagesinfos und Teamplaner-Ansichten."""
+"""Einteilungen, Abwesenheiten, Freitexte, freie Tage, Tagesinfos und Teamplaner-Ansichten."""
 
 from django.db import models
 from django.db.models import F, Q
@@ -63,6 +63,36 @@ class Abwesenheit(models.Model):
 
     def __str__(self):
         return f"{self.person} · {self.von:%d.%m.}–{self.bis:%d.%m.%Y}"
+
+
+class Freitext(models.Model):
+    """Balken mit freiem Text zu einer Person, z. B. „Schulung“ oder „Messe“.
+
+    Nur ein Hinweis: zählt nicht als Belegung, die Person bleibt einteilbar (keine Doppelbelegung).
+    """
+
+    person = models.ForeignKey(Person, on_delete=models.PROTECT, related_name="freitexte")
+    von = models.DateField()
+    bis = models.DateField()
+    text = models.CharField(_("Text"), max_length=120)
+    version = models.PositiveIntegerField(default=1)
+    erstellt_von = models.ForeignKey(
+        Person, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    erstellt_am = models.DateTimeField(auto_now_add=True)
+    geaendert_am = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["von", "id"]
+        verbose_name = _("Freitext")
+        verbose_name_plural = _("Freitexte")
+        constraints = [
+            models.CheckConstraint(condition=Q(bis__gte=F("von")), name="freitext_bis_nach_von"),
+        ]
+        indexes = [models.Index(fields=["person", "von", "bis"])]
+
+    def __str__(self):
+        return f"{self.person} · {self.text} · {self.von:%d.%m.}–{self.bis:%d.%m.%Y}"
 
 
 class FreierTag(models.Model):

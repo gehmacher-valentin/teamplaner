@@ -39,33 +39,41 @@ export function Modal({ titel, onSchliessen, children }: { titel: string; onSchl
   );
 }
 
+export const MAX_FREITEXT = 120;
+
 interface BearbeitenProps {
   eintrag: Eintrag | null; // null = neu
   aufgabe?: Aufgabe;
+  /** Neuer Freitext (eintrag = null), z. B. nach dem Ziehen des Chips „Freitext“ */
+  freitext?: boolean;
   personen: Person[];
   vorgabePerson?: number;
   vorgabeDatum: string;
-  onSpeichern: (werte: { person_id: number; von: string; bis: string }) => void;
+  onSpeichern: (werte: { person_id: number; von: string; bis: string; text: string }) => void;
   onLoeschen?: () => void;
   onSchliessen: () => void;
 }
 
-/** Einteilung/Abwesenheit per Formular bearbeiten oder anlegen – Alternative zum Ziehen. */
-export function BearbeitenDialog({ eintrag, aufgabe, personen, vorgabePerson, vorgabeDatum, onSpeichern, onLoeschen, onSchliessen }: BearbeitenProps) {
+/** Einteilung, Abwesenheit oder Freitext per Formular bearbeiten oder anlegen – Alternative zum Ziehen. */
+export function BearbeitenDialog({ eintrag, aufgabe, freitext, personen, vorgabePerson, vorgabeDatum, onSpeichern, onLoeschen, onSchliessen }: BearbeitenProps) {
   const [person, setPerson] = useState<number>(eintrag?.person_id ?? vorgabePerson ?? personen[0]?.id ?? 0);
   const [von, setVon] = useState(eintrag?.von ?? vorgabeDatum);
   const [bis, setBis] = useState(eintrag?.bis ?? vorgabeDatum);
+  const [text, setText] = useState(eintrag?.art === "freitext" ? eintrag.text : "");
   const [fehler, setFehler] = useState("");
-  const titel = eintrag?.art === "abwesenheit" || (!eintrag && !aufgabe)
-    ? (eintrag ? t("abwesenheit_bearbeiten") : t("abwesenheit_eintragen"))
-    : (eintrag ? t("einteilung_bearbeiten") : t("aufgabe_einteilen"));
+  const mitText = eintrag ? eintrag.art === "freitext" : !!freitext;
+  const titel = mitText
+    ? (eintrag ? t("freitext_bearbeiten") : t("freitext_eintragen"))
+    : eintrag?.art === "abwesenheit" ? t("abwesenheit_bearbeiten")
+      : (eintrag ? t("einteilung_bearbeiten") : t("aufgabe_einteilen"));
 
   const absenden = (e: React.FormEvent) => {
     e.preventDefault();
+    if (mitText && !text.trim()) return setFehler(t("fehler_text"));
     if (!von || !bis) return setFehler(t("fehler_daten"));
     if (bis < von) return setFehler(t("fehler_reihenfolge"));
     if (!person) return setFehler(t("fehler_person"));
-    onSpeichern({ person_id: person, von, bis });
+    onSpeichern({ person_id: person, von, bis, text: text.trim() });
   };
 
   return (
@@ -83,6 +91,13 @@ export function BearbeitenDialog({ eintrag, aufgabe, personen, vorgabePerson, vo
         </a>
       )}
       <form className="formular" onSubmit={absenden}>
+        {mitText && (
+          <label className="feld">
+            {t("text")}
+            <input type="text" value={text} maxLength={MAX_FREITEXT} required autoFocus
+              placeholder={t("text_platzhalter")} onChange={(e) => setText(e.target.value)} />
+          </label>
+        )}
         <label className="feld">
           {t("person")}
           <PersonenWahl personen={personen} wert={person} onWahl={setPerson} name={t("person")} />

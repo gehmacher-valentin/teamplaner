@@ -1,4 +1,4 @@
-"""Anlegen, Ändern und Löschen von Einteilungen und Abwesenheiten.
+"""Anlegen, Ändern und Löschen von Einteilungen, Abwesenheiten und Freitexten.
 
 Alle Schreibzugriffe aus API und Oberfläche laufen hier durch: Rechteprüfung,
 Feiertagsbestätigung, Schutz vor stillem Überschreiben, Protokoll
@@ -18,7 +18,7 @@ from zusammenarbeit.dienste import einteilung_benachrichtigen
 
 from . import rechte
 from .kalender import freie_tage_mit_wochenende
-from .models import Abwesenheit, Einteilung, FreigabeStufe, Tagesfreigabe, TagesInfo
+from .models import Abwesenheit, Einteilung, FreigabeStufe, Freitext, Tagesfreigabe, TagesInfo
 
 MAX_TAGE = 366
 MAX_INFO_ZEICHEN = 120
@@ -44,6 +44,8 @@ def als_dict(objekt):
     }
     if isinstance(objekt, Einteilung):
         daten["aufgabe_id"] = objekt.aufgabe_id
+    if isinstance(objekt, Freitext):
+        daten["text"] = objekt.text
     return daten
 
 
@@ -148,6 +150,8 @@ def _protokolldaten(objekt):
     daten = {"person": objekt.person, "von": objekt.von, "bis": objekt.bis}
     if isinstance(objekt, Einteilung):
         daten["aufgabe"] = objekt.aufgabe_id
+    if isinstance(objekt, Freitext):
+        daten["text"] = objekt.text
     return daten
 
 
@@ -171,7 +175,7 @@ def einteilung_anlegen(konto, *, aufgabe, person, von, bis, feiertag_bestaetigt=
 
 
 def _aendern(modell, art, konto, objekt_id, *, version, person=None, von=None, bis=None,
-             feiertag_bestaetigt=False, client_id=None):
+             feiertag_bestaetigt=False, client_id=None, text=None):
     with transaction.atomic():
         objekt = _sperren_und_pruefen(modell, konto, objekt_id, version)
         alt_person, alt_von, alt_bis = objekt.person, objekt.von, objekt.bis
@@ -188,6 +192,8 @@ def _aendern(modell, art, konto, objekt_id, *, version, person=None, von=None, b
 
         alt = _protokolldaten(objekt)
         objekt.person, objekt.von, objekt.bis = neue_person, neu_von, neu_bis
+        if modell is Freitext and text is not None:
+            objekt.text = text
         objekt.version += 1
         objekt.save()
         protokollieren(konto, art, objekt.pk, "geaendert", aenderungen(alt, _protokolldaten(objekt)),
@@ -241,6 +247,43 @@ def abwesenheit_aendern(konto, abwesenheit_id, **kwargs):
 
 def abwesenheit_loeschen(konto, abwesenheit_id, **kwargs):
     _loeschen(Abwesenheit, "abwesenheit", konto, abwesenheit_id, **kwargs)
+
+
+# --- Freitexte (nur ein Hinweis: zählen nicht als Belegung, keine Feiertagsbestätigung) ---
+
+def _freitext_text(text):
+    """Leerzeichen zusammenfassen; leer oder zu lang ist ein Fehler."""
+    text = " ".join((text or "").split())
+    if not text:
+        raise PlanungsFehler("text_fehlt", _("Bitte einen Text eingeben."))
+    if len(text) > MAX_INFO_ZEICHEN:
+        raise PlanungsFehler(
+            "zu_lang", _("Der Text darf höchstens %(n)s Zeichen lang sein.") % {"n": MAX_INFO_ZEICHEN}
+        )
+    return text
+
+
+def freitext_anlegen(konto, *, person, von, bis, text, client_id=None):
+    _pruefe_recht(konto, person)
+    _pruefe_nicht_archiviert(person)
+    _pruefe_auswaehlbar(person)
+    _pruefe_zeitraum(von, bis)
+    text = _freitext_text(text)
+    with transaction.atomic():
+        freitext = Freitext.objects.create(person=person, von=von, bis=bis, text=text, erstellt_von=konto.person)
+        protokollieren(konto, "freitext", freitext.pk, "angelegt", _protokolldaten(freitext))
+        _melden("freitext", "angelegt", freitext, [person.pk], von, bis, konto, client_id)
+    return freitext
+
+
+def freitext_aendern(konto, freitext_id, *, text=None, **kwargs):
+    kwargs.pop("feiertag_bestaetigt", None)
+    return _aendern(Freitext, "freitext", konto, freitext_id,
+                    text=None if text is None else _freitext_text(text), **kwargs)
+
+
+def freitext_loeschen(konto, freitext_id, **kwargs):
+    _loeschen(Freitext, "freitext", konto, freitext_id, **kwargs)
 
 
 # --- Tagesinfo (Info-Zeile unter den Wochentagen, für alle sichtbar) ---

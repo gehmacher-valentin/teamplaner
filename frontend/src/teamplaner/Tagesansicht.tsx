@@ -54,6 +54,8 @@ export function Tagesansicht({ spalten, frei, infos, tagesfreigaben, freigabeNam
                   {eintraege.map((e) => {
                     if (e.art === "abwesenheit") {
                       return <span key={`a${e.id}`} className="tp-balken tp-balken--abwesend tp-balken--karte">{t("abwesend")}</span>;
+                    }                    if (e.art === "freitext") {
+                      return <span key={`f${e.id}`} className="tp-balken tp-balken--freitext tp-balken--karte">{e.text}</span>;
                     }
                     const a = aufgaben[e.aufgabe_id];
                     const projekt = a ? projekte[a.projekt_id] : undefined;

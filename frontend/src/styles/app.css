@@ -979,6 +979,7 @@ a.eltern-hinweis:hover { text-decoration: underline; }
 .stapel--eng { gap: 6px; }
 .stapel > .badge { align-self: flex-start; }
 .badge--feiertag { background: var(--feiertag); color: var(--feiertag-text); }
+.badge--freitext { background: var(--info-bg); color: var(--info-gelb-text); }
 /* Mehrere Einteilungen eines Tages nebeneinander, solange die Karte breit genug ist (sonst untereinander) */
 .tageskacheln { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 140px), 1fr)); gap: 6px; }
 .tageskarte {

@@ -25,6 +25,7 @@ from .models import (
     Abwesenheit,
     Einteilung,
     FreigabeStufe,
+    Freitext,
     Tagesfreigabe,
     TagesInfo,
     TeamplanerAnsicht,
@@ -154,8 +155,10 @@ def raster(konto, ansicht_id, von: date, bis: date, archivierte=False):
         .select_related("aufgabe__status", "aufgabe__gewerk", f"aufgabe__{ELTERN_KETTE}")
     )
     abwesenheiten = list(Abwesenheit.objects.filter(person_id__in=person_ids, von__lte=bis, bis__gte=von))
+    freitexte = list(Freitext.objects.filter(person_id__in=person_ids, von__lte=bis, bis__gte=von))
 
-    belegt = {e.person_id for e in einteilungen} | {a.person_id for a in abwesenheiten}
+    belegt = ({e.person_id for e in einteilungen} | {a.person_id for a in abwesenheiten}
+              | {f.person_id for f in freitexte})
     if archivierte:
         # Archivierte Personen nur, wenn sie im Zeitraum Einträge haben
         personen = [p for p in personen if not p.archiviert or p.pk in belegt]
@@ -220,6 +223,12 @@ def raster(konto, ansicht_id, von: date, bis: date, archivierte=False):
             {"id": a.pk, "person_id": a.person_id, "von": a.von.isoformat(),
              "bis": a.bis.isoformat(), "version": a.version}
             for a in abwesenheiten
+        ],
+        # Nur Hinweise: zählen nicht bei den Doppelbelegungen
+        "freitexte": [
+            {"id": f.pk, "person_id": f.person_id, "von": f.von.isoformat(),
+             "bis": f.bis.isoformat(), "text": f.text, "version": f.version}
+            for f in freitexte
         ],
         "aufgaben": {
             a.pk: aufgabe_dict(a, pt.get(a.pk, 0), anzahl_personen.get(a.pk, 0), anhaenge.get(a.pk, 0))
