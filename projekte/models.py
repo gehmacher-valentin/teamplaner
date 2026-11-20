@@ -23,7 +23,7 @@ class Projektfarbe(models.TextChoices):
     GRAU = "grau", _("Grau")
 
 
-PRIORITAETEN = [(i, str(i)) for i in range(1, 6)]
+PRIORITAETEN = [(i, str(i)) for i in range(1, 11)]
 
 
 class Tag(models.Model):
