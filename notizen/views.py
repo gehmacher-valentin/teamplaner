@@ -89,7 +89,8 @@ def uebersicht(request, pk=None):
         "suche": suche,
         "darf_schreiben": darf_schreiben,
         "darf_verwalten": ordner is not None and rechte.darf_ordner_verwalten(konto, ordner),
-        "mitglieder": ordner.mitglieder.select_related("person").order_by("person__anzeigename") if ordner else [],
+        "mitglieder_personen": [k.person for k in ordner.mitglieder.select_related("person").order_by("person__anzeigename")]
+        if ordner else [],
     })
 
 
