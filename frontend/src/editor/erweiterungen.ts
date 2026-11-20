@@ -5,6 +5,7 @@ import { TableKit } from "@tiptap/extension-table";
 import { Placeholder } from "@tiptap/extensions";
 import { Markdown } from "@tiptap/markdown";
 import StarterKit from "@tiptap/starter-kit";
+import { Marker, Schriftfarbe } from "./farben";
 
 // Beschreibungen kennen nur eine Überschriftenebene (h3); „#“ bis „######“ am Zeilenanfang führen dorthin
 const ZwischenUeberschrift = Heading.extend({
@@ -16,6 +17,8 @@ const ZwischenUeberschrift = Heading.extend({
 /** ``zusammen``: Rückgängig übernimmt dann die Collaboration-Erweiterung (nur eigene Änderungen). */
 export function erweiterungen(markdown: boolean, platzhalter: string, zusammen = false) {
   const geteilt = [
+    Schriftfarbe,
+    Marker,
     Placeholder.configure({ placeholder: platzhalter }),
     // Auch bei HTML: nur zum Umwandeln von eingefügtem Markdown
     Markdown.configure({ markedOptions: { gfm: true, breaks: true } }),

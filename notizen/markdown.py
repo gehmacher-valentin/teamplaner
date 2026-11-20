@@ -17,10 +17,14 @@ import markdown as md
 import nh3
 from markdown.extensions import Extension
 
+from kern import textfarben
+
 ERLAUBTE_TAGS = {
     "p", "br", "strong", "em", "del", "s", "code", "pre", "blockquote", "hr", "a",
     "ul", "ol", "li", "h1", "h2", "h3", "h4", "h5", "h6",
     "table", "thead", "tbody", "tr", "th", "td",
+    # Schriftfarbe und Marker stehen als kleines HTML im Markdown
+    *textfarben.TAGS,
 }
 
 # Höchstdauer einer Umwandlung in Sekunden; gewöhnliche Notizen brauchen Millisekunden
@@ -100,7 +104,7 @@ def als_html(text):
         return "<p>" + html.escape(text).replace("\n", "<br>") + "</p>"
     return nh3.clean(
         roh, tags=ERLAUBTE_TAGS, attributes={"a": {"href", "title"}, "th": {"align"}, "td": {"align"}},
-        url_schemes={"http", "https", "mailto"}, link_rel="noopener noreferrer nofollow",
+        tag_attribute_values=textfarben.ATTRIBUTWERTE, url_schemes={"http", "https", "mailto"}, link_rel="noopener noreferrer nofollow",
     )
 
 

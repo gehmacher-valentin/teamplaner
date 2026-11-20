@@ -37,7 +37,7 @@ Live-Aktualisierung für alle. Oberfläche auf Deutsch und Englisch, zum Selbsth
 
 **Notizen und Bestellungen**
 - Persönliche Notizen (sieht niemand sonst, auch kein Admin) und freigegebene Gruppenordner,
-  mit Markdown und Anhängen
+  mit Markdown, Schriftfarbe, Marker und Anhängen
 - Gemeinsame Bestellliste mit Status von „offen“ bis „erhalten“, Prio, Liefertermin mit Warnung bei
   Überschreitung und Vorschlägen für den Lieferanten; jede Änderung im Protokoll
 
