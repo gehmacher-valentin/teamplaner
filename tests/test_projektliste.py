@@ -33,10 +33,26 @@ def test_prioritaet_setzen(konten, projekt, rolle, erlaubt):
         assert antwort.url == "/projekte/?archiv=1"
 
 
+@pytest.mark.parametrize("wert, erwartet", [("10", 10), ("11", None), ("0", None)])
+def test_prioritaet_bis_10(konten, projekt, wert, erwartet):
+    projekt.prioritaet = 3
+    projekt.save()
+    client_fuer(konten[P]).post(f"/projekte/{projekt.pk}/prioritaet/", {"prioritaet": wert})
+    projekt.refresh_from_db()
+    assert projekt.prioritaet == erwartet
+    seite = client_fuer(konten[P]).get("/projekte/").content.decode()
+    assert '<option value="10"' in seite and '<option value="11"' not in seite
+
+
+def test_projektformular_prioritaet_bis_10():
+    werte = [w for w, _ in ProjektForm().fields["prioritaet"].choices if w != ""]
+    assert werte == list(range(1, 11))
+
+
 def test_liste_nach_prioritaet_sortiert(konten):
-    for name, prio in [("Ohne", None), ("Zwei", 2), ("Eins", 1), ("Auch ohne", None)]:
+    for name, prio in [("Ohne", None), ("Zehn", 10), ("Zwei", 2), ("Eins", 1), ("Auch ohne", None)]:
         Projekt.objects.create(name=name, prioritaet=prio)
-    assert list(Projekt.objects.values_list("name", flat=True)) == ["Eins", "Zwei", "Auch ohne", "Ohne"]
+    assert list(Projekt.objects.values_list("name", flat=True)) == ["Eins", "Zwei", "Zehn", "Auch ohne", "Ohne"]
     seite = client_fuer(konten[M]).get("/projekte/").content.decode()
     assert seite.index(">Eins<") < seite.index(">Zwei<") < seite.index(">Auch ohne<")
 

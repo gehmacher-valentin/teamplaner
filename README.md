@@ -23,7 +23,7 @@ Live-Aktualisierung für alle. Oberfläche auf Deutsch und Englisch, zum Selbsth
 - Änderungen erscheinen sofort bei allen, die die Ansicht offen haben
 
 **Projekte und Aufgaben**
-- Projekte mit Tags, Abschnitten, Status und Priorität 1–5; Aufgaben mit Verantwortlichen, Gruppe, Schätzung,
+- Projekte mit Tags, Abschnitten, Status und Priorität 1–10; Aufgaben mit Verantwortlichen, Gruppe, Schätzung,
   Fälligkeit, Unteraufgaben und Anhängen
 - Direkt in der Liste bearbeiten und per Drag-and-drop sortieren, Filter, Volltextsuche
 - Aufgabendetail als Seitenleiste neben der Liste
