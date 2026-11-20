@@ -84,22 +84,17 @@ test("Editor: Schriftfarbe, Marker und Überschrift bleiben nach dem Neuladen", 
   await seite.locator("#notiz-titel-eingabe").press("Tab");
   const editor = seite.locator("[data-editor='notiz-text'] [contenteditable='true']");
   await editor.click();
-  // Erst den Text, dann von unten nach oben formatieren (Farben setzen sich sonst in der nächsten Zeile fort)
+  // Erst den Text, dann formatieren (Farben setzen sich sonst in der nächsten Zeile fort);
+  // Wörter per Doppelklick auswählen, das ist stabiler als Pfeiltasten
   for (const [i, zeile] of ["Achtung", "wichtig", "Ablauf"].entries()) {
     if (i) await seite.keyboard.press("Enter");
     await seite.keyboard.type(zeile);
   }
   await seite.locator('.editor__leiste button[title="Überschrift 3"]').click();
-  await seite.keyboard.press("ArrowUp");
-  await seite.keyboard.press("End");
-  await seite.keyboard.press("Shift+Home");
+  await editor.getByText("wichtig", { exact: true }).dblclick();
   await seite.getByRole("button", { name: "Marker" }).click();
   await seite.getByRole("group", { name: "Marker" }).getByRole("button", { name: "Gelb" }).click();
-  // Die Auswahl bleibt nach dem Färben stehen: erst aufheben, dann eine Zeile hoch
-  await seite.keyboard.press("ArrowLeft");
-  await seite.keyboard.press("ArrowUp");
-  await seite.keyboard.press("End");
-  await seite.keyboard.press("Shift+Home");
+  await editor.getByText("Achtung", { exact: true }).dblclick();
   await seite.getByRole("button", { name: "Schriftfarbe" }).click();
   await seite.getByRole("group", { name: "Schriftfarbe" }).getByRole("button", { name: "Rot" }).click();
   await expect(editor.locator('span[data-farbe="rot"]')).toHaveText("Achtung");
