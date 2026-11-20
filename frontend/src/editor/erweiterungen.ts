@@ -1,18 +1,9 @@
 /** Tiptap-Erweiterungen für Beschreibungen (HTML) und Notizen (Markdown), siehe index.ts. */
-import { textblockTypeInputRule } from "@tiptap/core";
-import Heading from "@tiptap/extension-heading";
 import { TableKit } from "@tiptap/extension-table";
 import { Placeholder } from "@tiptap/extensions";
 import { Markdown } from "@tiptap/markdown";
 import StarterKit from "@tiptap/starter-kit";
 import { Marker, Schriftfarbe } from "./farben";
-
-// Beschreibungen kennen nur eine Überschriftenebene (h3); „#“ bis „######“ am Zeilenanfang führen dorthin
-const ZwischenUeberschrift = Heading.extend({
-  addInputRules() {
-    return [textblockTypeInputRule({ find: /^#{1,6}\s$/, type: this.type, getAttributes: { level: 3 } })];
-  },
-});
 
 /** ``zusammen``: Rückgängig übernimmt dann die Collaboration-Erweiterung (nur eigene Änderungen). */
 export function erweiterungen(markdown: boolean, platzhalter: string, zusammen = false) {
@@ -36,8 +27,7 @@ export function erweiterungen(markdown: boolean, platzhalter: string, zusammen =
     ];
   }
   return [
-    StarterKit.configure({ heading: false, link: { openOnClick: false, autolink: true } }),
-    ZwischenUeberschrift.configure({ levels: [3] }),
+    StarterKit.configure({ heading: { levels: [1, 2, 3] }, link: { openOnClick: false, autolink: true } }),
     ...geteilt,
   ];
 }

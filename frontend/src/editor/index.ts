@@ -91,13 +91,18 @@ function farbwahl(e: Editor, knopf: HTMLButtonElement, art: FarbArt) {
   wahl.querySelector<HTMLButtonElement>('[aria-pressed="true"]')?.focus() ?? wahl.querySelector("button")!.focus();
 }
 
-function knoepfe(ebene: 2 | 3): Knopf[] {
+function knoepfe(): Knopf[] {
   return [
     { label: "B", titel: t("fett"), aktion: (e) => e.chain().focus().toggleBold().run(), aktiv: (e) => e.isActive("bold") },
     { label: "I", titel: t("kursiv"), aktion: (e) => e.chain().focus().toggleItalic().run(), aktiv: (e) => e.isActive("italic") },
     { label: "A", titel: t("schriftfarbe"), klasse: "editor__knopf--schriftfarbe", aktion: (e, k) => farbwahl(e, k, "schriftfarbe"), aktiv: (e) => e.isActive("schriftfarbe") },
     { label: "ab", titel: t("marker"), klasse: "editor__knopf--marker", aktion: (e, k) => farbwahl(e, k, "marker"), aktiv: (e) => e.isActive("marker") },
-    { label: "H", titel: t("zwischenueberschrift"), aktion: (e) => e.chain().focus().toggleHeading({ level: ebene }).run(), aktiv: (e) => e.isActive("heading") },
+    ...([1, 2, 3] as const).map((level): Knopf => ({
+      label: `H${level}`,
+      titel: t("ueberschrift", { n: level }),
+      aktion: (e) => e.chain().focus().toggleHeading({ level }).run(),
+      aktiv: (e) => e.isActive("heading", { level }),
+    })),
     { label: t("liste"), titel: t("aufzaehlung"), aktion: (e) => e.chain().focus().toggleBulletList().run(), aktiv: (e) => e.isActive("bulletList") },
     { label: t("nummern"), titel: t("nummerierte_liste"), aktion: (e) => e.chain().focus().toggleOrderedList().run(), aktiv: (e) => e.isActive("orderedList") },
     {
@@ -179,7 +184,7 @@ function einrichten(halter: HTMLElement) {
   });
   if (!editor.isEditable) leiste.hidden = true;
 
-  const liste = knoepfe(markdown ? 2 : 3).map((k) => {
+  const liste = knoepfe().map((k) => {
     const b = document.createElement("button");
     b.type = "button";
     b.textContent = k.label;

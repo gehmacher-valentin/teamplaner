@@ -19,7 +19,7 @@ from zusammenarbeit.dienste import (
 from . import termine, wiederholung
 from .models import UNTERAUFGABEN_EBENEN, Aufgabe, Status
 
-ERLAUBTE_TAGS = {"p", "br", "strong", "b", "em", "i", "u", "s", "ul", "ol", "li", "h3", "a", "blockquote", "code", "pre",
+ERLAUBTE_TAGS = {"p", "br", "strong", "b", "em", "i", "u", "s", "ul", "ol", "li", "h1", "h2", "h3", "a", "blockquote", "code", "pre",
                  "hr", *textfarben.TAGS}
 
 VERLAUF_FELDER = ["titel", "abschnitt", "verantwortlich", "gewerk", "beginn_am", "faellig_am", "wiederholung", "status",

@@ -898,7 +898,12 @@ legend { font-size: 13px; font-weight: 600; color: var(--text-2); padding: 0 4px
 .beschreibung { font-size: 15px; line-height: 1.55; color: var(--text-beschreibung); border: 1px solid var(--linie); border-radius: var(--radius); padding: 12px 14px; }
 .beschreibung p { margin: 0 0 0.6em; } .beschreibung p:last-child { margin-bottom: 0; }
 .beschreibung ul, .beschreibung ol { margin: 0 0 0.6em; padding-left: 1.4em; }
-.beschreibung h3, .editor__flaeche .ProseMirror h3 { margin: 0.8em 0 0.4em; }
+.beschreibung :is(h1, h2, h3), .editor__flaeche .ProseMirror :is(h1, h2, h3) { margin: 0.8em 0 0.4em; }
+.beschreibung > :first-child, .editor__flaeche .ProseMirror > :first-child { margin-top: 0; }
+/* Überschriften der Beschreibungen abgestuft, kleiner als die der Seite (Notizen: .markdown) */
+.beschreibung h1, .editor__flaeche:not(.markdown) .ProseMirror h1 { font-size: 20px; }
+.beschreibung h2, .editor__flaeche:not(.markdown) .ProseMirror h2 { font-size: 17px; }
+.beschreibung h3, .editor__flaeche:not(.markdown) .ProseMirror h3 { font-size: 15px; }
 .beschreibung blockquote, .editor__flaeche .ProseMirror blockquote { margin: 0 0 0.6em; border-left: 3px solid var(--rand-stark); padding-left: 12px; color: var(--text-2); }
 .beschreibung code, .editor__flaeche .ProseMirror code { font-family: var(--mono); font-size: 0.9em; background: var(--grau-bg); border-radius: 4px; padding: 1px 4px; }
 .beschreibung pre, .editor__flaeche .ProseMirror pre { background: var(--flaeche-3); border: 1px solid var(--linie); border-radius: var(--radius); padding: 10px 12px; overflow-x: auto; }

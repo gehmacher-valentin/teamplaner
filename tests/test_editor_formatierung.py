@@ -1,7 +1,14 @@
-"""Schriftfarbe und Marker: Bereinigung der Beschreibungen (HTML) und Anzeige der Notizen (Markdown)."""
+"""Formatierung aus dem Editor: Überschriften H1–H3, Schriftfarbe und Marker. Bereinigung der
+Beschreibungen (HTML) und Anzeige der Notizen (Markdown)."""
 
 from notizen.markdown import als_html, als_text
 from projekte.dienste import html_bereinigen
+
+
+def test_beschreibung_ueberschriften_h1_bis_h3():
+    html = "<h1>Ablauf</h1><h2>Teil</h2><h3>Schritt</h3>"
+    assert html_bereinigen(html) == html
+    assert html_bereinigen("<h4>Tiefer</h4>") == "Tiefer"
 
 
 def test_beschreibung_behaelt_gueltige_farben():
