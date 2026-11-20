@@ -2685,10 +2685,6 @@ msgid "%(name)s in neuem Tab öffnen"
 msgstr "Open %(name)s in a new tab"
 
 #: templates/teile/anhaenge.html:21
-msgid "Anhang löschen?"
-msgstr "Delete attachment?"
-
-#: templates/teile/anhaenge.html:21
 msgid "Anhang löschen"
 msgstr "Delete attachment"
 

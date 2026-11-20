@@ -14,6 +14,7 @@ import "./styles/app.css";
 import htmx from "htmx.org";
 import { initAbhaken } from "./lib/abhaken";
 import { initAufgabenBaum } from "./lib/aufgabenbaum";
+import { initBestaetigen } from "./lib/dialog";
 import { initErwaehnungen } from "./lib/erwaehnungen";
 import { initFeiern } from "./lib/feiern";
 import { initFreigaben } from "./lib/freigaben";
@@ -238,17 +239,5 @@ document.addEventListener("change", (event) => {
   }
 });
 
-// Formulare mit data-bestaetigen fragen vor dem Absenden nach (z. B. Löschen); in der Capture-Phase,
-// damit eine Absage auch Formulare mit HTMX aufhält
-document.addEventListener(
-  "submit",
-  (event) => {
-    const formular = event.target as HTMLFormElement;
-    const frage = formular.dataset.bestaetigen;
-    if (frage && !window.confirm(frage)) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-    }
-  },
-  true,
-);
+// Formulare mit data-bestaetigen fragen vor dem Absenden im eigenen Dialog nach (z. B. Löschen)
+initBestaetigen();

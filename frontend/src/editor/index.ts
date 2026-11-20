@@ -8,6 +8,7 @@
  * Eingefügtes Markdown wird zu Formatierung, Markdown-Kürzel beim Tippen ebenso (Eingaberegeln).
  */
 import { Editor } from "@tiptap/core";
+import { eingeben } from "../lib/dialog";
 import { t } from "../lib/texte";
 import Collaboration from "@tiptap/extension-collaboration";
 import { erweiterungen } from "./erweiterungen";
@@ -34,11 +35,11 @@ function knoepfe(ebene: 2 | 3): Knopf[] {
     {
       label: t("link"),
       titel: t("link_einfuegen"),
-      aktion: (e) => {
+      aktion: async (e) => {
         const alt = e.getAttributes("link").href as string | undefined;
-        const url = window.prompt(t("link_frage"), alt ?? "https://");
-        if (url === null) return;
-        if (url === "") e.chain().focus().unsetLink().run();
+        const url = await eingeben(t("link_frage"), alt ?? "https://");
+        if (url === null) return e.commands.focus();
+        if (url === "") e.chain().focus().extendMarkRange("link").unsetLink().run();
         else e.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
       },
       aktiv: (e) => e.isActive("link"),

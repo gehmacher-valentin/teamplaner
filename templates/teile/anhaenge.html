@@ -18,7 +18,7 @@
         <a href="{{ adresse }}" target="_blank" rel="noopener" class="zelle-text" title="{{ d.dateiname }}">{{ d.dateiname }}</a>
         <span class="gedaempft klein">{{ d.groesse|dateigroesse }}</span>
         {% if alle_loeschbar or d.hochgeladen_von_id == user.person_id %}
-          {% url loeschen_name d.pk as ziel %}<form method="post" action="{{ ziel }}" {% include "projekte/_seitenleiste_form.html" %} data-bestaetigen="{% translate 'Anhang löschen?' %}">{% csrf_token %}<button type="submit" class="knopf knopf--text klein" aria-label="{% translate 'Anhang löschen' %}: {{ d.dateiname }}">×</button></form>
+          {% url loeschen_name d.pk as ziel %}<form method="post" action="{{ ziel }}" {% include "projekte/_seitenleiste_form.html" %} data-bestaetigen="{% blocktranslate with name=d.dateiname %}„{{ name }}“ endgültig löschen?{% endblocktranslate %}">{% csrf_token %}<button type="submit" class="knopf knopf--text klein" aria-label="{% translate 'Anhang löschen' %}: {{ d.dateiname }}">×</button></form>
         {% endif %}
       </div>
     </div>
