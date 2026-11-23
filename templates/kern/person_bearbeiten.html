@@ -15,19 +15,24 @@
   <section class="karte" aria-labelledby="stamm-titel">
     <div class="karte__kopf"><h2 id="stamm-titel">{% translate "Stammdaten" %}</h2></div>
     <div class="karte--innen formular">
+      {% if bearbeitbar %}
       <div class="formular__zeile">
         {% include "teile/feld.html" with feld=form.anzeigename %}
         {% include "teile/feld.html" with feld=form.email %}
       </div>
+      {% else %}<p class="klein gedaempft ohne-rand">{{ ziel.email }}</p>{% endif %}
       <div class="formular__zeile">
         {% include "teile/feld.html" with feld=form.rolle %}
-        {% include "teile/feld.html" with feld=form.bereich %}
+        {% if bearbeitbar %}{% include "teile/feld.html" with feld=form.bereich %}{% endif %}
       </div>
+      {% if eigene_rolle_aenderbar %}<p class="klein gedaempft ohne-rand">{% translate "Wenn Sie Ihre eigene Rolle herabsetzen, kann nur ein anderer Admin sie wieder anheben." %}</p>{% endif %}
+      {% if bearbeitbar %}
       {% include "teile/chips.html" with feld=form.gewerke %}
       {% include "teile/feld.html" with feld=form.systemkonto zeile=True %}
       {% include "teile/feld.html" with feld=form.darf_tagesfreigabe zeile=True %}
       {% if freigabe_zeile_aus %}<div class="meldung meldung--info klein">{% translate "Die Zeile ist unter Einstellungen → Allgemein ausgeschaltet; der Haken wirkt erst, wenn sie eingeschaltet ist." %}</div>{% endif %}
       {% if freigabe_ohne_teamplaner %}<div class="meldung meldung--warning klein">{% translate "Diese Person sieht den Teamplaner nicht und kann die Freigabe deshalb trotz Haken nicht setzen." %}</div>{% endif %}
+      {% else %}<p class="klein gedaempft ohne-rand">{% translate "Bei anderen Admins lassen sich hier nur die Rolle ändern und das Konto deaktivieren. Alles Weitere geht über die Kommandozeile des Servers." %}</p>{% endif %}
     </div>
     {% url 'einst_personen' as zurueck %}{% include "teile/speicherleiste.html" with abbrechen=zurueck %}
   </section>
@@ -36,12 +41,13 @@
 <section class="karte" aria-labelledby="anm-titel">
   <div class="karte__kopf"><h2 id="anm-titel">{% translate "Anmeldung" %}</h2></div>
   {% if ziel.daten_entfernt_am %}<div class="karte--innen"><div class="meldung meldung--info klein">{% blocktranslate with datum=ziel.daten_entfernt_am|date:"d.m.Y" %}Persönliche Daten am {{ datum }} entfernt (Frist nach der Deaktivierung). Zum Reaktivieren eine neue E-Mail-Adresse eintragen und eine Einladung schicken.{% endblocktranslate %}</div></div>{% endif %}
+  {% if schutz_bis and ziel.pk != user.pk and bearbeitbar %}<div class="karte--innen"><div class="meldung meldung--info klein">{% blocktranslate with datum=schutz_bis|date:"d.m.Y H:i" %}Dieses Konto war bis vor Kurzem Admin. E-Mail, Passwort und Zwei-Faktor-Anmeldung lassen sich erst ab {{ datum }} verwalten.{% endblocktranslate %}</div></div>{% endif %}
   <div class="einstellungszeile">
     <div class="luecke">
       <div>{% if ziel.has_usable_password %}{% translate "Passwort gesetzt" %}{% else %}{% translate "Einladung noch nicht angenommen" %}{% endif %}</div>
       {% if ziel.last_login %}<div class="klein gedaempft">{% translate "Letzte Anmeldung" %} <span class="mono">{{ ziel.last_login|date:"d.m.Y H:i" }}</span></div>{% endif %}
     </div>
-    {% if ziel.pk != user.pk %}
+    {% if anmeldung_verwaltbar and ziel.pk != user.pk %}
       <form method="post" action="{% url 'person_aktion' ziel.pk 'link' %}"{% if ziel.has_usable_password and not mail_aktiv %} data-bestaetigen="{% translate 'Das bisherige Passwort gilt danach nicht mehr, bis die Person über den Link ein neues festlegt. Fortfahren?' %}"{% endif %}>{% csrf_token %}
         <button type="submit" class="knopf">{% if not ziel.has_usable_password %}{% translate "Neuen Einladungslink erzeugen" %}{% elif mail_aktiv %}{% translate "Link zum Zurücksetzen schicken" %}{% else %}{% translate "Passwort zurücksetzen und Link erzeugen" %}{% endif %}</button>
       </form>
@@ -51,14 +57,14 @@
     <div class="luecke">{% translate "Zwei-Faktor-Anmeldung" %}</div>
     {% if zwei_faktor_aktiv %}
       <span class="badge badge--ok">{% blocktranslate with seit=ziel.totp_seit|date:"d.m.Y" %}Eingerichtet seit {{ seit }}{% endblocktranslate %}</span>
-      {% if ziel.pk != user.pk %}
+      {% if anmeldung_verwaltbar and ziel.pk != user.pk %}
         <form method="post" action="{% url 'person_aktion' ziel.pk 'zwei_faktor_zuruecksetzen' %}" data-bestaetigen="{% if mail_aktiv %}{% translate 'Zwei-Faktor-Anmeldung zurücksetzen, z. B. weil das Telefon verloren ist? Die Person bekommt eine E-Mail.' %}{% else %}{% translate 'Zwei-Faktor-Anmeldung zurücksetzen, z. B. weil das Telefon verloren ist?' %}{% endif %}">{% csrf_token %}
           <button type="submit" class="knopf knopf--klein">{% translate "Zurücksetzen" %}</button>
         </form>
       {% endif %}
     {% else %}<span class="badge">{% translate "Nicht eingerichtet" %}</span>{% endif %}
   </div>
-  {% if ziel.person.foto and ziel.pk != user.pk %}
+  {% if bearbeitbar and ziel.person.foto and ziel.pk != user.pk %}
   <div class="einstellungszeile">
     <div class="luecke">{% translate "Profilbild" %}</div>
     <form method="post" action="{% url 'person_aktion' ziel.pk 'foto_entfernen' %}" data-bestaetigen="{% translate 'Profilbild entfernen?' %}">{% csrf_token %}<button type="submit" class="knopf knopf--klein">{% translate "Entfernen" %}</button></form>

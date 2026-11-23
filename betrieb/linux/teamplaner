@@ -24,6 +24,9 @@ HILFE="Aufruf: sudo teamplaner <befehl> [-j|--ja]
   wiederherstellen DUMP [ANHAENGE]
                               Sicherung einspielen (überschreibt die Daten)
   konto-anlegen OPTIONEN      Konto anlegen, z. B. das erste Admin-Konto (siehe INSTALLATION.md)
+  konto-aendern EMAIL OPTIONEN
+                              vorhandenes Konto ändern, auch Admins: --rolle, --deaktivieren,
+                              --reaktivieren, --neue-email, --passwort-link; ohne Option nur anzeigen
   verwalten BEFEHL …          Django-Verwaltungsbefehl als Dienstbenutzer, z. B. mail_protokoll (was wann
                               an wen verschickt wurde) oder axes_reset_username
 
@@ -758,6 +761,7 @@ main() {
     sichern) wurzel && installiert && sicherung_anlegen ;;
     wiederherstellen) cmd_wiederherstellen "$@" ;;
     konto-anlegen) wurzel && installiert && verwalten konto_anlegen "$@" ;;
+    konto-aendern) wurzel && installiert && verwalten konto_aendern "$@" ;;
     verwalten) wurzel && installiert && verwalten "$@" ;;
     hilfe) echo "$HILFE" ;;
     *) echo "$HILFE" >&2; exit 1 ;;

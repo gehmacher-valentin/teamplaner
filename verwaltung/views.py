@@ -22,6 +22,7 @@ from django.utils.crypto import salted_hmac
 from django.utils.html import format_html
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
@@ -44,6 +45,7 @@ from projekte.models import Aufgabe, Status
 from zusammenarbeit.mail import einladung_senden, mail_aktiv, reset_senden, sicherheitshinweis
 from zusammenarbeit.models import Anhang
 
+from . import konten
 from .einstellungen import gespeichert, seite, zwei_faktor_kontext
 from .forms import (
     AnmeldeForm,
@@ -56,7 +58,7 @@ from .forms import (
     ZweiFaktorCodeForm,
     ZweiFaktorEinrichtenForm,
 )
-from .freigaben import arten, herabstufen, setzen
+from .freigaben import arten, setzen
 
 # ---------- Anmeldung ----------
 
@@ -314,7 +316,7 @@ def personen(request):
     bereich = als_zahl(request.GET.get("bereich"))
     liste = list((basis.filter(bereich_id=bereich) if bereich else basis).order_by("anzeigename", "id"))
     for p in liste:
-        p.bearbeitbar = p.ist_platzhalter or rechte.darf_konto_bearbeiten(konto, p.konto)
+        p.bearbeitbar = p.ist_platzhalter or rechte.darf_konto_oeffnen(konto, p.konto)
     bereiche = [{"bereich": b, "anzahl": zahlen.get(b.pk, 0)} for b in Bereich.objects.all()]
     return seite(request, "kern/personen.html", "personen", personen=liste, bereiche=bereiche,
                  gesamt=sum(zahlen.values()), filter_bereich=bereich, filter_art=art, inaktiv=inaktiv, suche=suche,
@@ -435,12 +437,17 @@ def _hinweis_planer_ohne_ansicht(konto, ziel):
     )
 
 
+LETZTER_ADMIN = gettext_lazy("Nicht möglich: Es muss ein weiterer aktiver Admin mit gesetztem Passwort bleiben.")
+
+
 @erfordert(rechte.darf_konten_verwalten)
 def person_bearbeiten(request, pk):
     konto = request.user
     ziel = get_object_or_404(Konto.objects.select_related("person__bereich"), pk=pk)
-    if not rechte.darf_konto_bearbeiten(konto, ziel):
+    if not rechte.darf_konto_oeffnen(konto, ziel):
         raise PermissionDenied
+    bearbeitbar = rechte.darf_konto_bearbeiten(konto, ziel)  # sonst anderer Admin: nur die Rolle
+    anmeldung_verwaltbar = rechte.darf_anmeldung_verwalten(konto, ziel)
     person = ziel.person
     form = KontoBearbeitenForm(
         request.POST or None, konto=konto, ziel=ziel,
@@ -448,36 +455,49 @@ def person_bearbeiten(request, pk):
                  "gewerke": person.gewerke.all(), "systemkonto": ziel.systemkonto,
                  "darf_tagesfreigabe": ziel.darf_tagesfreigabe},
     )
-    if ziel.pk == konto.pk:
-        form.fields["rolle"].disabled = True  # die eigene Rolle ändert eine höhere Rolle
+    eigene_rolle_aenderbar = ziel.pk == konto.pk and rechte.ist_admin(konto) and konten.anderer_admin_vorhanden(ziel)
+    if ziel.pk == konto.pk and not eigene_rolle_aenderbar:
+        form.fields["rolle"].disabled = True  # ohne weiteren Admin bleibt die eigene Rolle
+    if not bearbeitbar:
+        for feld in ("anzeigename", "email", "bereich", "gewerke", "systemkonto", "darf_tagesfreigabe"):
+            del form.fields[feld]
+    elif not anmeldung_verwaltbar:
+        form.fields["email"].disabled = True
     if request.method == "POST" and form.is_valid():
         d = form.cleaned_data
         if not rechte.darf_rolle_vergeben(konto, ziel, d["rolle"]):
             raise PermissionDenied
-        alt = {"anzeigename": person.anzeigename, "bereich": person.bereich, "email": ziel.email, "rolle": ziel.rolle,
+        alt = {"anzeigename": person.anzeigename, "bereich": person.bereich, "email": ziel.email,
                "systemkonto": ziel.systemkonto, "darf_tagesfreigabe": ziel.darf_tagesfreigabe}
-        with transaction.atomic():
-            person.anzeigename, person.bereich = d["anzeigename"], d["bereich"]
-            person.save(update_fields=["anzeigename", "bereich"])
-            person.gewerke.set(d["gewerke"])
-            ziel.email, ziel.rolle, ziel.systemkonto = d["email"], d["rolle"], d["systemkonto"]
-            ziel.darf_tagesfreigabe = d["darf_tagesfreigabe"]  # deaktiviertes Feld: bleibt beim alten Wert
-            ziel.save(update_fields=["email", "rolle", "systemkonto", "darf_tagesfreigabe"])
-            diff = aenderungen(alt, {"anzeigename": person.anzeigename, "bereich": person.bereich, "email": ziel.email,
-                                     "rolle": ziel.rolle, "systemkonto": ziel.systemkonto,
-                                     "darf_tagesfreigabe": ziel.darf_tagesfreigabe})
-            if diff:
-                protokollieren(konto, "konto", ziel.pk, "geaendert", {"person": person, **diff})
-            if "rolle" in diff:
-                herabstufen(konto, ziel)  # unter Planer:in wird „Bearbeiten“ zu „Sehen“
+        diff = {}
+        try:
+            with transaction.atomic():
+                rolle_neu = konten.rolle_setzen(konto, ziel, d["rolle"])
+                if bearbeitbar:
+                    person.anzeigename, person.bereich = d["anzeigename"], d["bereich"]
+                    person.save(update_fields=["anzeigename", "bereich"])
+                    person.gewerke.set(d["gewerke"])
+                    ziel.email, ziel.systemkonto = d["email"], d["systemkonto"]
+                    ziel.darf_tagesfreigabe = d["darf_tagesfreigabe"]  # deaktiviertes Feld: bleibt beim alten Wert
+                    ziel.save(update_fields=["email", "systemkonto", "darf_tagesfreigabe"])
+                    diff = aenderungen(alt, {"anzeigename": person.anzeigename, "bereich": person.bereich,
+                                             "email": ziel.email, "systemkonto": ziel.systemkonto,
+                                             "darf_tagesfreigabe": ziel.darf_tagesfreigabe})
+                    if diff:
+                        protokollieren(konto, "konto", ziel.pk, "geaendert", {"person": person, **diff})
+        except konten.LetzterAdmin:
+            messages.error(request, LETZTER_ADMIN)
+            return redirect("einst_person", pk=pk)
         if "email" in diff:
             # An die bisherige Adresse: die Person merkt es, auch wenn jemand anderes ihr Konto übernehmen will
             sicherheitshinweis(ziel, "email_geaendert", an=alt["email"], neu=ziel.email)
         messages.success(request, _("Gespeichert."))
-        if "rolle" in diff and ziel.rolle == Rolle.PLANER and not hat_planungsansicht(ziel):
+        if ziel.pk == konto.pk and not rechte.darf_konten_verwalten(ziel):
+            return redirect(settings.LOGIN_REDIRECT_URL)  # sich selbst herabgestuft
+        if rolle_neu and ziel.rolle == Rolle.PLANER and not hat_planungsansicht(ziel):
             messages.info(request, _hinweis_planer_ohne_ansicht(konto, ziel))
         elif ziel.darf_tagesfreigabe and not hat_planungsansicht(ziel) and (
-                "darf_tagesfreigabe" in diff or "rolle" in diff):
+                "darf_tagesfreigabe" in diff or rolle_neu):
             messages.info(request, _hinweis_freigabe_ohne_teamplaner(konto, ziel))
         return redirect("einst_person", pk=pk)
     darf_freigaben = {art: recht(konto) for art, (_a, _f, _t, recht, _u) in arten().items()}
@@ -487,7 +507,10 @@ def person_bearbeiten(request, pk):
                  freigabe_ohne_teamplaner=ziel.darf_tagesfreigabe and not hat_planungsansicht(ziel), link=link, link_qr=link_qr_svg(link) if link else None, mail_aktiv=mail_aktiv(),
                  zwei_faktor_aktiv=zwei_faktor.aktiv(ziel),
                  immer_bearbeiten=rechte.sieht_alles_im_teamplaner(ziel), ab_planer=ziel.hat_mindestens(Rolle.PLANER),
-                 freigaben=[g for g in _freigaben_der_person(ziel) if darf_freigaben[g["art"]]])
+                 bearbeitbar=bearbeitbar, anmeldung_verwaltbar=anmeldung_verwaltbar,
+                 eigene_rolle_aenderbar=eigene_rolle_aenderbar,
+                 schutz_bis=ziel.admin_bis + rechte.ADMIN_SCHUTZFRIST if rechte.in_schutzfrist(ziel) else None,
+                 freigaben=[g for g in _freigaben_der_person(ziel) if bearbeitbar and darf_freigaben[g["art"]]])
 
 
 @require_POST
@@ -515,7 +538,10 @@ def person_freigabe(request, pk):
 def person_aktion(request, pk, aktion):
     konto = request.user
     ziel = get_object_or_404(Konto.objects.select_related("person"), pk=pk)
-    if not rechte.darf_konto_bearbeiten(konto, ziel):
+    darf = {"deaktivieren": rechte.darf_konto_oeffnen, "reaktivieren": rechte.darf_konto_deaktivieren,
+            "link": rechte.darf_anmeldung_verwalten, "zwei_faktor_zuruecksetzen": rechte.darf_anmeldung_verwalten,
+            "foto_entfernen": rechte.darf_konto_bearbeiten}.get(aktion)
+    if darf is None or not darf(konto, ziel):
         raise PermissionDenied
     if aktion == "link":
         if ziel.has_usable_password():
@@ -537,15 +563,14 @@ def person_aktion(request, pk, aktion):
         if ziel.pk == konto.pk:
             messages.error(request, _("Sie können Ihr eigenes Konto nicht deaktivieren."))
         else:
-            ziel.person.archivieren()
-            protokollieren(konto, "konto", ziel.pk, "deaktiviert", {"person": ziel.person})
-            messages.success(request, _("Konto deaktiviert. Aufgaben und Einteilungen bleiben erhalten."))
+            try:
+                konten.deaktivieren(konto, ziel)
+            except konten.LetzterAdmin:
+                messages.error(request, LETZTER_ADMIN)
+            else:
+                messages.success(request, _("Konto deaktiviert. Aufgaben und Einteilungen bleiben erhalten."))
     elif aktion == "reaktivieren":
-        ziel.person.wiederherstellen()
-        if ziel.daten_entfernt_am:  # bei einer späteren Deaktivierung wieder nach Frist bereinigen
-            ziel.daten_entfernt_am = None
-            ziel.save(update_fields=["daten_entfernt_am"])
-        protokollieren(konto, "konto", ziel.pk, "reaktiviert", {"person": ziel.person})
+        konten.reaktivieren(konto, ziel)
         messages.success(request, _("Konto reaktiviert."))
     elif aktion == "foto_entfernen":
         fotos.entfernen(ziel.person)

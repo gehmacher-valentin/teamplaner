@@ -106,6 +106,7 @@ Für Rechteprüfung und Einteilungslogik sind automatische Tests Pflicht.
 | `tests/test_schichten.py` | Abhängigkeitsrichtung der Apps, keine Importe aus fremden `views.py` |
 | `tests/test_direkt_bearbeiten.py` | Aufgabendetail direkt bearbeiten, Konflikte, Toasts, Gantt-Einstellung am Konto |
 | `tests/test_sicherheit.py` | Zwei-Faktor-Anmeldung, Sitzungen, Konten übernehmen, Passwort-Links und Postausgang, Live-Verbindung, ungültige Eingaben (400 statt 500, NUL-Zeichen) |
+| `tests/test_admin_konten.py` | Admins herabstufen und deaktivieren, letzter Admin, Schutzfrist, `konto_aendern` |
 | `tests/test_mailverlauf.py` | Protokollzeilen je E-Mail, Ausgabe des Versanddienstes, `mail_protokoll`, Einladung bei `konto_anlegen`, Seite „E-Mail-Versand“ |
 | `tests/test_mail_versand.py`, `tests/test_organisation.py` | E-Mail-Versand global abschaltbar, Passwort-Link als QR-Code, Organisationsname |
 | `tests/test_aufgabenbaum.py`, `tests/test_unteraufgaben.py`, `tests/test_seitenleiste.py` | Projektliste als Baum (Ziehen, Ebenen, Rechte), Unteraufgaben bis drei Ebenen, Aufgabendetail als Seitenleiste |
@@ -141,7 +142,7 @@ Dazu prüft `shellcheck` die Betriebs- und Bauskripte.
 | `gantt/` | Gantt-Ansichten mit Freigaben; `daten.py` (Abgleich, Verletzungen), `dienste.py` (Termine, Abhängigkeiten, neue Projekte in Gesamtansichten) |
 | `notizen/` | Persönliche Notizen und freigegebene Gruppenordner; `rechte.py`, `markdown.py` (Markdown → bereinigtes HTML, mit Frist gegen aufwendige Eingaben) |
 | `bestellungen/` | Bestellungsverfolgung (eine Liste für alle); `warnungen.py` (überschrittene Liefertermine) |
-| `verwaltung/` | Oberste Schicht ohne eigene Modelle: Anmeldung, Passwort und Zwei-Faktor-Oberfläche, Personenverwaltung, Einstellungsseiten (`einstellungen.py`), Protokollseite, Speicherplatz, Navigation (`context_processors.py`), Aufräumen nach Fristen (`aufraeumen.py`); Versandverlauf der E-Mails (Seite „E-Mail-Versand“); Befehle `mails_versenden`, `mail_protokoll`, `konto_anlegen`, `aufraeumen`, `demodaten`, `lasttest` |
+| `verwaltung/` | Oberste Schicht ohne eigene Modelle: Anmeldung, Passwort und Zwei-Faktor-Oberfläche, Personenverwaltung, Einstellungsseiten (`einstellungen.py`), Protokollseite, Speicherplatz, Navigation (`context_processors.py`), Aufräumen nach Fristen (`aufraeumen.py`); Versandverlauf der E-Mails (Seite „E-Mail-Versand“); Befehle `mails_versenden`, `mail_protokoll`, `konto_anlegen`, `konto_aendern`, `aufraeumen`, `demodaten`, `lasttest` |
 | `templates/` | Django-Templates (HTMX); die Seiten von `verwaltung` liegen unter `templates/kern/` |
 | `frontend/` | Vite-Projekt: `src/main.ts` (alle Seiten), `src/teamplaner/` und `src/gantt/` (React), `src/editor/` (Tiptap); `e2e/` (Browser-Tests) |
 | `locale/en/` | englische Übersetzung |

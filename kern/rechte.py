@@ -5,7 +5,14 @@ prüfen sie für jede Rolle. Rechte im Teamplaner (wer wen sehen/einteilen darf)
 stehen in ``planung.rechte``, weil sie zusätzlich von den Ansichtsfreigaben abhängen.
 """
 
+from datetime import timedelta
+
+from django.utils import timezone
+
 from .models import ROLLEN_RANG, Rolle
+
+# So lange nach dem Ende der Admin-Rolle bleibt die Anmeldung des Kontos für die Verwaltung gesperrt
+ADMIN_SCHUTZFRIST = timedelta(days=7)
 
 
 def _aktiv(konto):
@@ -43,17 +50,43 @@ def vergebbare_rollen(konto):
     return [r for r in Rolle if ROLLEN_RANG[r] <= konto.rang]
 
 
+def _anderer_admin(konto, ziel):
+    return ist_admin(konto) and ziel.rolle == Rolle.ADMIN and ziel.pk != konto.pk
+
+
 def darf_konto_bearbeiten(konto, ziel):
-    """Ändern, deaktivieren, Links, Zwei-Faktor zurücksetzen: nur Konten mit niedrigerer Rolle –
-    sonst könnten sich Kolleg:innen gleicher Rolle gegenseitig übernehmen. Dazu das eigene Konto
-    (ohne Rolle). Admin-Konten anderer Admins nur über die Kommandozeile."""
+    """Stammdaten, Freigaben, Foto: nur Konten mit niedrigerer Rolle – sonst könnten sich Kolleg:innen
+    gleicher Rolle gegenseitig übernehmen. Dazu das eigene Konto."""
     return darf_konten_verwalten(konto) and (ziel.rang < konto.rang or ziel.pk == konto.pk)
 
 
-def darf_rolle_vergeben(konto, ziel, neue_rolle):
+def in_schutzfrist(ziel):
+    return ziel.admin_bis is not None and timezone.now() < ziel.admin_bis + ADMIN_SCHUTZFRIST
+
+
+def darf_anmeldung_verwalten(konto, ziel):
+    """E-Mail, Passwort-Link und Zwei-Faktor-Anmeldung. Bei ehemaligen Admins erst nach der
+    Schutzfrist – sonst ließe sich ein Admin-Konto herabstufen und gleich danach übernehmen."""
+    return darf_konto_bearbeiten(konto, ziel) and (ziel.pk == konto.pk or not in_schutzfrist(ziel))
+
+
+def darf_konto_deaktivieren(konto, ziel):
+    """Deaktivieren und reaktivieren; Admins auch andere Admins, niemand sich selbst."""
     if ziel.pk == konto.pk:
+        return False
+    return darf_konto_bearbeiten(konto, ziel) or _anderer_admin(konto, ziel)
+
+
+def darf_konto_oeffnen(konto, ziel):
+    """Seite der Person in den Einstellungen. Bei anderen Admins nur Rolle und Deaktivieren."""
+    return darf_konto_bearbeiten(konto, ziel) or _anderer_admin(konto, ziel)
+
+
+def darf_rolle_vergeben(konto, ziel, neue_rolle):
+    """Die eigene Rolle ändern nur Admins. Dass ein Admin übrig bleibt, prüft ``verwaltung.konten``."""
+    if ziel.pk == konto.pk and not ist_admin(konto):
         return darf_konten_verwalten(konto) and neue_rolle == ziel.rolle
-    return darf_konto_bearbeiten(konto, ziel) and neue_rolle in vergebbare_rollen(konto)
+    return darf_konto_oeffnen(konto, ziel) and neue_rolle in vergebbare_rollen(konto)
 
 
 def darf_protokoll_sehen(konto):

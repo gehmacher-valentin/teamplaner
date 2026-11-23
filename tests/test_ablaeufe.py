@@ -39,9 +39,14 @@ def test_einladen_in_der_eigenen_rolle_zeigt_den_link(konten, bereich_a, rolle):
     seite = antwort.content.decode()
     assert "/passwort/setzen/" in seite and "Konto für Person 43 angelegt." in seite
     assert 'name="anzeigename"' not in seite  # kein Formular zum Bearbeiten
-    # Einmalig: beim zweiten Aufruf zurück zur Liste; die Seite der Person bleibt gesperrt
+    # Einmalig: beim zweiten Aufruf zurück zur Liste; die Stammdaten bleiben gesperrt
     assert c.get(f"/einstellungen/personen/{neu.pk}/eingeladen/").url == "/einstellungen/personen/"
-    assert c.get(f"/einstellungen/personen/{neu.pk}/").status_code == 403
+    antwort = c.get(f"/einstellungen/personen/{neu.pk}/")
+    if rolle == BL:
+        assert antwort.status_code == 403
+    else:  # Admins öffnen andere Admins, aber nur für Rolle und Deaktivieren
+        inhalt = antwort.content.decode()
+        assert 'name="email"' not in inhalt and "/passwort/setzen/" not in inhalt
 
 
 def test_link_erscheint_nur_beim_eingeladenen_konto(konten, bereich_a):
