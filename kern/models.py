@@ -222,6 +222,9 @@ class Konto(AbstractBaseUser):
     # Persönliche Daten nach der Frist für deaktivierte Konten entfernt (verwaltung.aufraeumen)
     daten_entfernt_am = models.DateTimeField(null=True, blank=True, editable=False)
 
+    # Ende der Admin-Rolle; danach gilt die Schutzfrist (kern.rechte.ADMIN_SCHUTZFRIST)
+    admin_bis = models.DateTimeField(null=True, blank=True, editable=False)
+
     USERNAME_FIELD = "email"
     EMAIL_FIELD = "email"
     REQUIRED_FIELDS = []

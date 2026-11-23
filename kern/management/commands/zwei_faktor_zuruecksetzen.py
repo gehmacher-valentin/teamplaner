@@ -2,8 +2,8 @@
 
     sudo teamplaner verwalten zwei_faktor_zuruecksetzen admin@example.org
 
-Admin-Konten lassen sich in der Oberfläche nicht von anderen Admins ändern; dafür gibt es diesen
-Befehl. Für Admin und Bereichsleitung wird die Zwei-Faktor-Anmeldung bei der nächsten Anmeldung neu eingerichtet.
+Die Anmeldung von Admin-Konten lässt sich in der Oberfläche nicht von anderen Admins verwalten; dafür
+gibt es diesen Befehl und konto_aendern. Für Admin und Bereichsleitung wird die Zwei-Faktor-Anmeldung bei der nächsten Anmeldung neu eingerichtet.
 """
 
 from django.core.management.base import BaseCommand, CommandError

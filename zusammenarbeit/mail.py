@@ -318,7 +318,12 @@ SICHERHEITSHINWEISE = {
     "zwei_faktor_ausgeschaltet": gettext_lazy("die Zwei-Faktor-Anmeldung Ihres Teamplaner-Kontos wurde ausgeschaltet."),
     "zwei_faktor_zurueckgesetzt": gettext_lazy("die Zwei-Faktor-Anmeldung Ihres Teamplaner-Kontos wurde von der "
                                                "Verwaltung zurückgesetzt."),
+    "admin_entzogen": gettext_lazy("Ihr Teamplaner-Konto hat die Rolle Admin nicht mehr."),
+    "deaktiviert": gettext_lazy("Ihr Teamplaner-Konto wurde deaktiviert."),
 }
+
+# Macht in der Regel jemand anderes
+OHNE_EIGENES_ZUTUN = {"admin_entzogen", "deaktiviert"}
 
 
 def sicherheitshinweis(konto, anlass, an=None, **werte):
@@ -329,7 +334,10 @@ def sicherheitshinweis(konto, anlass, an=None, **werte):
     with translation.override(konto.sprache):
         gruss = _("Guten Tag %(name)s,") % {"name": konto.person.anzeigename}
         hinweis = str(SICHERHEITSHINWEISE[anlass]) % werte
-        warnung = _("Waren Sie das nicht, wenden Sie sich bitte sofort an die Administration.")
+        if anlass in OHNE_EIGENES_ZUTUN:
+            warnung = _("War das nicht beabsichtigt, wenden Sie sich bitte sofort an die Administration.")
+        else:
+            warnung = _("Waren Sie das nicht, wenden Sie sich bitte sofort an die Administration.")
         text = "\n".join([gruss, "", hinweis, "", warnung])
         betreff = f"[{_('Teamplaner')}] " + _("Sicherheitshinweis zu Ihrem Konto")
         html = _html(betreff, [{"absatz": gruss}, {"absatz": hinweis}, {"absatz": warnung, "wichtig": True},

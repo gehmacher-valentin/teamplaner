@@ -1882,8 +1882,8 @@ msgid "Der Link wird nur jetzt angezeigt. Bitte jetzt kopieren und an die Person
 msgstr "The link is shown only this once. Please copy it now and pass it on to the person."
 
 #: templates/kern/person_eingeladen.html:14
-msgid "Konten mit gleicher oder höherer Rolle können Sie danach nicht bearbeiten. Einen neuen Link erzeugt eine höhere Rolle, für Admin-Konten die Kommandozeile."
-msgstr "You cannot edit accounts with the same or a higher role than yours. A new link has to come from someone with a higher role, or from the command line for admin accounts."
+msgid "Die Anmeldung von Konten mit gleicher oder höherer Rolle können Sie danach nicht verwalten. Einen neuen Link erzeugt eine höhere Rolle, für Admin-Konten die Kommandozeile."
+msgstr "After this, you cannot manage sign-in for accounts with the same or a higher role than yours. A new link has to come from someone with a higher role, or from the command line for admin accounts."
 
 #: templates/kern/person_eingeladen.html:15
 msgid "Zur Personenliste"
@@ -3785,3 +3785,32 @@ msgstr "The text may be at most %(n)s characters long."
 #: templates/notizen/uebersicht.html
 msgid "Geändert"
 msgstr "Modified"
+
+#: templates/kern/person_bearbeiten.html
+msgid "Wenn Sie Ihre eigene Rolle herabsetzen, kann nur ein anderer Admin sie wieder anheben."
+msgstr "If you lower your own role, only another admin can raise it again."
+
+#: templates/kern/person_bearbeiten.html
+msgid "Bei anderen Admins lassen sich hier nur die Rolle ändern und das Konto deaktivieren. Alles Weitere geht über die Kommandozeile des Servers."
+msgstr "For other admins, you can only change the role and deactivate the account here. Anything else is done on the server’s command line."
+
+#: templates/kern/person_bearbeiten.html
+#, python-format
+msgid "Dieses Konto war bis vor Kurzem Admin. E-Mail, Passwort und Zwei-Faktor-Anmeldung lassen sich erst ab %(datum)s verwalten."
+msgstr "This account was an admin until recently. Its email, password and two-factor authentication cannot be managed until %(datum)s."
+
+#: verwaltung/views.py
+msgid "Nicht möglich: Es muss ein weiterer aktiver Admin mit gesetztem Passwort bleiben."
+msgstr "Not possible: another active admin with a password must remain."
+
+#: zusammenarbeit/mail.py
+msgid "Ihr Teamplaner-Konto hat die Rolle Admin nicht mehr."
+msgstr "your Teamplaner account no longer has the admin role."
+
+#: zusammenarbeit/mail.py
+msgid "Ihr Teamplaner-Konto wurde deaktiviert."
+msgstr "your Teamplaner account has been deactivated."
+
+#: zusammenarbeit/mail.py
+msgid "War das nicht beabsichtigt, wenden Sie sich bitte sofort an die Administration."
+msgstr "If this was not intended, please contact your administrators immediately."

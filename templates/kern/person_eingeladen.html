@@ -11,7 +11,7 @@
 <section class="karte karte--innen stapel" aria-label="{% translate 'Einladung' %}">
   <div class="klein gedaempft">{{ ziel.email }} · {{ ziel.get_rolle_display }} · {{ ziel.person.bereich.name }}</div>
   <p class="ohne-rand">{% if mail_aktiv %}{% translate "Der Link wird nur jetzt angezeigt. Er geht zusätzlich per E-Mail an die Person." %}{% else %}{% translate "Der Link wird nur jetzt angezeigt. Bitte jetzt kopieren und an die Person weitergeben." %}{% endif %}</p>
-  <p class="klein gedaempft ohne-rand">{% translate "Konten mit gleicher oder höherer Rolle können Sie danach nicht bearbeiten. Einen neuen Link erzeugt eine höhere Rolle, für Admin-Konten die Kommandozeile." %}</p>
+  <p class="klein gedaempft ohne-rand">{% translate "Die Anmeldung von Konten mit gleicher oder höherer Rolle können Sie danach nicht verwalten. Einen neuen Link erzeugt eine höhere Rolle, für Admin-Konten die Kommandozeile." %}</p>
   <div><a class="knopf" href="{% url 'einst_personen' %}">{% translate "Zur Personenliste" %}</a></div>
 </section>
 {% endblock %}

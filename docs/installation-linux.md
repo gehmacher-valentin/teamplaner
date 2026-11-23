@@ -354,6 +354,7 @@ Webserver werden unabhängig davon aktualisiert, Python-Bibliotheken kommen mit 
 | Mails kommen nicht an | Einstellungen → E-Mail-Versand oder `sudo teamplaner verwalten mail_protokoll`: offen (Dienst läuft nicht? `sudo teamplaner status`), aufgegeben (Grund in `sudo teamplaner logs mailer`) oder verschickt (Spam-Ordner, Mailserver des Empfängers). Schalter „E-Mail-Versand“ unter Einstellungen → Allgemein prüfen |
 | Konto gesperrt | `sudo teamplaner verwalten axes_reset_username <email>` (kleingeschrieben) |
 | IP-Adresse gesperrt | `sudo teamplaner verwalten axes_reset_ip <ip>` |
+| Admin soll herabgestuft oder deaktiviert werden, kein anderer Admin erreichbar | [Konten auf dem Server ändern](#konten-auf-dem-server-ändern) |
 | Admin hat das Telefon verloren | `sudo teamplaner verwalten zwei_faktor_zuruecksetzen <email>` |
 
 ## Deinstallation
@@ -379,4 +380,20 @@ Erhalten bleiben Datenbank, `/var/lib/teamplaner`, `/var/backups/teamplaner` und
 - Das Änderungsprotokoll ist in der Datenbank per Trigger gegen Ändern geschützt und erst nach einem Jahr
   löschbar. Die Löschfristen wendet `teamplaner-mailer` täglich an, sofort mit
   `sudo teamplaner verwalten aufraeumen`.
-- Andere Admin-Konten lassen sich nur über die Kommandozeile ändern.
+- Admins können andere Admins herabstufen und deaktivieren, sich selbst herabstufen; ein Admin, der sich
+  anmelden kann, bleibt immer übrig. E-Mail, Passwort-Link und Zwei-Faktor-Anmeldung anderer Admins sind
+  in der Oberfläche gesperrt, nach dem Herabstufen noch 7 Tage. Auf dem Server geht das jederzeit:
+  `sudo teamplaner konto-aendern <email>` (siehe unten „Konten auf dem Server ändern“).
+
+### Konten auf dem Server ändern
+
+| Aufgabe | Befehl |
+| --- | --- |
+| Konto anzeigen | `sudo teamplaner konto-aendern <email>` |
+| Rolle ändern | `sudo teamplaner konto-aendern <email> --rolle bereichsleitung` |
+| Deaktivieren, reaktivieren | `sudo teamplaner konto-aendern <email> --deaktivieren` bzw. `--reaktivieren` |
+| E-Mail ändern | `sudo teamplaner konto-aendern <email> --neue-email <neu>` |
+| Passwort-Link ausgeben | `sudo teamplaner konto-aendern <email> --passwort-link` |
+| Zwei-Faktor-Anmeldung zurücksetzen | `sudo teamplaner verwalten zwei_faktor_zuruecksetzen <email>` |
+
+Rollen: `admin`, `bereichsleitung`, `planer`, `mitarbeiter`, `lesend`. Alles steht im Protokoll, ohne Akteur.

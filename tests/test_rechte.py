@@ -74,6 +74,16 @@ def test_konten_gleicher_rolle_nur_durch_hoehere_rolle(konten, bereich_a):
     anderer_admin = konto_anlegen("Person 91", bereich_a, A)
     assert not rechte.darf_konto_bearbeiten(konten[BL], andere_bl)
     assert not rechte.darf_konto_bearbeiten(konten[A], anderer_admin)
+    # Andere Admins: nur Rolle und Deaktivieren, die Anmeldung nicht
+    assert rechte.darf_konto_oeffnen(konten[A], anderer_admin)
+    assert rechte.darf_konto_deaktivieren(konten[A], anderer_admin)
+    assert rechte.darf_rolle_vergeben(konten[A], anderer_admin, BL)
+    assert not rechte.darf_anmeldung_verwalten(konten[A], anderer_admin)
+    for rolle in (BL, P, M, L):
+        assert not rechte.darf_konto_oeffnen(konten[rolle], anderer_admin)
+        assert not rechte.darf_rolle_vergeben(konten[rolle], anderer_admin, rolle)
+    assert not rechte.darf_konto_oeffnen(konten[BL], andere_bl)
+    assert not rechte.darf_konto_deaktivieren(konten[A], konten[A])
     assert rechte.darf_konto_bearbeiten(konten[A], andere_bl)
     assert rechte.darf_konto_bearbeiten(konten[BL], konten[P])
     # Eigenes Konto: ja, aber ohne die eigene Rolle
