@@ -147,6 +147,34 @@ class ZweiFaktorEinrichtenForm(PasswortBestaetigenForm):
     field_order = ["code", "passwort"]
 
 
+class EmailAendernForm(PasswortBestaetigenForm):
+    """Eigene E-Mail-Adresse. Ohne E-Mail-Versand (``wiederholen``) zweimal, sonst bestätigt sie der Link."""
+
+    email = forms.EmailField(label=_("Neue E-Mail-Adresse"), widget=forms.EmailInput(attrs={"autocomplete": "email"}))
+    email2 = forms.EmailField(label=_("Neue E-Mail-Adresse wiederholen"),
+                              widget=forms.EmailInput(attrs={"autocomplete": "off"}))
+
+    field_order = ["email", "email2", "passwort"]
+
+    def __init__(self, *args, konto, wiederholen, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.ziel = konto
+        if not wiederholen:
+            del self.fields["email2"]
+
+    def clean_email(self):
+        email = KontoBearbeitenForm.clean_email(self)
+        if email == self.ziel.email.lower():
+            raise forms.ValidationError(_("Das ist bereits Ihre E-Mail-Adresse."))
+        return email
+
+    def clean_email2(self):
+        email2 = self.cleaned_data["email2"].lower()
+        if "email" in self.cleaned_data and email2 != self.cleaned_data["email"]:
+            raise forms.ValidationError(_("Die beiden Adressen stimmen nicht überein."))
+        return email2
+
+
 class PasswortVergessenForm(forms.Form):
     email = forms.EmailField(label=_("E-Mail"), widget=forms.EmailInput(attrs={"autofocus": True, "autocomplete": "email"}))
 
