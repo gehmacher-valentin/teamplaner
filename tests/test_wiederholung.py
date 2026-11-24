@@ -9,7 +9,14 @@ from kern.models import Protokolleintrag, Rolle
 from planung.models import Einteilung
 from projekte import dienste
 from projekte.models import Abhaengigkeit, Aufgabe, Status
-from projekte.wiederholung import UngueltigeRegel, naechster_termin, regel_bauen, regel_text
+from projekte.wiederholung import (
+    UngueltigeRegel,
+    auswahl,
+    ende,
+    naechster_termin,
+    regel_bauen,
+    regel_text,
+)
 from zusammenarbeit.models import Kommentar
 from zusammenarbeit.verlauf import verlauf_eintraege
 
@@ -79,6 +86,83 @@ def test_regel_pruefen_und_text():
     assert regel_text(regel("woechentlich", MO, intervall=2, wochentage=["2", "0"], bis="2027-06-30")) == \
         "Alle 2 Wochen (Mo, Mi) bis 30.06.2027"
     assert regel_text(regel("monatlich", MO)) == "Monatlich"
+
+
+# ---------- Vierteljährlich und halbjährlich (#87) ----------
+
+def termine_ab(stichtag, r, anzahl):
+    termine, d = [], stichtag
+    for _ in range(anzahl):
+        d = naechster_termin(d, r)
+        termine.append(d)
+    return termine
+
+
+def test_vierteljaehrlich_und_halbjaehrlich_als_monatlich_gespeichert():
+    # Gespeichert wie „monatlich alle 3 bzw. 6 Monate“, ein eingegebenes Intervall zählt nicht
+    assert regel("vierteljaehrlich", date(2027, 1, 15), intervall="7") == \
+        {"frequenz": "monatlich", "intervall": 3, "tag": 15}
+    assert regel("halbjaehrlich", date(2027, 1, 15)) == {"frequenz": "monatlich", "intervall": 6, "tag": 15}
+    assert regel_text(regel("vierteljaehrlich", MO)) == "Vierteljährlich"
+    assert regel_text(regel("halbjaehrlich", MO, bis="2028-12-31")) == "Halbjährlich bis 31.12.2028"
+    assert regel_text(regel("monatlich", MO, intervall=2)) == "Alle 2 Monate"
+
+
+def test_vierteljaehrlich_vom_monatsletzten_und_ueber_den_jahreswechsel():
+    r = regel("vierteljaehrlich", date(2027, 1, 31))
+    assert termine_ab(date(2027, 1, 31), r, 4) == [date(2027, 4, 30), date(2027, 7, 31), date(2027, 10, 31),
+                                                    date(2028, 1, 31)]
+    r = regel("vierteljaehrlich", date(2026, 11, 30))
+    assert termine_ab(date(2026, 11, 30), r, 2) == [date(2027, 2, 28), date(2027, 5, 30)]
+    h = regel("halbjaehrlich", date(2026, 8, 31))
+    assert termine_ab(date(2026, 8, 31), h, 3) == [date(2027, 2, 28), date(2027, 8, 31), date(2028, 2, 29)]
+
+
+def test_bestehende_regeln_mit_3_und_6_monaten():
+    # Alte Regeln „monatlich alle 3/6 Monate“ erscheinen als die neuen Einträge, andere bleiben, wie sie sind
+    assert auswahl({"frequenz": "monatlich", "intervall": 3, "tag": 1}) == "vierteljaehrlich"
+    assert auswahl({"frequenz": "monatlich", "intervall": 6}) == "halbjaehrlich"
+    assert auswahl({"frequenz": "monatlich", "intervall": 4}) == "monatlich"
+    assert auswahl({"frequenz": "jaehrlich", "intervall": 3}) == "jaehrlich"
+    assert auswahl(None) == ""
+    assert regel_text({"frequenz": "monatlich", "intervall": 6, "tag": 5}) == "Halbjährlich"
+    assert regel_text({"frequenz": "woechentlich", "intervall": 3}) == "Alle 3 Wochen"
+
+
+def test_vierteljaehrlich_im_detail(client_fuer, konten, aufgabe):
+    aufgabe.faellig_am = date(2027, 1, 31)
+    aufgabe.save()
+    c = client_fuer(konten[P])
+    assert feld(c, aufgabe, frequenz="vierteljaehrlich", bis="2027-12-31")["HX-Refresh"] == "true"
+    aufgabe.refresh_from_db()
+    assert aufgabe.wiederholung == {"frequenz": "monatlich", "intervall": 3, "bis": "2027-12-31", "tag": 31}
+    verlauf = Protokolleintrag.objects.filter(aufgabe_id=aufgabe.pk, aktion="geaendert").first()
+    assert verlauf.daten["wiederholung"] == ["", "Vierteljährlich bis 31.12.2027"]
+    # Vorbelegt, ohne Feld „alle …“
+    seite = c.get(f"/aufgaben/{aufgabe.pk}/").content.decode()
+    assert '<option value="vierteljaehrlich" selected>' in seite
+    assert 'name="intervall"' not in seite and 'name="bis"' in seite
+    # Ende der Wiederholung gilt wie bei allen Regeln
+    assert ende(aufgabe.wiederholung) == date(2027, 12, 31)
+    # Zurück auf monatlich: Intervall 1, Feld „alle …“ wieder da
+    feld(c, aufgabe, frequenz="monatlich")
+    aufgabe.refresh_from_db()
+    assert aufgabe.wiederholung["intervall"] == 1
+    seite = c.get(f"/aufgaben/{aufgabe.pk}/").content.decode()
+    assert '<option value="monatlich" selected>' in seite and 'name="intervall"' in seite
+    # Monatlich alle 6 Monate eingegeben: als halbjährlich angezeigt
+    feld(c, aufgabe, frequenz="monatlich", intervall="6")
+    seite = c.get(f"/aufgaben/{aufgabe.pk}/").content.decode()
+    assert '<option value="halbjaehrlich" selected>' in seite and 'name="intervall"' not in seite
+
+
+def test_vierteljaehrlich_folgeaufgabe_beim_abhaken(konten, aufgabe):
+    aufgabe.wiederholung = regel("vierteljaehrlich", date(2027, 1, 31))
+    aufgabe.faellig_am = date(2027, 1, 31)
+    aufgabe.save()
+    dienste.erledigt_setzen(konten[P], aufgabe, True)
+    assert folge(aufgabe).faellig_am == date(2027, 4, 30)
+    assert folge(aufgabe).wiederholung == aufgabe.wiederholung
 
 
 # ---------- Folgeaufgabe beim Abhaken ----------

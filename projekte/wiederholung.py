@@ -7,6 +7,8 @@ Eine Regel ist ein kleines Dict (``Aufgabe.wiederholung``)::
 ``tag`` und ``monat`` sind der Anker für monatlich/jährlich: „monatlich am 31.“ fällt in kürzeren Monaten auf den
 letzten Tag, kehrt danach aber zum 31. zurück. Der Stichtag (``faellig_am``) gilt als Kalendertag; Wochenenden,
 Feiertage und freie Tage spielen keine Rolle.
+
+„Vierteljährlich“ und „Halbjährlich“ sind nur Einträge der Auswahl: gespeichert als monatlich alle 3 bzw. 6 Monate.
 """
 
 import calendar
@@ -21,6 +23,13 @@ FREQUENZEN = [
     ("monatlich", gettext_lazy("Monatlich")),
     ("jaehrlich", gettext_lazy("Jährlich")),
 ]
+# Einträge der Auswahl, die als monatlich mit festem Intervall gespeichert werden (ohne Feld „alle …“)
+MONATSVIELFACHE = {
+    "vierteljaehrlich": (3, gettext_lazy("Vierteljährlich")),
+    "halbjaehrlich": (6, gettext_lazy("Halbjährlich")),
+}
+# Auswahl im Aufgabendetail in der Reihenfolge der Abstände
+AUSWAHL = [*FREQUENZEN[:3], *((wert, name) for wert, (_n, name) in MONATSVIELFACHE.items()), FREQUENZEN[3]]
 INTERVALL_MAX = 99
 
 
@@ -39,6 +48,8 @@ def regel_bauen(frequenz, intervall=1, wochentage=(), bis=None, stichtag=None):
     """
     if not frequenz:
         return None
+    if frequenz in MONATSVIELFACHE:
+        frequenz, intervall = "monatlich", MONATSVIELFACHE[frequenz][0]
     if frequenz not in dict(FREQUENZEN):
         raise UngueltigeRegel(_("Ungültige Eingabe."))
     try:
@@ -72,6 +83,23 @@ def mit_anker(regel, stichtag):
         if regel["frequenz"] == "jaehrlich":
             regel["monat"] = stichtag.month
     return regel
+
+
+def auswahl(regel):
+    """Eintrag der Auswahl zu einer gespeicherten Regel: monatlich alle 3 bzw. 6 Monate als eigener Eintrag."""
+    if not regel:
+        return ""
+    if regel["frequenz"] == "monatlich":
+        n = int(regel.get("intervall") or 1)
+        for wert, (monate, _name) in MONATSVIELFACHE.items():
+            if n == monate:
+                return wert
+    return regel["frequenz"]
+
+
+def mit_intervall(regel):
+    """Ob die Eingabe „alle … “ angeboten wird (nicht bei vierteljährlich und halbjährlich)."""
+    return bool(regel) and auswahl(regel) not in MONATSVIELFACHE
 
 
 def _tag_im_monat(jahr, monat, tag):
@@ -115,7 +143,9 @@ def regel_text(regel):
         return ""
     n = int(regel.get("intervall") or 1)
     frequenz = regel["frequenz"]
-    if n == 1:
+    if auswahl(regel) in MONATSVIELFACHE:
+        text = str(MONATSVIELFACHE[auswahl(regel)][1])
+    elif n == 1:
         text = str(dict(FREQUENZEN)[frequenz])
     else:
         text = {
