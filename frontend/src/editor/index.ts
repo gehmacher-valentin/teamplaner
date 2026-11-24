@@ -29,15 +29,15 @@ interface Knopf {
   menue?: boolean; // öffnet eine Auswahl unter dem Knopf
 }
 
+// Alle Symbole füllen im Raster 24 × 24 genau die Höhe von 4 bis 20, damit sie gleich hoch wirken
 const symbol = (inhalt: string) =>
-  `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inhalt}</svg>`;
+  `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inhalt}</svg>`;
 const ziffer = (n: number, y: number) =>
-  `<text x="4.5" y="${y}" font-size="9" font-weight="700" text-anchor="middle" fill="currentColor" stroke="none">${n}</text>`;
-const LINIEN = '<path d="M10 5h11M10 12h11M10 19h11"/>';
+  `<text x="4.5" y="${y}" font-size="10" font-weight="700" text-anchor="middle" fill="currentColor" stroke="none">${n}</text>`;
 const SYMBOLE = {
-  kette: symbol('<g transform="rotate(-45 12 12)"><path d="M10 8H7a4 4 0 0 0 0 8h3"/><path d="M14 8h3a4 4 0 0 1 0 8h-3"/><path d="M8 12h8"/></g>'),
-  punkte: symbol(`${LINIEN}<path d="M4.5 5h.01M4.5 12h.01M4.5 19h.01" stroke-width="3.6"/>`),
-  ziffern: symbol(`${LINIEN}${ziffer(1, 8)}${ziffer(2, 15.2)}${ziffer(3, 22.4)}`),
+  kette: symbol('<g transform="rotate(-45 12 12) translate(12 12) scale(0.92) translate(-12 -12)"><path d="M10 8H7a4 4 0 0 0 0 8h3"/><path d="M14 8h3a4 4 0 0 1 0 8h-3"/><path d="M8 12h8"/></g>'),
+  punkte: symbol('<path d="M10 5.5h11M10 12h11M10 18.5h11"/><path d="M4.5 5.5h.01M4.5 12h.01M4.5 18.5h.01" stroke-width="3"/>'),
+  ziffern: symbol(`<path d="M10 7.5h11M10 16.5h11"/>${ziffer(1, 11)}${ziffer(2, 20)}`),
 };
 
 type FarbArt = "schriftfarbe" | "marker";
