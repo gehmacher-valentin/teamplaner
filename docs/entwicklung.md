@@ -114,7 +114,7 @@ Für Rechteprüfung und Einteilungslogik sind automatische Tests Pflicht.
 | `tests/test_termine.py` | Termine nachziehen: Hauptaufgaben, Nachfolger, Sammelaufgaben; Gantt-Daten mit zwei Ebenen |
 | `tests/test_tagesinfo.py`, `tests/test_personen.py` | Info-Zeile im Teamplaner; Systemkonto, Personenauswahl mit Tippsuche |
 | `tests/test_einstellungen.py` | Einstellungsbereich: Schalter, Farbschema (hell, dunkel, wie am Gerät), Listen-Editor, Kalender mit Zeiträumen, Personen, Freigaben, Ansichten |
-| `tests/test_wiederholung.py` | Wiederkehrende Aufgaben: Regel (Monatsende, Intervalle, Wochentage, Enddatum), Folgeaufgabe auf allen Wegen des Abhakens, kein Doppelanlegen, Unteraufgaben, nicht übernommene Daten, Eingabe im Detail |
+| `tests/test_wiederholung.py` | Wiederkehrende Aufgaben: Regel (Monatsende, Intervalle, vierteljährlich und halbjährlich, Wochentage, Enddatum), Folgeaufgabe auf allen Wegen des Abhakens, kein Doppelanlegen, Unteraufgaben, nicht übernommene Daten, Eingabe im Detail |
 | `tests/test_vorlagen.py` | Vorlagen ohne mehrzeilige `{# #}`-Kommentare (erscheinen sonst als Text) |
 | `frontend/src/teamplaner/*.test.ts` | Rasterlogik und Übersetzung im Browser |
 | `frontend/src/editor/*.test.ts`, `frontend/src/lib/*.test.ts` | Markdown beim Einfügen, Editor-Rundlauf, Zitat, Spaltenbreiten, Personenauswahl, Vorschläge, Restzeit der Admin-Sitzung, nur die jüngste Ladeanfrage zählt (`neueste.ts`), Stand vom Server nach dem Neuladen (`sofort.ts`), Zähler nach dem Abhaken (`offenzaehler.ts`) |

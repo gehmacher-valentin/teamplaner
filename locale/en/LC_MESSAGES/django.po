@@ -4004,3 +4004,11 @@ msgstr "Drop a file here or choose one"
 #: templates/teile/anhang_feld.html
 msgid "Datei auswählen"
 msgstr "Choose file"
+
+#: projekte/wiederholung.py
+msgid "Vierteljährlich"
+msgstr "Quarterly"
+
+#: projekte/wiederholung.py
+msgid "Halbjährlich"
+msgstr "Every six months"

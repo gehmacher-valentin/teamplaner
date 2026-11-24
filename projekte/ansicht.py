@@ -117,7 +117,9 @@ def wiederholung_kontext(aufgabe):
     """Eingabe und Anzeige der Wiederholung im Aufgabendetail."""
     regel = aufgabe.wiederholung or {}
     return {
-        "frequenzen": wiederholung.FREQUENZEN,
+        "frequenzen": wiederholung.AUSWAHL,
+        "regel_auswahl": wiederholung.auswahl(regel),
+        "mit_intervall": wiederholung.mit_intervall(regel),
         "wochentag_liste": list(enumerate(wiederholung.wochentag_namen())),
         "regel": regel,
         "regel_text": wiederholung.regel_text(regel),
