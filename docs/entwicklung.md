@@ -101,7 +101,7 @@ Für Rechteprüfung und Einteilungslogik sind automatische Tests Pflicht.
 | `tests/test_tagesfreigabe.py` | Zeile „Tagesfreigabe“: eigenes Recht (Haken am Konto, nur Admin vergibt ihn, nur mit Teamplaner-Zugang), Protokoll, Stufen, Name, Ein- und Ausschalten |
 | `tests/test_notizen.py`, `tests/test_bestellungen.py` | Notizen (Sichtbarkeit, Ordnerrechte, Markdown, Längengrenze und Frist der Umwandlung) und Bestellungen (Prio, Liefertermin und Warnung, „bestellt“ ausfüllen, Lieferanten-Vorschläge) |
 | `tests/test_heic.py` | HEIC-Fotos werden zu JPEG (Anhänge, Notiz-Anhänge, Profilfoto), Testbild in `tests/daten/` |
-| `tests/test_projektliste.py` | Projektpriorität, Navigation, Mitgliederauswahl, Protokoll „erledigt“, Posteingang im Kopf, Gesamtansicht |
+| `tests/test_projektliste.py` | Projektpriorität, Navigation, Mitgliederauswahl, Aufgabe anlegen per Knopf, Protokoll „erledigt“, Posteingang im Kopf, Gesamtansicht |
 | `tests/test_version.py` | Versionsanzeige auf der Seite „Über“ |
 | `tests/test_schichten.py` | Abhängigkeitsrichtung der Apps, keine Importe aus fremden `views.py` |
 | `tests/test_direkt_bearbeiten.py` | Aufgabendetail direkt bearbeiten, Konflikte, Toasts, Gantt-Einstellung am Konto |
@@ -124,7 +124,7 @@ Für Rechteprüfung und Einteilungslogik sind automatische Tests Pflicht.
 | `frontend/e2e/02-einladen.spec.ts` | Konto einladen, auch in der eigenen Rolle: Link erscheint einmal und funktioniert; auf die eigene Rolle anheben |
 | `frontend/e2e/03-einteilen.spec.ts` | Teamplaner: aus der Palette ziehen, verschieben, verlängern, rückgängig, live bei einer zweiten Person; Freitext-Chip ziehen, Text eingeben und ändern |
 | `frontend/e2e/04-gantt.spec.ts` | Gantt: Warnzeichen bei Verletzung durch Einteilungen, Hinweis klappt am unteren Rand nach oben, Balken ziehen und Nachziehen, schnelle Änderungen, Abhängigkeit anlegen und entfernen |
-| `frontend/e2e/05-aufgabe.spec.ts` | Aufgabe anlegen, Seitenleiste, direkt bearbeiten, Erwähnung, Anhang, Posteingang |
+| `frontend/e2e/05-aufgabe.spec.ts` | Aufgabe anlegen (Enter und Knopf), Seitenleiste, direkt bearbeiten, Erwähnung, Anhang, Posteingang |
 | `frontend/e2e/06-notizen-bestellungen.spec.ts` | Notiz und Bestellung anlegen, bearbeiten, wiederfinden; Editor: Farben, Zitat, Link |
 | `frontend/e2e/07-notizen-gemeinsam.spec.ts` | Notiz gemeinsam bearbeiten |
 | `frontend/e2e/08-darstellung.spec.ts` | Farbschema mehrfach umstellen: Auswahl und `data-theme` stimmen nach jedem Neuladen |

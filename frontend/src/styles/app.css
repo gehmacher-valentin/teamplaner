@@ -930,7 +930,16 @@ legend { font-size: 13px; font-weight: 600; color: var(--text-2); padding: 0 4px
 .aufgabe-griff { display: none; }
 [data-aufgaben-baum] .aufgabe-griff { display: inline-flex; }
 [data-aufgaben-baum] .aufgabe-block--waise > .aufgabe-zeile .aufgabe-griff { visibility: hidden; }
-.neue-aufgabe { display: flex; padding-left: 44px; }
+.neue-aufgabe { display: flex; align-items: center; gap: 8px; padding-left: 44px; }
+.neue-aufgabe .inline-eingabe { max-width: 420px; background: transparent; }
+/* Knopf zum Anlegen (Enter geht weiterhin): zurückhaltend, erst mit Fokus oder Text; am Handy immer */
+.neue-aufgabe__knopf { display: none; flex: none; }
+.neue-aufgabe:focus-within .neue-aufgabe__knopf,
+.neue-aufgabe:has(.inline-eingabe:not(:placeholder-shown)) .neue-aufgabe__knopf { display: inline-flex; }
+.neue-aufgabe:has(.inline-eingabe:placeholder-shown) .neue-aufgabe__knopf { opacity: 0.55; cursor: not-allowed; }
+@media (hover: none), (pointer: coarse), (max-width: 700px) {
+  .neue-aufgabe__knopf { display: inline-flex; }
+}
 .unter-liste .aufgabe-zeile > .zeile:first-child { padding-left: 22px; }
 .unter-liste .unter-liste .aufgabe-zeile > .zeile:first-child { padding-left: 44px; }
 .unter-liste .unter-liste .unter-liste .aufgabe-zeile > .zeile:first-child { padding-left: 66px; }

@@ -1,6 +1,8 @@
 """Projektliste: Priorität, Navigation, Mitgliederauswahl; Protokoll „erledigte Aufgaben“; Posteingang im Kopf;
 Gantt-Gesamtansicht nimmt neue Projekte auf."""
 
+import re
+
 import pytest
 from django.test import Client
 from django.utils import timezone
@@ -9,7 +11,7 @@ from gantt.models import GanttAnsicht
 from kern.models import Protokolleintrag, Rolle
 from projekte import dienste
 from projekte.forms import ProjektForm
-from projekte.models import Projekt, Projektfarbe, Tag
+from projekte.models import Abschnitt, Aufgabe, Projekt, Projektfarbe, Tag
 from zusammenarbeit.models import Benachrichtigung
 
 pytestmark = pytest.mark.django_db
@@ -149,3 +151,36 @@ def test_vorauswahl_zufaellig_aus_allen_farben_inklusive_grau(konten, projekt):
     gesehen = {ProjektForm().initial["farbe"] for _ in range(200)}
     assert gesehen == set(Projektfarbe.values) - {"bernstein"}
     assert ProjektForm(instance=projekt).initial["farbe"] == "bernstein"
+
+
+# ---------- Aufgabe anlegen: Knopf neben dem Eingabefeld (#86) ----------
+
+def neue_aufgabe_formulare(seite):
+    """Die Formulare „+ Aufgabe hinzufügen“ der Projektseite."""
+    return re.findall(r'<form class="liste__zeile neue-aufgabe" hx-post="([^"]+)".*?</form>', seite, re.S)
+
+
+def test_aufgabe_anlegen_mit_knopf_ohne_und_mit_abschnitt(konten, projekt):
+    c = client_fuer(konten[P])
+    # Ohne Abschnitte: ein Formular für Aufgaben ohne Abschnitt, mit Knopf
+    seite = c.get(f"/projekte/{projekt.pk}/").content.decode()
+    assert neue_aufgabe_formulare(seite) == [f"/projekte/{projekt.pk}/aufgaben/"]
+    assert 'class="knopf knopf--klein neue-aufgabe__knopf">Hinzufügen</button>' in seite
+    antwort = c.post(f"/projekte/{projekt.pk}/aufgaben/", {"titel": "Fundament"}, HTTP_HX_REQUEST="true")
+    assert antwort.status_code == 200 and "Fundament" in antwort.content.decode()
+    assert Aufgabe.objects.get(titel="Fundament").abschnitt is None
+    # Mit Abschnitt: je Abschnitt ein Formular mit Knopf
+    abschnitt = Abschnitt.objects.create(projekt=projekt, name="Montage")
+    seite = c.get(f"/projekte/{projekt.pk}/").content.decode()
+    assert neue_aufgabe_formulare(seite) == [f"/projekte/{projekt.pk}/abschnitte/{abschnitt.pk}/aufgaben/"]
+    assert seite.count("neue-aufgabe__knopf") == 1
+    c.post(f"/projekte/{projekt.pk}/abschnitte/{abschnitt.pk}/aufgaben/", {"titel": "Stützen"}, HTTP_HX_REQUEST="true")
+    assert Aufgabe.objects.get(titel="Stützen").abschnitt == abschnitt
+    # Leerer Titel: nichts angelegt
+    assert c.post(f"/projekte/{projekt.pk}/aufgaben/", {"titel": "  "}, HTTP_HX_REQUEST="true").status_code == 400
+    assert Aufgabe.objects.count() == 2
+
+
+def test_ohne_bearbeitungsrecht_kein_formular(konten, projekt):
+    seite = client_fuer(konten[M]).get(f"/projekte/{projekt.pk}/").content.decode()
+    assert "neue-aufgabe__knopf" not in seite
