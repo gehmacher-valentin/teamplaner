@@ -364,6 +364,16 @@ def _link_abholen(request, konto):
     return gemerkt.get("link")
 
 
+def _link_nur_mailen(akteur, ziel):
+    """Anderer Admin: der Link geht nur an die hinterlegte Adresse und wird nie angezeigt, auch nicht als
+    QR-Code. Ein bestehendes Passwort bleibt gültig. Rückgabe: False ohne E-Mail-Versand."""
+    senden = reset_senden if ziel.has_usable_password() else einladung_senden
+    if not senden(ziel, passwort_link(ziel)):
+        return False
+    protokollieren(akteur, "konto", ziel.pk, "link_per_mail", {"person": ziel.person})
+    return True
+
+
 def _nach_einladung(request, neu):
     """Link erzeugen und zur Seite, die ihn zeigt: die Seite der Person, wenn das Konto bearbeitet
     werden darf – sonst (gleiche Rolle) eine Bestätigungsseite, die kein Bearbeitungsrecht braucht."""
@@ -515,6 +525,7 @@ def person_bearbeiten(request, pk):
                  zwei_faktor_aktiv=zwei_faktor.aktiv(ziel),
                  immer_bearbeiten=rechte.sieht_alles_im_teamplaner(ziel), ab_planer=ziel.hat_mindestens(Rolle.PLANER),
                  bearbeitbar=bearbeitbar, anmeldung_zuruecksetzbar=rechte.darf_anmeldung_zuruecksetzen(konto, ziel),
+                 link_nur_per_mail=rechte.darf_link_mailen(konto, ziel),
                  eigene_rolle_aenderbar=eigene_rolle_aenderbar,
                  schutz_bis=ziel.admin_bis + rechte.ADMIN_SCHUTZFRIST if rechte.in_schutzfrist(ziel) else None,
                  freigaben=[g for g in _freigaben_der_person(ziel) if bearbeitbar and darf_freigaben[g["art"]]])
@@ -545,14 +556,19 @@ def person_freigabe(request, pk):
 def person_aktion(request, pk, aktion):
     konto = request.user
     ziel = get_object_or_404(Konto.objects.select_related("person"), pk=pk)
+    nur_per_mail = aktion == "link" and rechte.darf_link_mailen(konto, ziel)
     darf = {"deaktivieren": rechte.darf_konto_oeffnen, "reaktivieren": rechte.darf_konto_deaktivieren,
             "link": rechte.darf_anmeldung_zuruecksetzen,
             "zwei_faktor_zuruecksetzen": rechte.darf_anmeldung_zuruecksetzen,
             "foto_entfernen": rechte.darf_konto_bearbeiten}.get(aktion)
-    if darf is None or not darf(konto, ziel):
+    if darf is None or not (nur_per_mail or darf(konto, ziel)):
         raise PermissionDenied
     if aktion == "link" and ziel.email_entfernt:
         messages.error(request, _("Bitte zuerst eine neue E-Mail-Adresse eintragen."))
+    elif nur_per_mail:
+        if not _link_nur_mailen(konto, ziel):
+            raise PermissionDenied  # ohne E-Mail-Versand nur am Server
+        messages.success(request, _("Ein neuer Link geht per E-Mail an %(email)s.") % {"email": ziel.email})
     elif aktion == "link":
         if ziel.has_usable_password():
             # Link zum Zurücksetzen nur an die Person selbst – sonst könnte die Verwaltung das Konto

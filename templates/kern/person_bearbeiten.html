@@ -32,7 +32,7 @@
       {% include "teile/feld.html" with feld=form.darf_tagesfreigabe zeile=True %}
       {% if freigabe_zeile_aus %}<div class="meldung meldung--info klein">{% translate "Die Zeile ist unter Einstellungen → Allgemein ausgeschaltet; der Haken wirkt erst, wenn sie eingeschaltet ist." %}</div>{% endif %}
       {% if freigabe_ohne_teamplaner %}<div class="meldung meldung--warning klein">{% translate "Diese Person sieht den Teamplaner nicht und kann die Freigabe deshalb trotz Haken nicht setzen." %}</div>{% endif %}
-      {% else %}<p class="klein gedaempft ohne-rand">{% translate "Bei anderen Admins lassen sich hier nur die Rolle ändern und das Konto deaktivieren. Alles Weitere geht über die Kommandozeile des Servers." %}</p>{% endif %}
+      {% else %}<p class="klein gedaempft ohne-rand">{% translate "Name, E-Mail-Adresse und Zwei-Faktor-Anmeldung anderer Admins lassen sich hier nicht ändern, nur über die Kommandozeile des Servers." %}</p>{% endif %}
     </div>
     {% url 'einst_personen' as zurueck %}{% include "teile/speicherleiste.html" with abbrechen=zurueck %}
   </section>
@@ -46,10 +46,15 @@
     <div class="luecke">
       <div>{% if ziel.has_usable_password %}{% translate "Passwort gesetzt" %}{% else %}{% translate "Einladung noch nicht angenommen" %}{% endif %}</div>
       {% if ziel.last_login %}<div class="klein gedaempft">{% translate "Letzte Anmeldung" %} <span class="mono">{{ ziel.last_login|date:"d.m.Y H:i" }}</span></div>{% endif %}
+      {% if link_nur_per_mail and not mail_aktiv %}<div class="klein gedaempft">{% translate "Ohne E-Mail-Versand gibt es einen neuen Link nur am Server:" %} <code class="umbruch">sudo teamplaner konto-aendern {{ ziel.email }} --passwort-link</code></div>{% endif %}
     </div>
     {% if anmeldung_zuruecksetzbar and not ziel.email_entfernt %}
       <form method="post" action="{% url 'person_aktion' ziel.pk 'link' %}"{% if ziel.has_usable_password and not mail_aktiv %} data-bestaetigen="{% translate 'Das bisherige Passwort gilt danach nicht mehr, bis die Person über den Link ein neues festlegt. Fortfahren?' %}"{% endif %}>{% csrf_token %}
         <button type="submit" class="knopf">{% if not ziel.has_usable_password %}{% translate "Neuen Einladungslink erzeugen" %}{% elif mail_aktiv %}{% translate "Link zum Zurücksetzen schicken" %}{% else %}{% translate "Passwort zurücksetzen und Link erzeugen" %}{% endif %}</button>
+      </form>
+    {% elif link_nur_per_mail and mail_aktiv and not ziel.email_entfernt %}
+      <form method="post" action="{% url 'person_aktion' ziel.pk 'link' %}">{% csrf_token %}
+        <button type="submit" class="knopf">{% if ziel.has_usable_password %}{% translate "Link zum Zurücksetzen schicken" %}{% else %}{% translate "Neue Einladung schicken" %}{% endif %}</button>
       </form>
     {% endif %}
   </div>

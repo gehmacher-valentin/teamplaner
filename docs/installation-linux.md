@@ -382,7 +382,8 @@ Erhalten bleiben Datenbank, `/var/lib/teamplaner`, `/var/backups/teamplaner` und
   `sudo teamplaner verwalten aufraeumen`.
 - Admins können andere Admins herabstufen und deaktivieren, sich selbst herabstufen; ein aktiver Admin, der
   sich schon einmal angemeldet hat, bleibt immer übrig. E-Mail, Passwort-Link und Zwei-Faktor-Anmeldung anderer Admins sind
-  in der Oberfläche gesperrt, nach dem Herabstufen noch 7 Tage. Auf dem Server geht das jederzeit:
+  in der Oberfläche gesperrt, nach dem Herabstufen noch 7 Tage. Mit E-Mail-Versand können sie anderen Admins
+  einen Link an die hinterlegte Adresse schicken, ohne ihn zu sehen. Auf dem Server geht das jederzeit:
   `sudo teamplaner konto-aendern <email>` (siehe unten „Konten auf dem Server ändern“).
 
 ### Konten auf dem Server ändern

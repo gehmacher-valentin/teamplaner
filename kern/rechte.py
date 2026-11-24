@@ -76,6 +76,12 @@ def darf_anmeldung_zuruecksetzen(konto, ziel):
     return ziel.pk != konto.pk and darf_anmeldung_verwalten(konto, ziel)
 
 
+def darf_link_mailen(konto, ziel):
+    """Anderen aktiven Admins einen Einladungs- oder Passwort-Link an ihre hinterlegte Adresse schicken,
+    ohne ihn zu sehen. Alles andere an ihrer Anmeldung bleibt gesperrt."""
+    return _anderer_admin(konto, ziel) and ziel.is_active
+
+
 def darf_konto_deaktivieren(konto, ziel):
     """Deaktivieren und reaktivieren; Admins auch andere Admins, niemand sich selbst."""
     if ziel.pk == konto.pk:

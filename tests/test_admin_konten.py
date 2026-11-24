@@ -140,6 +140,42 @@ def test_eigene_anmeldung_nicht_ueber_die_personenverwaltung(konten, rolle, name
     assert c.get(seite(konto)).status_code == 200  # Sitzung läuft weiter
 
 
+@pytest.mark.parametrize("mit_passwort", [True, False])
+def test_anderem_admin_einen_link_mailen(konten, zweiter, settings, mit_passwort):
+    settings.EMAIL_HOST = "mail.example.test"
+    if not mit_passwort:
+        zweiter.set_unusable_password()
+        zweiter.save()
+    c = angemeldet(konten[A])
+    html = c.get(seite(zweiter)).content.decode()
+    assert ("Link zum Zurücksetzen schicken" if mit_passwort else "Neue Einladung schicken") in html
+    antwort = c.post(f"/personen/{zweiter.pk}/link/")
+    danach = c.get(antwort.url).content.decode()
+    mail = Postausgang.objects.get()
+    assert mail.empfaenger == zweiter.email and "/passwort/setzen/" in mail.text
+    assert mail.art == (Postausgang.Art.RESET if mit_passwort else Postausgang.Art.EINLADUNG)
+    # Der Link steht weder in der Antwort noch in der Sitzung
+    assert "/passwort/setzen/" not in danach and "passwort-link__qr" not in danach
+    assert "/passwort/setzen/" not in str(dict(c.session))
+    assert frisch(zweiter).has_usable_password() is mit_passwort
+    assert Protokolleintrag.objects.filter(objekt_id=zweiter.pk, aktion="link_per_mail").exists()
+
+
+def test_link_mailen_nur_mit_versand_und_nur_aktiven_admins(konten, zweiter, settings):
+    html = angemeldet(konten[A]).get(seite(zweiter)).content.decode()
+    assert f"konto-aendern {zweiter.email} --passwort-link" in html and "Zurücksetzen schicken" not in html
+    assert aktion(konten[A], zweiter, "link").status_code == 403
+    settings.EMAIL_HOST = "mail.example.test"
+    assert aktion(konten[BL], zweiter, "link").status_code == 403
+    # In der Schutzfrist nach dem Herabstufen wie bisher gesperrt
+    rolle_senden(konten[A], zweiter, P)
+    assert aktion(konten[A], zweiter, "link").status_code == 403
+    Konto.objects.filter(pk=zweiter.pk).update(rolle=A)
+    zweiter.person.archivieren()
+    assert aktion(konten[A], zweiter, "link").status_code == 403
+    assert not Postausgang.objects.filter(art=Postausgang.Art.RESET).exists()
+
+
 def test_schutzfrist_nach_dem_herabstufen(konten, zweiter):
     rolle_senden(konten[A], zweiter, P)
     for wer in (konten[A], konten[BL]):
