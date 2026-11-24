@@ -40,7 +40,11 @@ def erfordert(pruefung):
 
 class PasswortLinks(PasswordResetTokenGenerator):
     """Wie Djangos Generator (Frist PASSWORD_RESET_TIMEOUT für Einladungen). Links für Konten, die
-    schon ein Passwort haben (Zurücksetzen), gelten nur TEAMPLANER_RESET_GUELTIG_STUNDEN."""
+    schon ein Passwort haben (Zurücksetzen), gelten nur TEAMPLANER_RESET_GUELTIG_STUNDEN. Beim
+    Deaktivieren werden offene Links ungültig (``Konto.zugang_stand``)."""
+
+    def _make_hash_value(self, user, timestamp):
+        return super()._make_hash_value(user, timestamp) + user.zugang_marke
 
     def check_token(self, user, token):
         if not super().check_token(user, token):

@@ -9,6 +9,7 @@ from django.test import Client
 from django.utils import timezone
 
 from kern import rechte, zwei_faktor
+from kern.hilfen import passwort_link
 from kern.models import Konto, Protokolleintrag, Rolle
 from zusammenarbeit.models import Postausgang
 
@@ -75,6 +76,44 @@ def test_anderen_admin_deaktivieren_und_reaktivieren(konten, zweiter):
     assert not frisch(zweiter).is_active
     aktion(konten[A], zweiter, "reaktivieren")
     assert frisch(zweiter).is_active
+
+
+@pytest.mark.parametrize("weg", ["oberflaeche", "befehl"])
+def test_deaktivieren_beendet_sitzungen_und_links(konten, weg):
+    konto = konten[M]
+    c = angemeldet(konto)
+    assert c.get("/projekte/").status_code == 200
+    link = passwort_link(konto)
+    if weg == "befehl":
+        befehl(konto, "--deaktivieren")
+        befehl(konto, "--reaktivieren")
+    else:
+        aktion(konten[A], konto, "deaktivieren")
+        aktion(konten[A], konto, "reaktivieren")
+    assert c.get("/projekte/").status_code == 302
+    assert "ungültig" in Client().get(link, follow=True).content.decode()
+    # Das Passwort bleibt, neue Sitzungen und Links gelten
+    neu = Client()
+    neu.post("/anmelden/", {"username": konto.email, "password": TESTPASSWORT})
+    assert neu.get("/projekte/").status_code == 200
+    assert "ungültig" not in Client().get(passwort_link(frisch(konto)), follow=True).content.decode()
+
+
+def test_deaktivieren_beendet_die_offene_code_eingabe(konten):
+    konto = konten[M]
+    zwei_faktor.einrichten(konto, zwei_faktor.neues_geheimnis(), 1)
+    c = Client()
+    c.post("/anmelden/", {"username": konto.email, "password": TESTPASSWORT})
+    assert c.get("/anmelden/code/").status_code == 200
+    befehl(konto, "--deaktivieren")
+    befehl(konto, "--reaktivieren")
+    assert c.get("/anmelden/code/").status_code == 302
+
+
+def test_nie_deaktivierte_konten_behalten_ihre_sitzung(konten):
+    """Nach dem Update bleibt angemeldet, wer angemeldet war: ohne Deaktivierung derselbe Wert wie in Django."""
+    assert konten[M].zugang_marke == ""
+    assert konten[M].get_session_auth_hash() == super(Konto, konten[M])._get_session_auth_hash()
 
 
 @pytest.mark.parametrize("name", ["link", "zwei_faktor_zuruecksetzen", "foto_entfernen"])

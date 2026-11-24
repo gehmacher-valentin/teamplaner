@@ -70,6 +70,9 @@ def deaktivieren(akteur, ziel):
     if konto.rolle == Rolle.ADMIN and not anderer_admin_vorhanden(konto, admins):
         raise LetzterAdmin
     konto.person.archivieren()
+    konto.zugang_stand += 1  # Sitzungen und offene Links gelten auch nach dem Reaktivieren nicht mehr
+    konto.save(update_fields=["zugang_stand"])
+    ziel.zugang_stand = konto.zugang_stand
     protokollieren(akteur, "konto", konto.pk, "deaktiviert", {"person": konto.person})
     if konto.rolle == Rolle.ADMIN:
         sicherheitshinweis(konto, "deaktiviert")

@@ -84,7 +84,7 @@ class AnmeldenView(auth_views.LoginView):
             return render(self.request, "registration/gesperrt.html", status=429)
         # Passwort stimmt; angemeldet wird erst nach dem Code aus der App
         self.request.session[ANMELDUNG_OFFEN] = {
-            "konto": konto.pk, "backend": konto.backend, "seit": time.time(),
+            "konto": konto.pk, "backend": konto.backend, "seit": time.time(), "stand": konto.zugang_stand,
             "weiter": self.get_success_url(), "fehler": 0,
         }
         return redirect("anmelden_code")
@@ -117,7 +117,7 @@ def anmelden_code(request):
     offen = request.session.get(ANMELDUNG_OFFEN)
     konto = Konto.objects.select_related("person").filter(pk=offen["konto"]).first() if offen else None
     if (konto is None or time.time() - offen["seit"] > ANMELDUNG_OFFEN_SEKUNDEN
-            or not konto.is_active or not zwei_faktor.aktiv(konto)):
+            or not konto.is_active or not zwei_faktor.aktiv(konto) or offen.get("stand", 0) != konto.zugang_stand):
         request.session.pop(ANMELDUNG_OFFEN, None)
         if offen:
             messages.info(request, _("Die Zeit für die Eingabe ist abgelaufen. Bitte erneut anmelden."))
