@@ -28,7 +28,7 @@ from kern.models import (
     Rolle,
 )
 from kern.protokoll import protokollieren
-from notizen.models import Notiz, NotizAnhang
+from notizen.models import Notiz
 from zusammenarbeit.models import Benachrichtigung, Postausgang
 
 PROTOKOLL_MINDESTENS_TAGE = 365  # wie im Trigger kern_protokoll_nur_einfuegen
@@ -64,9 +64,7 @@ def deaktivierte_bereinigen(jetzt):
     for konto in konten:
         person = konto.person
         with transaction.atomic():
-            for anhang in NotizAnhang.objects.filter(notiz__besitzer=person):
-                anhang.datei.delete(save=False)
-            Notiz.objects.filter(besitzer=person).delete()
+            Notiz.objects.filter(besitzer=person).delete()  # Dateien der Anhänge: zusammenarbeit.anhaenge
             konto.notizordner.clear()
             konto.ansicht_freigaben.all().delete()
             konto.gantt_freigaben.all().delete()

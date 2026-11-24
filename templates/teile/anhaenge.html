@@ -1,15 +1,18 @@
 {% load i18n teamplaner %}{% comment %}
-  Anhänge als Kacheln: Fotos mit Vorschau, alles öffnet in einem neuen Tab.
-  Erwartet: anhaenge, url_name, loeschen_name, alle_loeschbar (sonst nur eigene), hochladen (Adresse oder
-  leer: ohne Feld zum Hochladen); seitenleiste: per HTMX
+  Anhänge als Kacheln: Fotos mit Vorschau, PDFs mit ihrer ersten Seite (Feld vorschau), alles öffnet in
+  einem neuen Tab. Erwartet: anhaenge, url_name, vorschau_name, loeschen_name, alle_loeschbar (sonst nur
+  eigene), hochladen (Adresse oder leer: ohne Feld zum Hochladen); seitenleiste: per HTMX
 {% endcomment %}
 <div class="anhaenge">
   {% for d in anhaenge %}
     {% url url_name d.pk as adresse %}
-    <div class="anhang-kachel{% if d.hat_vorschau %} anhang-kachel--bild{% endif %}">
+    <div class="anhang-kachel{% if d.hat_vorschau %} anhang-kachel--bild{% elif d.vorschau %} anhang-kachel--pdf{% endif %}">
       <a class="anhang-kachel__vorschau" href="{{ adresse }}" target="_blank" rel="noopener" title="{% blocktranslate with name=d.dateiname %}{{ name }} in neuem Tab öffnen{% endblocktranslate %}">
         {% if d.hat_vorschau %}
           <img src="{{ adresse }}" alt="{{ d.dateiname }}" loading="lazy" decoding="async">
+        {% elif d.vorschau %}
+          <img src="{% url vorschau_name d.pk %}" alt="{{ d.dateiname }}" loading="lazy" decoding="async">
+          <span class="anhang-kachel__marke" aria-hidden="true">PDF</span>
         {% else %}
           <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg>
           <span class="anhang-kachel__endung">{{ d.dateiname|dateiendung }}</span>

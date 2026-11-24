@@ -6,7 +6,7 @@ from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.db.models import Count, F, Q
 from django.db.models.functions import Lower
-from django.http import FileResponse, Http404, HttpResponse
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.translation import gettext as _
@@ -16,7 +16,8 @@ from kern import rechte as kern_rechte
 from kern.heic import heic_umwandeln
 from kern.hilfen import TEXT_MAX_ZEICHEN, als_zahl, erfordert
 from kern.protokoll import protokollieren
-from zusammenarbeit.anhaenge import INLINE_TYPEN, dateityp
+from zusammenarbeit import pdf_vorschau
+from zusammenarbeit.anhaenge import ausliefern, dateityp
 
 from . import rechte
 from .forms import OrdnerForm
@@ -195,8 +196,7 @@ def notiz_loeschen(request, pk):
     if not rechte.darf_notiz_schreiben(request.user, eintrag):
         raise PermissionDenied
     ziel = _ziel(eintrag)
-    _dateien_loeschen(eintrag.anhaenge.all())
-    eintrag.delete()
+    eintrag.delete()  # Dateien der Anhänge löscht zusammenarbeit.anhaenge.dateien_entfernen
     messages.success(request, _("Notiz „%(titel)s“ gelöscht.") % {"titel": eintrag.titel})
     return redirect(ziel)
 
@@ -235,18 +235,12 @@ def ordner_loeschen(request, pk):
         raise PermissionDenied
     protokollieren(request.user, "notizordner", ordner.pk, "geloescht",
                    {"name": ordner.name, "notizen": ordner.notizen.count()})
-    _dateien_loeschen(NotizAnhang.objects.filter(notiz__ordner=ordner))
-    ordner.delete()
+    ordner.delete()  # samt Notizen und den Dateien ihrer Anhänge
     messages.success(request, _("Ordner „%(name)s“ gelöscht.") % {"name": ordner.name})
     return redirect("notizen")
 
 
 # ---------- Anhänge ----------
-
-def _dateien_loeschen(anhaenge):
-    for anhang in anhaenge:
-        anhang.datei.delete(save=False)
-
 
 @require_POST
 @erfordert(kern_rechte.darf_lesen)
@@ -260,9 +254,11 @@ def anhang_hochladen(request, pk):
         messages.error(request, _("Die Datei ist zu groß (höchstens %(mb)s MB).") % {"mb": max_mb})
     elif datei is not None:
         datei = heic_umwandeln(datei) or datei  # iPhone-Fotos als JPEG
+        content_type = dateityp(datei)
         NotizAnhang.objects.create(
             notiz=eintrag, datei=datei, dateiname=datei.name[:255], groesse=datei.size,
-            content_type=dateityp(datei), hochgeladen_von=request.user.person,
+            content_type=content_type, hochgeladen_von=request.user.person,
+            vorschau=pdf_vorschau.fuer_upload(datei, content_type),  # erste Seite eines PDFs, sonst leer
         )
     return redirect(reverse("notiz", args=[eintrag.pk]) + "#anhaenge")
 
@@ -272,17 +268,16 @@ def anhang_herunterladen(request, pk):
     anhang = get_object_or_404(NotizAnhang.objects.select_related("notiz"), pk=pk)
     if not rechte.darf_notiz_lesen(request.user, anhang.notiz):
         raise PermissionDenied
-    try:
-        datei = anhang.datei.open("rb")
-    except FileNotFoundError:
-        raise Http404 from None
-    inline = anhang.content_type in INLINE_TYPEN
-    antwort = FileResponse(datei, as_attachment=not inline, filename=anhang.dateiname,
-                           content_type=anhang.content_type if inline else "application/octet-stream")
-    antwort["X-Content-Type-Options"] = "nosniff"
-    antwort["Content-Security-Policy"] = "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'"
-    antwort["Cache-Control"] = "private"
-    return antwort
+    return ausliefern(anhang.datei, anhang.content_type, anhang.dateiname)
+
+
+@erfordert(kern_rechte.darf_lesen)
+def anhang_vorschau(request, pk):
+    """Erste Seite eines PDF-Anhangs als Bild, mit denselben Rechten wie der Anhang selbst."""
+    anhang = get_object_or_404(NotizAnhang.objects.select_related("notiz"), pk=pk)
+    if not rechte.darf_notiz_lesen(request.user, anhang.notiz):
+        raise PermissionDenied
+    return ausliefern(anhang.vorschau, "image/webp")
 
 
 @require_POST
@@ -291,6 +286,5 @@ def anhang_loeschen(request, pk):
     anhang = get_object_or_404(NotizAnhang.objects.select_related("notiz"), pk=pk)
     if not rechte.darf_notiz_schreiben(request.user, anhang.notiz):
         raise PermissionDenied
-    _dateien_loeschen([anhang])
-    anhang.delete()
+    anhang.delete()  # Datei und Vorschau löscht zusammenarbeit.anhaenge.dateien_entfernen
     return redirect(reverse("notiz", args=[anhang.notiz_id]) + "#anhaenge")

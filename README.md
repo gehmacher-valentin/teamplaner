@@ -47,6 +47,7 @@ Live-Aktualisierung für alle. Oberfläche auf Deutsch und Englisch, zum Selbsth
 - Platzhalter-Personen ohne Konto, z. B. für Aushilfen
 - Einladung und „Passwort vergessen“ per E-Mail; E-Mail-Benachrichtigungen fein einstellbar
 - Profilfoto, Feieranimation beim Abhaken (beides optional); iPhone-Fotos (HEIC) werden beim Hochladen zu JPEG
+- Anhänge als Kacheln mit Vorschau: Fotos und bei PDFs die erste Seite
 - Änderungsprotokoll, in der Datenbank gegen Ändern und Löschen geschützt
 - Admin-Übersicht der Anhänge nach Größe und Datum, um Speicherplatz freizugeben
 

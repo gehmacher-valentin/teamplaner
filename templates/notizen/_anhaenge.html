@@ -2,6 +2,6 @@
 <section class="karte--innen stapel notiz-anhaenge" id="anhaenge" aria-label="{% translate 'Anhänge' %}"{% if oob %} hx-swap-oob="true"{% endif %}>
   <h3>{% translate "Anhänge" %}</h3>
   {% if darf_schreiben %}{% url 'notiz_anhang_hochladen' notiz.pk as hochladen %}{% endif %}
-  {% include "teile/anhaenge.html" with url_name="notiz_anhang" loeschen_name="notiz_anhang_loeschen" alle_loeschbar=darf_schreiben %}
+  {% include "teile/anhaenge.html" with url_name="notiz_anhang" vorschau_name="notiz_anhang_vorschau" loeschen_name="notiz_anhang_loeschen" alle_loeschbar=darf_schreiben %}
 </section>
 {% else %}<div id="anhaenge" hidden></div>{% endif %}

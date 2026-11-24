@@ -20,5 +20,6 @@ urlpatterns = [
     path("api/planung/stream/notiz/<int:pk>", live.stream, name="notiz_stream"),
     path("notizen/<int:pk>/anhaenge/", views.anhang_hochladen, name="notiz_anhang_hochladen"),
     path("notizen/anhaenge/<int:pk>/", views.anhang_herunterladen, name="notiz_anhang"),
+    path("notizen/anhaenge/<int:pk>/vorschau/", views.anhang_vorschau, name="notiz_anhang_vorschau"),
     path("notizen/anhaenge/<int:pk>/loeschen/", views.anhang_loeschen, name="notiz_anhang_loeschen"),
 ]

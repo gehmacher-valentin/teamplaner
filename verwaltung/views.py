@@ -845,8 +845,7 @@ def anhang_entfernen(request, pk):
     anhang = get_object_or_404(Anhang, pk=pk)
     protokollieren(request.user, "anhang", anhang.pk, "geloescht", {"name": anhang.dateiname},
                    aufgabe_id=anhang.aufgabe_id)
-    anhang.datei.delete(save=False)
-    anhang.delete()
+    anhang.delete()  # Datei und Vorschau löscht zusammenarbeit.anhaenge.dateien_entfernen
     messages.success(request, _("„%(name)s“ gelöscht.") % {"name": anhang.dateiname})
     weiter = request.POST.get("weiter", "")
     if not url_has_allowed_host_and_scheme(weiter, allowed_hosts={request.get_host()}, require_https=request.is_secure()):

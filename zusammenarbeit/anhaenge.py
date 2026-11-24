@@ -1,4 +1,12 @@
-"""Anhänge: welcher Inhaltstyp gespeichert und was im Browser angezeigt statt heruntergeladen wird."""
+"""Anhänge: welcher Inhaltstyp gespeichert und was im Browser angezeigt statt heruntergeladen wird;
+Ausliefern und Entfernen der Dateien (gemeinsam für ``Anhang`` und ``notizen.NotizAnhang``)."""
+
+import logging
+
+from django.db import transaction
+from django.http import FileResponse, Http404
+
+log = logging.getLogger(__name__)
 
 INLINE_TYPEN = {"image/png", "image/jpeg", "image/gif", "image/webp", "application/pdf"}
 BILDFORMATE = {"PNG": "image/png", "JPEG": "image/jpeg", "GIF": "image/gif", "WEBP": "image/webp"}
@@ -25,3 +33,38 @@ def dateityp(datei):
     if format_ in BILDFORMATE:
         return BILDFORMATE[format_]
     return "application/octet-stream" if angabe in INLINE_TYPEN else angabe
+
+
+def ausliefern(feld, content_type, dateiname=None):
+    """Datei eines Anhangs (oder seine Vorschau) mit den Kopfzeilen für fremde Inhalte. Im Browser angezeigt
+    werden nur ``INLINE_TYPEN``, alles andere wird heruntergeladen."""
+    if not feld:
+        raise Http404
+    try:
+        datei = feld.open("rb")
+    except FileNotFoundError:
+        raise Http404 from None
+    inline = content_type in INLINE_TYPEN
+    antwort = FileResponse(datei, as_attachment=not inline, filename=dateiname or "",
+                           content_type=content_type if inline else "application/octet-stream")
+    antwort["X-Content-Type-Options"] = "nosniff"
+    antwort["Content-Security-Policy"] = "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'"
+    antwort["Cache-Control"] = "private"
+    return antwort
+
+
+def dateien_entfernen(sender, instance, **kwargs):
+    """``post_delete`` von ``Anhang`` und ``NotizAnhang``: Datei und Vorschau löschen, sobald das Löschen
+    feststeht. Gilt auch, wenn der Anhang mit seiner Aufgabe, Notiz oder seinem Ordner oder beim Aufräumen
+    nach Fristen verschwindet; wird die Transaktion zurückgerollt, bleiben die Dateien."""
+    dateien = [(feld.storage, feld.name) for feld in (instance.datei, instance.vorschau) if feld]
+
+    def entfernen():
+        for speicher, name in dateien:
+            try:
+                speicher.delete(name)
+            except OSError:
+                log.warning("Datei %s ließ sich nicht löschen", name, exc_info=True)
+
+    if dateien:
+        transaction.on_commit(entfernen)
