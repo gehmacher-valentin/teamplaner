@@ -27,9 +27,10 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
 from kern import fotos, rechte, zwei_faktor
-from kern.auth import zu_viele_fehlversuche_von_ip
+from kern.auth import code_zugang, sperre_aufheben, zu_viele_fehlversuche_von_ip
 from kern.hilfen import als_zahl, erfordert, link_qr_svg, passwort_link, passwort_links
 from kern.models import (
+    ENTFERNT_DOMAIN,
     Bereich,
     Konto,
     Person,
@@ -80,9 +81,11 @@ class AnmeldenView(auth_views.LoginView):
         konto = form.get_user()
         if not zwei_faktor.aktiv(konto):
             return super().form_valid(form)
+        if _gesperrt(self.request, code_zugang(konto)):
+            return render(self.request, "registration/gesperrt.html", status=429)
         # Passwort stimmt; angemeldet wird erst nach dem Code aus der App
         self.request.session[ANMELDUNG_OFFEN] = {
-            "konto": konto.pk, "backend": konto.backend, "seit": time.time(),
+            "konto": konto.pk, "backend": konto.backend, "seit": time.time(), "stand": konto.zugang_stand,
             "weiter": self.get_success_url(), "fehler": 0,
         }
         return redirect("anmelden_code")
@@ -100,13 +103,13 @@ def _zugang(konto):
     return {settings.AXES_USERNAME_FORM_FIELD: konto.email}
 
 
-def _fehlversuch(request, konto):
+def _fehlversuch(request, zugang):
     """Falscher Code oder falsches Passwort zählt wie ein Fehlversuch bei der Anmeldung (Sperre)."""
-    user_login_failed.send(sender=__name__, credentials=_zugang(konto), request=request)
+    user_login_failed.send(sender=__name__, credentials=zugang, request=request)
 
 
-def _gesperrt(request, konto):
-    return AxesProxyHandler.is_locked(request, _zugang(konto)) or zu_viele_fehlversuche_von_ip(request)
+def _gesperrt(request, zugang):
+    return AxesProxyHandler.is_locked(request, zugang) or zu_viele_fehlversuche_von_ip(request)
 
 
 @never_cache
@@ -115,19 +118,20 @@ def anmelden_code(request):
     offen = request.session.get(ANMELDUNG_OFFEN)
     konto = Konto.objects.select_related("person").filter(pk=offen["konto"]).first() if offen else None
     if (konto is None or time.time() - offen["seit"] > ANMELDUNG_OFFEN_SEKUNDEN
-            or not konto.is_active or not zwei_faktor.aktiv(konto)):
+            or not konto.is_active or not zwei_faktor.aktiv(konto) or offen.get("stand", 0) != konto.zugang_stand):
         request.session.pop(ANMELDUNG_OFFEN, None)
         if offen:
             messages.info(request, _("Die Zeit für die Eingabe ist abgelaufen. Bitte erneut anmelden."))
         return redirect("login")
     form = ZweiFaktorCodeForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
-        if _gesperrt(request, konto):
+        if _gesperrt(request, _zugang(konto)) or _gesperrt(request, code_zugang(konto)):
             request.session.pop(ANMELDUNG_OFFEN, None)
             return render(request, "registration/gesperrt.html", status=429)
         art = zwei_faktor.pruefen(konto, form.cleaned_data["code"])
         if art:
             del request.session[ANMELDUNG_OFFEN]
+            sperre_aufheben(code_zugang(konto))
             login(request, konto, backend=offen["backend"])
             zwei_faktor.bestanden(request, konto)
             if art == "ersatz":
@@ -136,7 +140,7 @@ def anmelden_code(request):
                                             "oder ein neues Telefon richten Sie unter „Mein Konto“ ein.")
                                  % {"n": zwei_faktor.ersatzcodes_uebrig(konto)})
             return redirect(offen["weiter"])
-        _fehlversuch(request, konto)
+        _fehlversuch(request, code_zugang(konto))
         offen["fehler"] += 1
         if offen["fehler"] >= CODE_VERSUCHE:
             del request.session[ANMELDUNG_OFFEN]
@@ -156,11 +160,11 @@ def zwei_faktor_einrichten(request):
     request.session[NEUES_GEHEIMNIS] = geheimnis
     form = ZweiFaktorEinrichtenForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
-        if _gesperrt(request, konto):
+        if _gesperrt(request, _zugang(konto)):
             return render(request, "registration/gesperrt.html", status=429)
         schritt = zwei_faktor.passender_schritt(geheimnis, form.cleaned_data["code"])
         if not konto.check_password(form.cleaned_data["passwort"]):
-            _fehlversuch(request, konto)
+            _fehlversuch(request, _zugang(konto))
             form.add_error("passwort", _("Das Passwort stimmt nicht."))
         elif schritt is None:
             form.add_error("code", _("Der Code passt nicht. Bitte den aktuellen Code aus der App eingeben; "
@@ -193,11 +197,11 @@ def zwei_faktor_aendern(request, aktion):
         raise PermissionDenied
     if aktion == "ausschalten" and zwei_faktor.pflicht(konto):
         raise PermissionDenied
-    if _gesperrt(request, konto):
+    if _gesperrt(request, _zugang(konto)):
         return render(request, "registration/gesperrt.html", status=429)
     form = PasswortBestaetigenForm(request.POST)
     if not form.is_valid() or not konto.check_password(form.cleaned_data["passwort"]):
-        _fehlversuch(request, konto)
+        _fehlversuch(request, _zugang(konto))
         messages.error(request, _("Das Passwort stimmt nicht."))
         return redirect(reverse("einst_sicherheit") + "#zwei-faktor")
     if aktion == "ersatzcodes":
@@ -261,6 +265,7 @@ class PasswortSetzenView(auth_views.PasswordResetConfirmView):
         messages.success(self.request, _("Passwort gespeichert. Sie können sich jetzt anmelden."))
         protokollieren(self.user, "konto", self.user.pk, "passwort_gesetzt")
         antwort = super().form_valid(form)
+        sperre_aufheben(_zugang(self.user))  # der zweite Faktor wird weiter verlangt
         if zuruecksetzen:
             sicherheitshinweis(self.user, "passwort_zurueckgesetzt")
         return antwort
@@ -359,6 +364,26 @@ def _link_abholen(request, konto):
     return gemerkt.get("link")
 
 
+def _link_nur_mailen(akteur, ziel):
+    """Anderer Admin: der Link geht nur an die hinterlegte Adresse und wird nie angezeigt, auch nicht als
+    QR-Code. Ein bestehendes Passwort bleibt gültig. Rückgabe: False ohne E-Mail-Versand."""
+    senden = reset_senden if ziel.has_usable_password() else einladung_senden
+    if not senden(ziel, passwort_link(ziel)):
+        return False
+    protokollieren(akteur, "konto", ziel.pk, "link_per_mail", {"person": ziel.person})
+    return True
+
+
+def _neu_einladen(request, ziel):
+    """Nach dem Korrigieren der Adresse: neue Einladung dorthin, der alte Link gilt nicht mehr."""
+    if ziel.is_active and _link_nur_mailen(request.user, ziel):
+        messages.info(request, _("Eine neue Einladung geht per E-Mail an %(email)s. Der bisherige Link gilt nicht mehr.")
+                      % {"email": ziel.email})
+    else:
+        messages.warning(request, _("Der bisherige Link gilt nicht mehr. Ein neuer lässt sich am Server erzeugen: %(befehl)s")
+                         % {"befehl": f"sudo teamplaner konto-aendern {ziel.email} --passwort-link"})
+
+
 def _nach_einladung(request, neu):
     """Link erzeugen und zur Seite, die ihn zeigt: die Seite der Person, wenn das Konto bearbeitet
     werden darf – sonst (gleiche Rolle) eine Bestätigungsseite, die kein Bearbeitungsrecht braucht."""
@@ -437,7 +462,7 @@ def _hinweis_planer_ohne_ansicht(konto, ziel):
     )
 
 
-LETZTER_ADMIN = gettext_lazy("Nicht möglich: Es muss ein weiterer aktiver Admin mit gesetztem Passwort bleiben.")
+LETZTER_ADMIN = gettext_lazy("Nicht möglich: Es muss ein weiterer aktiver Admin bleiben, der sich schon einmal angemeldet hat.")
 
 
 @erfordert(rechte.darf_konten_verwalten)
@@ -458,9 +483,11 @@ def person_bearbeiten(request, pk):
     eigene_rolle_aenderbar = ziel.pk == konto.pk and rechte.ist_admin(konto) and konten.anderer_admin_vorhanden(ziel)
     if ziel.pk == konto.pk and not eigene_rolle_aenderbar:
         form.fields["rolle"].disabled = True  # ohne weiteren Admin bleibt die eigene Rolle
+    adresse_korrigierbar = rechte.darf_adresse_korrigieren(konto, ziel)
     if not bearbeitbar:
         for feld in ("anzeigename", "email", "bereich", "gewerke", "systemkonto", "darf_tagesfreigabe"):
-            del form.fields[feld]
+            if feld != "email" or not adresse_korrigierbar:
+                del form.fields[feld]
     elif not anmeldung_verwaltbar:
         form.fields["email"].disabled = True
     if request.method == "POST" and form.is_valid():
@@ -472,6 +499,9 @@ def person_bearbeiten(request, pk):
         diff = {}
         try:
             with transaction.atomic():
+                korrigiert = adresse_korrigierbar and d["email"] != ziel.email
+                if korrigiert:
+                    konten.adresse_korrigieren(konto, ziel, d["email"])
                 rolle_neu = konten.rolle_setzen(konto, ziel, d["rolle"])
                 if bearbeitbar:
                     person.anzeigename, person.bereich = d["anzeigename"], d["bereich"]
@@ -488,12 +518,16 @@ def person_bearbeiten(request, pk):
         except konten.LetzterAdmin:
             messages.error(request, LETZTER_ADMIN)
             return redirect("einst_person", pk=pk)
-        if "email" in diff:
+        if "email" in diff and not alt["email"].endswith(ENTFERNT_DOMAIN):
             # An die bisherige Adresse: die Person merkt es, auch wenn jemand anderes ihr Konto übernehmen will
             sicherheitshinweis(ziel, "email_geaendert", an=alt["email"], neu=ziel.email)
         messages.success(request, _("Gespeichert."))
-        if ziel.pk == konto.pk and not rechte.darf_konten_verwalten(ziel):
-            return redirect(settings.LOGIN_REDIRECT_URL)  # sich selbst herabgestuft
+        if korrigiert:
+            _neu_einladen(request, ziel)
+        ich = ziel if ziel.pk == konto.pk else konto
+        if not rechte.darf_konto_oeffnen(ich, ziel):
+            # Sich selbst herabgestuft oder die Person auf die eigene Rolle angehoben
+            return redirect(settings.LOGIN_REDIRECT_URL if ich is ziel else "einst_personen")
         if rolle_neu and ziel.rolle == Rolle.PLANER and not hat_planungsansicht(ziel):
             messages.info(request, _hinweis_planer_ohne_ansicht(konto, ziel))
         elif ziel.darf_tagesfreigabe and not hat_planungsansicht(ziel) and (
@@ -507,7 +541,8 @@ def person_bearbeiten(request, pk):
                  freigabe_ohne_teamplaner=ziel.darf_tagesfreigabe and not hat_planungsansicht(ziel), link=link, link_qr=link_qr_svg(link) if link else None, mail_aktiv=mail_aktiv(),
                  zwei_faktor_aktiv=zwei_faktor.aktiv(ziel),
                  immer_bearbeiten=rechte.sieht_alles_im_teamplaner(ziel), ab_planer=ziel.hat_mindestens(Rolle.PLANER),
-                 bearbeitbar=bearbeitbar, anmeldung_verwaltbar=anmeldung_verwaltbar,
+                 bearbeitbar=bearbeitbar, adresse_korrigierbar=adresse_korrigierbar, anmeldung_zuruecksetzbar=rechte.darf_anmeldung_zuruecksetzen(konto, ziel),
+                 link_nur_per_mail=rechte.darf_link_mailen(konto, ziel),
                  eigene_rolle_aenderbar=eigene_rolle_aenderbar,
                  schutz_bis=ziel.admin_bis + rechte.ADMIN_SCHUTZFRIST if rechte.in_schutzfrist(ziel) else None,
                  freigaben=[g for g in _freigaben_der_person(ziel) if bearbeitbar and darf_freigaben[g["art"]]])
@@ -538,12 +573,20 @@ def person_freigabe(request, pk):
 def person_aktion(request, pk, aktion):
     konto = request.user
     ziel = get_object_or_404(Konto.objects.select_related("person"), pk=pk)
+    nur_per_mail = aktion == "link" and rechte.darf_link_mailen(konto, ziel)
     darf = {"deaktivieren": rechte.darf_konto_oeffnen, "reaktivieren": rechte.darf_konto_deaktivieren,
-            "link": rechte.darf_anmeldung_verwalten, "zwei_faktor_zuruecksetzen": rechte.darf_anmeldung_verwalten,
+            "link": rechte.darf_anmeldung_zuruecksetzen,
+            "zwei_faktor_zuruecksetzen": rechte.darf_anmeldung_zuruecksetzen,
             "foto_entfernen": rechte.darf_konto_bearbeiten}.get(aktion)
-    if darf is None or not darf(konto, ziel):
+    if darf is None or not (nur_per_mail or darf(konto, ziel)):
         raise PermissionDenied
-    if aktion == "link":
+    if aktion == "link" and ziel.email_entfernt:
+        messages.error(request, _("Bitte zuerst eine neue E-Mail-Adresse eintragen."))
+    elif nur_per_mail:
+        if not _link_nur_mailen(konto, ziel):
+            raise PermissionDenied  # ohne E-Mail-Versand nur am Server
+        messages.success(request, _("Ein neuer Link geht per E-Mail an %(email)s.") % {"email": ziel.email})
+    elif aktion == "link":
         if ziel.has_usable_password():
             # Link zum Zurücksetzen nur an die Person selbst – sonst könnte die Verwaltung das Konto
             # übernehmen. Ohne Mailversand: bisheriges Passwort sperren, dann wie eine Einladung.

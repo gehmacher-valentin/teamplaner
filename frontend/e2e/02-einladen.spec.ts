@@ -41,6 +41,30 @@ for (const [name, rolle, neueRolle, bearbeitbar] of faelle) {
   });
 }
 
+test("Auf die eigene Rolle anheben: Rückfrage, danach zur Personenliste", async ({ seiteFuer }, info) => {
+  const seite = await seiteFuer("leitung");
+  const person = `Person R${info.workerIndex}${info.retry}`;
+  await seite.goto("/einstellungen/personen/einladen/");
+  await seite.locator("#id_anzeigename").fill(person);
+  await seite.locator("#id_email").fill(`${person.toLowerCase().replace(/\s/g, ".")}@example.test`);
+  await seite.locator("#id_bereich").selectOption({ label: "Produktion" });
+  await seite.getByRole("button", { name: "Konto anlegen und Link erzeugen" }).click();
+  await expect(seite.getByRole("heading", { name: "Stammdaten" })).toBeVisible();
+
+  const rolle = seite.locator("#id_rolle");
+  await rolle.selectOption({ label: "Bereichsleitung" });
+  await seite.getByRole("button", { name: "Speichern" }).click();
+  const frage = seite.getByRole("dialog", { name: /Danach kann nur ein Admin diese Rolle wieder ändern/ });
+  await frage.getByRole("button", { name: "Abbrechen" }).click();
+  await expect(frage).toHaveCount(0);
+  await expect(seite.getByRole("heading", { name: "Stammdaten" })).toBeVisible();
+
+  await seite.getByRole("button", { name: "Speichern" }).click();
+  await frage.getByRole("button", { name: "Speichern" }).click();
+  await expect(seite).toHaveURL(/\/einstellungen\/personen\/$/);
+  await expect(seite.locator(".toast").filter({ hasText: "Gespeichert." })).toBeVisible();
+});
+
 test("Personen: Suche filtert beim Tippen", async ({ seiteFuer }) => {
   const seite = await seiteFuer("admin");
   await seite.goto("/einstellungen/personen/");

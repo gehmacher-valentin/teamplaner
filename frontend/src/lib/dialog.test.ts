@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeAll, describe, expect, it } from "vitest";
-import { bestaetigen, eingeben, knopfText } from "./dialog";
+import { bestaetigen, eingeben, frageVon, knopfText } from "./dialog";
 
 beforeAll(() => {
   // jsdom kennt showModal/close noch nicht
@@ -69,5 +69,18 @@ describe("Beschriftung des Aktionsknopfs", () => {
     expect(knopfText(formular('<form><button type="submit">×</button></form>'))).toBe("Löschen");
     expect(knopfText(formular('<form><button type="submit"><svg></svg></button></form>'))).toBe("Löschen");
     expect(knopfText(formular('<form data-bestaetigen-knopf="Entfernen"><button type="submit">×</button></form>'))).toBe("Entfernen");
+  });
+});
+
+describe("Frage an der gewählten Option", () => {
+  it("fragt nur, solange die Option mit data-bestaetigen gewählt ist; das Formular hat Vorrang", () => {
+    document.body.innerHTML = '<form><select><option value="a">A</option><option value="b" data-bestaetigen="Sicher?">B</option></select></form>';
+    const formular = document.querySelector("form")!;
+    const auswahl = formular.querySelector("select")!;
+    expect(frageVon(formular)).toBeUndefined();
+    auswahl.value = "b";
+    expect(frageVon(formular)).toBe("Sicher?");
+    formular.dataset.bestaetigen = "Vorrang?";
+    expect(frageVon(formular)).toBe("Vorrang?");
   });
 });

@@ -46,10 +46,22 @@ class EinladenForm(forms.Form):
         return email
 
 
+class RollenAuswahl(forms.Select):
+    """Auswahlliste, die bei einzelnen Werten vor dem Speichern nachfragt (``lib/dialog.ts``)."""
+
+    rueckfragen = {}
+
+    def create_option(self, name, value, *args, **kwargs):
+        option = super().create_option(name, value, *args, **kwargs)
+        if value in self.rueckfragen:
+            option["attrs"]["data-bestaetigen"] = self.rueckfragen[value]
+        return option
+
+
 class KontoBearbeitenForm(forms.Form):
     anzeigename = forms.CharField(label=_("Name"), max_length=150)
     email = forms.EmailField(label=_("E-Mail"))
-    rolle = forms.ChoiceField(label=_("Rolle"))
+    rolle = forms.ChoiceField(label=_("Rolle"), widget=RollenAuswahl)
     bereich = forms.ModelChoiceField(Bereich.objects.all(), label=_("Bereich"))
     gewerke = GewerkeFeld()
     systemkonto = forms.BooleanField(label=Konto._meta.get_field("systemkonto").verbose_name, required=False)
@@ -59,6 +71,12 @@ class KontoBearbeitenForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.ziel = ziel
         self.fields["rolle"].choices = [(r.value, r.label) for r in rechte.vergebbare_rollen(konto)]
+        # Auf die eigene Rolle anheben lässt sich nicht (Bereichsleitung) bzw. nur teilweise (Admin) zurücknehmen
+        if ziel.pk != konto.pk and ziel.rang < konto.rang:
+            self.fields["rolle"].widget.rueckfragen = {Rolle(konto.rolle).value: (
+                _("Zum Admin machen? E-Mail-Adresse, Passwort-Link und Zwei-Faktor-Anmeldung dieses Kontos können Sie "
+                  "danach nicht mehr verwalten.") if rechte.ist_admin(konto)
+                else _("Auf Bereichsleitung anheben? Danach kann nur ein Admin diese Rolle wieder ändern."))}
         feld = self.fields["darf_tagesfreigabe"]
         feld.label = _("Darf „%(name)s“ setzen") % {"name": Systemeinstellungen.laden().freigabe_bezeichnung}
         # Die Freigabe gilt für alle: den Haken vergibt nur, wer die Systemeinstellungen verwaltet (Admin)

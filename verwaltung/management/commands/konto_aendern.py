@@ -7,8 +7,8 @@
     sudo teamplaner konto-aendern admin@example.org --neue-email neu@example.org
     sudo teamplaner konto-aendern admin@example.org --passwort-link
 
-Anders als in der Oberfläche gilt hier keine Schutzfrist für ehemalige Admins. Der letzte Admin, der
-sich anmelden kann, bleibt auch hier geschützt: zuerst mit konto-anlegen einen weiteren anlegen.
+Anders als in der Oberfläche gilt hier keine Schutzfrist für ehemalige Admins. Der letzte Admin
+bleibt auch hier geschützt: Es muss ein weiterer aktiver Admin bleiben, der sich schon einmal angemeldet hat.
 Zwei-Faktor-Anmeldung zurücksetzen: zwei_faktor_zuruecksetzen.
 """
 
@@ -50,8 +50,8 @@ class Command(BaseCommand):
             if o["deaktivieren"]:
                 konten.deaktivieren(None, konto)
         except konten.LetzterAdmin:
-            raise CommandError("Das ist der letzte Admin, der sich anmelden kann. Zuerst einen weiteren Admin "
-                               "anlegen (konto-anlegen) und dessen Passwort setzen.") from None
+            raise CommandError("Das ist der letzte Admin. Es muss ein weiterer aktiver Admin bleiben, der sich "
+                               "schon einmal angemeldet hat: zuerst mit konto-anlegen anlegen und damit anmelden.") from None
         if o["neue_email"]:
             self._email_aendern(konto, o["neue_email"].strip().lower())
         konto = Konto.objects.select_related("person").get(pk=konto.pk)
