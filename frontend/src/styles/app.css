@@ -768,6 +768,9 @@ legend { font-size: 13px; font-weight: 600; color: var(--text-2); padding: 0 4px
 @media (hover: none) { .spaltengriff { display: none; } }
 .liste__zeile:last-child { border-bottom: 0; }
 .liste__zeile--gedaempft { color: var(--text-3); }
+/* Hinweis unter der Zeile: bleibt ganz lesbar, auch wenn die Liste waagrecht rollt */
+.liste:has(.liste__hinweis) { container-type: inline-size; }
+.liste__hinweis { grid-column: 1 / -1; justify-self: start; position: sticky; left: 16px; max-width: calc(100cqw - 32px); }
 .liste__zeile--flex { display: flex; gap: 10px; align-items: center; }
 .liste__gruppe { display: flex; align-items: center; gap: 8px; padding: 14px 16px 8px; font-size: 15px; font-weight: 700; }
 .zelle-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }

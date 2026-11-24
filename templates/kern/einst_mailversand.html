@@ -30,10 +30,10 @@
   <noscript><button type="submit" class="knopf">{% translate "Anzeigen" %}</button></noscript>
 </form>
 
-<section class="karte liste liste--mobil" aria-label="{% translate 'E-Mails' %}" style="--spalten: 124px minmax(0,1fr) minmax(0,2.2fr) 124px 70px 124px 140px; --liste-min: 900px">
+<section class="karte liste liste--mobil" aria-label="{% translate 'E-Mails' %}" style="--spalten: 96px minmax(0,1fr) minmax(0,2.2fr) 124px 70px 96px 165px; --liste-min: 870px">
   <div class="liste__inner">
     <div class="liste__kopf"><div>{% translate "Erstellt" %}</div><div>{% translate "Art" %}</div><div>{% translate "Empfänger" %}</div><div>{% translate "Status" %}</div><div>{% translate "Versuche" %}</div><div>{% translate "Verschickt" %}</div><div></div></div>
-    {% for e in seite %}
+    {% for z in zeilen %}{% with e=z.e ziel=z.e.neuer_link_fuer %}
       <div class="liste__zeile" data-mail="{{ e.quelle }}-{{ e.id }}">
         <div class="mono klein">{{ e.erstellt_am|date:"d.m.Y H:i" }}</div>
         <div class="zelle-text" title="{{ e.kennung }}">{{ e.art }}</div>
@@ -43,13 +43,24 @@
         <div class="mono klein">{% if e.gesendet_am %}{{ e.gesendet_am|date:"d.m.Y H:i" }}{% else %}–{% endif %}</div>
         <div>
           {% if e.wiederholbar %}
-            <form method="post" action="{% url 'einst_mailversand_erneut' e.id %}">{% csrf_token %}<button type="submit" class="knopf knopf--klein">{% translate "Erneut versuchen" %}</button></form>
-          {% elif e.status == "fehler" %}
-            <span class="gedaempft klein" title="{% translate 'Der Text mit dem Link wurde nach dem Aufgeben gelöscht. Auf der Seite der Person einen neuen Link erzeugen.' %}">{% translate "neuen Link erzeugen" %}</span>
+            <form method="post" action="{% if e.quelle == 'system' %}{% url 'einst_mailversand_hinweis_erneut' e.id %}{% else %}{% url 'einst_mailversand_erneut' e.id %}{% endif %}">{% csrf_token %}<button type="submit" class="knopf knopf--klein">{% translate "Erneut versuchen" %}</button></form>
+          {% elif z.hilfe == "link" %}
+            <a class="knopf knopf--klein" href="{% url 'einst_person' ziel.pk %}">{% translate "Neuen Link erzeugen" %}</a>
           {% endif %}
         </div>
+        {% if z.hilfe and z.hilfe != "link" %}
+        <div class="liste__hinweis klein gedaempft">
+          {% url 'einst_person' ziel.pk as person_url %}{% url 'einst_sicherheit' as sicherheit_url %}
+          {% if z.hilfe == "deaktiviert" %}{% blocktranslate %}Das Konto ist deaktiviert. Für einen neuen Link zuerst auf der <a href="{{ person_url }}">Seite der Person</a> reaktivieren.{% endblocktranslate %}
+          {% elif z.hilfe == "ohne_adresse" %}{% blocktranslate %}Für einen neuen Link zuerst auf der <a href="{{ person_url }}">Seite der Person</a> eine neue E-Mail-Adresse eintragen.{% endblocktranslate %}
+          {% elif z.hilfe == "eigenes" %}{% blocktranslate %}Ihr eigenes Konto: Das Passwort ändern Sie unter <a href="{{ sicherheit_url }}">Anmeldung &amp; Sicherheit</a>.{% endblocktranslate %}{% if mail_aktiv %} {% translate "Einen neuen Link fordern Sie auf der Anmeldeseite über „Passwort vergessen?“ an." %}{% endif %}
+          {% elif z.hilfe == "schutzfrist" %}{% blocktranslate with datum=z.schutz_bis|date:"d.m.Y H:i" %}Dieses Konto war bis vor Kurzem Admin. Ein neuer Link lässt sich hier erst ab {{ datum }} erzeugen, vorher nur am Server:{% endblocktranslate %} <code class="umbruch">sudo teamplaner konto-aendern {{ ziel.email }} --passwort-link</code>
+          {% elif z.hilfe == "ohne_versand" %}{% translate "Ohne E-Mail-Versand gibt es einen neuen Link nur am Server:" %} <code class="umbruch">sudo teamplaner konto-aendern {{ ziel.email }} --passwort-link</code>
+          {% endif %}
+        </div>
+        {% endif %}
       </div>
-    {% empty %}
+    {% endwith %}{% empty %}
       <div class="leer">{% translate "Keine E-Mails." %}</div>
     {% endfor %}
   </div>

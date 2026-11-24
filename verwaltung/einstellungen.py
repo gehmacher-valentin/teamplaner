@@ -249,6 +249,22 @@ MAIL_JE_SEITE = 50
 MAIL_HOECHSTENS = 2000
 
 
+def _hilfe_neuer_link(konto, ziel, versand):
+    """Was bei einer aufgegebenen Einladung oder einem Passwort-Link an ``ziel`` hilft: ``link`` (auf der
+    Seite der Person erzeugen) oder, wenn ``konto`` das dort nicht kann, der Grund."""
+    if not ziel.is_active:
+        return "deaktiviert"
+    if ziel.email_entfernt:
+        return "ohne_adresse"
+    if rechte.darf_anmeldung_zuruecksetzen(konto, ziel):
+        return "link"
+    if rechte.darf_link_mailen(konto, ziel):
+        return "link" if versand else "ohne_versand"
+    if ziel.pk == konto.pk:
+        return "eigenes"
+    return "schutzfrist" if rechte.in_schutzfrist(ziel) else ""
+
+
 @erfordert(rechte.darf_systemeinstellungen)
 def mailversand(request):
     """Postausgang für Admins ohne Zugang zum Server: was offen ist, was fehlschlug, was verschickt
@@ -260,22 +276,43 @@ def mailversand(request):
     if not status:
         eintraege.sort(key=lambda e: _MAIL_REIHENFOLGE[e.status])  # stabil: je Status weiter neueste zuerst
     blatt = Paginator(eintraege, MAIL_JE_SEITE).get_page(request.GET.get("seite"))
+    versand = mail_aktiv()
+    zeilen = []
+    for e in blatt:
+        ziel = e.neuer_link_fuer
+        zeilen.append({"e": e, "hilfe": _hilfe_neuer_link(request.user, ziel, versand) if ziel else "",
+                       "schutz_bis": ziel.admin_bis + rechte.ADMIN_SCHUTZFRIST if ziel and ziel.admin_bis else None})
     return seite(request, "kern/einst_mailversand.html", "mailversand", zahlen=mailverlauf.zahlen(), seite=blatt,
-                 filter_status=status, statusliste=[(s.value, s.label) for s in mailverlauf.STATUS],
-                 kein_smtp=not mail_eingerichtet(), mail_aktiv=mail_aktiv(), max_versuche=MAX_VERSUCHE,
+                 zeilen=zeilen, filter_status=status, statusliste=[(s.value, s.label) for s in mailverlauf.STATUS],
+                 kein_smtp=not mail_eingerichtet(), mail_aktiv=versand, max_versuche=MAX_VERSUCHE,
                  tage=settings.TEAMPLANER_AUFBEWAHRUNG_TAGE)
 
 
 @require_POST
 @erfordert(rechte.darf_systemeinstellungen)
 def mailversand_erneut(request, pk):
-    """Aufgegebene Benachrichtigung wieder einreihen. System-Mails nicht: ihr Text mit dem Passwort-Link
-    ist nach dem Aufgeben gelöscht, dort hilft ein neuer Link auf der Seite der Person."""
+    """Aufgegebene Benachrichtigung wieder einreihen."""
     with transaction.atomic():
         b = mailverlauf.erneut_versuchen(pk)
         if b is not None:
             protokollieren(request.user, "benachrichtigung", b.pk, "mail_erneut", {"person": b.empfaenger})
-    if b is None:
+    return _nach_erneut(request, b is not None)
+
+
+@require_POST
+@erfordert(rechte.darf_systemeinstellungen)
+def mailversand_hinweis_erneut(request, pk):
+    """Aufgegebenen Sicherheitshinweis wieder einreihen. Einladung und Passwort-Link nicht: ihr Text ist nach
+    dem Aufgeben gelöscht, dort hilft ein neuer Link auf der Seite der Person."""
+    with transaction.atomic():
+        m = mailverlauf.hinweis_erneut_versuchen(pk)
+        if m is not None:
+            protokollieren(request.user, "systemmail", m.pk, "mail_erneut", {"person": m.konto.person} if m.konto else {})
+    return _nach_erneut(request, m is not None)
+
+
+def _nach_erneut(request, eingereiht):
+    if not eingereiht:
         messages.error(request, _("Diese E-Mail ist nicht mehr aufgegeben."))
     else:
         messages.success(request, _("Die E-Mail wird erneut verschickt."))
