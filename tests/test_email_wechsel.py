@@ -14,8 +14,9 @@ from kern.models import EmailWechsel, Konto, Protokolleintrag, Rolle
 from verwaltung import konten as kontenlogik
 from verwaltung.aufraeumen import aufraeumen
 from verwaltung.templatetags.verwaltung import protokoll_text
-from zusammenarbeit.mail import offene_versenden
-from zusammenarbeit.models import Postausgang
+from zusammenarbeit.mail import MAX_VERSUCHE, offene_versenden
+from zusammenarbeit.mailverlauf import verlauf
+from zusammenarbeit.models import MailStatus, Postausgang
 
 from .conftest import TESTPASSWORT, konto_anlegen
 
@@ -93,6 +94,24 @@ def test_mail_ist_im_versandverlauf_und_wird_nach_dem_versand_geleert(konten, sm
     assert offene_versenden() == 1
     mail = Postausgang.objects.get()
     assert (mail.text, mail.html, mail.get_art_display()) == ("", "", "E-Mail-Adresse bestätigen")
+
+
+def test_aufgegebene_mail_wird_geleert_und_bekommt_keine_aktion(konten, smtp, settings):
+    settings.EMAIL_BACKEND = "kein.vorhandenes.Backend"  # jeder Versand scheitert
+    c = angemeldet(konten[A])
+    anfordern(c)
+    for _i in range(MAX_VERSUCHE):
+        offene_versenden()
+    mail = Postausgang.objects.get()
+    assert (mail.status, mail.text, mail.html) == (MailStatus.FEHLER, "", "")
+    assert (mail.konto, mail.empfaenger) == (konten[A], NEU)
+    eintrag = verlauf()[0]
+    assert not eintrag.wiederholbar and eintrag.neuer_link_fuer is None
+    seite = c.get("/einstellungen/mailversand/").content.decode()
+    assert NEU in seite and "Neuen Link erzeugen" not in seite and "Erneut versuchen" not in seite
+    c.post(f"/einstellungen/mailversand/system/{mail.pk}/erneut/")
+    mail.refresh_from_db()
+    assert mail.status == MailStatus.FEHLER
 
 
 def test_abbrechen_macht_den_link_ungueltig(konten, smtp):

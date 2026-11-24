@@ -284,7 +284,8 @@ versucht es bei Fehlern bis zu fünfmal. Nachvollziehen lässt sich der Versand 
 
 - In der Anwendung unter **Einstellungen → E-Mail-Versand** (nur Admin): offene, aufgegebene und
   verschickte E-Mails, mit Warnung, wenn offene E-Mails länger als 15 Minuten liegen. Aufgegebene
-  Benachrichtigungen lassen sich dort erneut einreihen.
+  Benachrichtigungen und Sicherheitshinweise lassen sich dort erneut einreihen; bei Einladungen und
+  Passwort-Links führt ein Link zur Seite der Person, auf der sich ein neuer erzeugen lässt.
 - `sudo teamplaner verwalten mail_protokoll`: dieselben Angaben als Tabelle.
 - `sudo teamplaner logs mailer`: je E-Mail eine Zeile mit Art, Empfänger und Eintrag, bei Fehlern mit
   Versuch und Grund.

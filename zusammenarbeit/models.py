@@ -7,7 +7,7 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from kern.models import Person
+from kern.models import Konto, Person
 from projekte.models import Aufgabe
 
 
@@ -141,7 +141,8 @@ class Benachrichtigung(models.Model):
 class Postausgang(models.Model):
     """System-Mails (Einladung, Passwort-Link, Sicherheitshinweis), verschickt vom Dienst
     ``mails_versenden`` – nicht während der Anfrage, damit Antwortzeit und SMTP-Fehler nichts über
-    Konten verraten. Nach dem Versand werden Text und HTML geleert (sie enthalten Passwort-Links)."""
+    Konten verraten. Nach dem Versand werden Text und HTML geleert (sie enthalten Passwort-Links), nach
+    dem Aufgeben auch – außer beim Sicherheitshinweis, der sich erneut verschicken lässt."""
 
     class Art(models.TextChoices):
         EINLADUNG = "einladung", _("Einladung")
@@ -151,6 +152,8 @@ class Postausgang(models.Model):
 
     art = models.CharField(max_length=20, choices=Art.choices)
     empfaenger = models.EmailField()
+    # Das Konto, um das es geht: die Adresse allein kann sich ändern. Leer bei E-Mails aus der Zeit davor
+    konto = models.ForeignKey(Konto, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
     betreff = models.CharField(max_length=200)
     text = models.TextField(blank=True)
     html = models.TextField(blank=True)

@@ -1,0 +1,21 @@
+{% load i18n teamplaner %}{# Hochladen als letzte Kachel (frontend/src/lib/anhangfeld.ts). Erwartet: ziel; seitenleiste: per HTMX. Ohne JavaScript ein normales Formular #}
+<form method="post" action="{{ ziel }}" enctype="multipart/form-data" class="anhang-kachel anhang-feld" data-anhang-feld data-max-mb="{% anhang_max_mb %}" {% include "projekte/_seitenleiste_form.html" %}{% if seitenleiste %} hx-encoding="multipart/form-data"{% endif %}>
+  {% csrf_token %}
+  <label class="anhang-feld__flaeche">
+    <span class="sr-only">{% translate "Datei" %}</span>
+    <input class="anhang-feld__datei" type="file" name="datei" required>
+    <span class="anhang-feld__leer" aria-hidden="true">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      <span class="anhang-feld__text">{% translate "Datei hierher ziehen oder auswählen" %}</span>
+      <span class="anhang-feld__text anhang-feld__text--tippen">{% translate "Datei auswählen" %}</span>
+    </span>
+    <span class="anhang-kachel__vorschau anhang-feld__vorschau" aria-hidden="true"></span>
+    <span class="anhang-feld__marke" aria-hidden="true"></span>
+    <span class="anhang-kachel__fuss anhang-feld__fuss" aria-hidden="true"><span class="anhang-kachel__text"><span class="anhang-kachel__name anhang-feld__name"></span><span class="anhang-kachel__groesse anhang-feld__groesse"></span></span></span>
+  </label>
+  <div class="anhang-feld__aktionen">
+    <button type="submit" class="knopf knopf--klein knopf--primaer">{% translate "Hochladen" %}</button>
+    <button type="button" class="knopf knopf--klein anhang-feld__entfernen"></button>
+  </div>
+  <span class="sr-only anhang-feld__status" role="status"></span>
+</form>

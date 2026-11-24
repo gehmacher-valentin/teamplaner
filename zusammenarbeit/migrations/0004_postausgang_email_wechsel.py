@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('zusammenarbeit', '0002_postausgang_html'),
+        ('zusammenarbeit', '0003_postausgang_konto'),
     ]
 
     operations = [

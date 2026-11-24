@@ -241,6 +241,13 @@ def test_html_anhang_wird_nur_als_download_ausgeliefert(konten, aufgabe, setting
     assert "attachment" in antwort["Content-Disposition"]
 
 
+def test_feld_zum_hochladen_nur_mit_recht(konten, aufgabe, settings):
+    settings.TEAMPLANER_ANHANG_MAX_MB = 7
+    seite = client_fuer(konten[M]).get(f"/aufgaben/{aufgabe.pk}/").content.decode()
+    assert "data-anhang-feld" in seite and 'data-max-mb="7"' in seite
+    assert "data-anhang-feld" not in client_fuer(konten[L]).get(f"/aufgaben/{aufgabe.pk}/").content.decode()
+
+
 def test_anhang_groessenlimit(konten, aufgabe, settings, tmp_path):
     settings.MEDIA_ROOT = tmp_path
     settings.TEAMPLANER_ANHANG_MAX_MB = 1

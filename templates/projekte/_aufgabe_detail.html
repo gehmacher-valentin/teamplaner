@@ -79,17 +79,8 @@
 
     <section class="stapel" id="anhaenge">
       <h2>{% translate "Anhänge" %}</h2>
-      {% if anhaenge %}
-      {% include "teile/anhaenge.html" with url_name="anhang" loeschen_name="anhang_loeschen" alle_loeschbar=darf_bearbeiten %}
-      {% endif %}
-      {% if darf_abschliessen %}
-        {% url 'anhang_hochladen' aufgabe.pk as ziel %}<form method="post" action="{{ ziel }}" enctype="multipart/form-data" class="zeile" {% include "projekte/_seitenleiste_form.html" %}{% if seitenleiste %} hx-encoding="multipart/form-data"{% endif %}>
-          {% csrf_token %}
-          <label class="sr-only" for="datei">{% translate "Datei" %}</label>
-          <input id="datei" type="file" name="datei" required>
-          <button type="submit" class="knopf knopf--klein">{% translate "Hochladen" %}</button>
-        </form>
-      {% endif %}
+      {% if darf_abschliessen %}{% url 'anhang_hochladen' aufgabe.pk as hochladen %}{% endif %}
+      {% if anhaenge or hochladen %}{% include "teile/anhaenge.html" with url_name="anhang" loeschen_name="anhang_loeschen" alle_loeschbar=darf_bearbeiten %}{% endif %}
     </section>
 
     <section class="stapel kommentare" id="kommentare">

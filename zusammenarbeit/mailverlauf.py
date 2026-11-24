@@ -11,11 +11,15 @@ from datetime import datetime, timedelta
 
 from django.utils import timezone
 
+from kern.models import Konto
+
 from .models import Benachrichtigung, MailStatus, Postausgang
 
 STATUS = (MailStatus.OFFEN, MailStatus.GESENDET, MailStatus.FEHLER)
 # Offene Mails verschickt der Dienst alle paar Sekunden. Liegt eine länger, läuft er vermutlich nicht.
 HAENGT_NACH = timedelta(minutes=15)
+# Passwort-Links. Nicht EMAIL_WECHSEL: den Wechsel fordert die Person selbst neu an, mit ihrem Passwort
+MIT_LINK = (Postausgang.Art.EINLADUNG, Postausgang.Art.RESET)
 
 
 @dataclass(frozen=True)
@@ -29,16 +33,14 @@ class Eintrag:
     status_text: str
     versuche: int
     gesendet_am: datetime | None
+    # Aufgegeben, aber der Text ist noch da (Benachrichtigung, Sicherheitshinweis): lässt sich erneut einreihen
+    wiederholbar: bool = False
+    # Konto zu einer aufgegebenen Einladung oder einem Passwort-Link: der Text ist gelöscht, es hilft nur ein neuer Link
+    neuer_link_fuer: Konto | None = None
 
     @property
     def kennung(self):
         return f"{'System-Mail' if self.quelle == 'system' else 'Benachrichtigung'} {self.id}"
-
-    @property
-    def wiederholbar(self):
-        """Aufgegebene Benachrichtigungen lassen sich erneut einreihen. Bei System-Mails ist der Text
-        (mit Passwort-Link) nach dem Aufgeben gelöscht: dort hilft nur ein neuer Link."""
-        return self.quelle == "benachrichtigung" and self.status == MailStatus.FEHLER
 
 
 def _zeitraum(abfrage, tage):
@@ -49,19 +51,23 @@ def verlauf(tage=None, status=None, limit=None):
     """Einträge beider Quellen, neueste zuerst. ``status``: offen, gesendet oder fehler (sonst alle drei);
     ``tage``: nur Einträge der letzten N Tage; ``limit``: höchstens so viele."""
     gewaehlt = [status] if status in STATUS else list(STATUS)
-    system = _zeitraum(Postausgang.objects.filter(status__in=gewaehlt), tage).order_by("-erstellt_am", "-id")
+    system = (_zeitraum(Postausgang.objects.filter(status__in=gewaehlt), tage)
+              .select_related("konto__person").order_by("-erstellt_am", "-id"))
     hinweise = (_zeitraum(Benachrichtigung.objects.filter(mail_status__in=gewaehlt), tage)
                 .select_related("empfaenger__konto").order_by("-erstellt_am", "-id"))
     if limit:
         system, hinweise = system[:limit], hinweise[:limit]
     eintraege = [
         Eintrag("system", m.pk, m.erstellt_am, m.get_art_display(), m.empfaenger, m.status,
-                m.get_status_display(), m.versuche, m.gesendet_am)
+                m.get_status_display(), m.versuche, m.gesendet_am,
+                wiederholbar=m.status == MailStatus.FEHLER and m.art == Postausgang.Art.SICHERHEIT and bool(m.text),
+                neuer_link_fuer=m.konto if m.status == MailStatus.FEHLER and m.art in MIT_LINK else None)
         for m in system
     ] + [
         Eintrag("benachrichtigung", b.pk, b.erstellt_am, b.get_art_display(),
                 getattr(getattr(b.empfaenger, "konto", None), "email", ""), b.mail_status,
-                b.get_mail_status_display(), b.mail_versuche, b.gesendet_am)
+                b.get_mail_status_display(), b.mail_versuche, b.gesendet_am,
+                wiederholbar=b.mail_status == MailStatus.FEHLER)
         for b in hinweise
     ]
     eintraege.sort(key=lambda e: (e.erstellt_am, e.id), reverse=True)
@@ -99,3 +105,12 @@ def erneut_versuchen(benachrichtigung_id):
     geaendert = Benachrichtigung.objects.filter(pk=benachrichtigung_id, mail_status=MailStatus.FEHLER).update(
         mail_status=MailStatus.OFFEN, mail_versuche=0)
     return Benachrichtigung.objects.select_related("empfaenger").get(pk=benachrichtigung_id) if geaendert else None
+
+
+def hinweis_erneut_versuchen(system_mail_id):
+    """Aufgegebenen Sicherheitshinweis wieder einreihen, solange sein Text da ist. Gibt die System-Mail
+    zurück oder None, wenn sie nicht (mehr) aufgegeben ist oder sich nicht wiederholen lässt."""
+    geaendert = (Postausgang.objects
+                 .filter(pk=system_mail_id, art=Postausgang.Art.SICHERHEIT, status=MailStatus.FEHLER).exclude(text="")
+                 .update(status=MailStatus.OFFEN, versuche=0))
+    return Postausgang.objects.select_related("konto__person").get(pk=system_mail_id) if geaendert else None

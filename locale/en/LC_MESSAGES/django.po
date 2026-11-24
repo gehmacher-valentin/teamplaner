@@ -1582,13 +1582,33 @@ msgstr "failed"
 msgid "Erneut versuchen"
 msgstr "Try again"
 
-#: templates/kern/einst_mailversand.html:48
-msgid "Der Text mit dem Link wurde nach dem Aufgeben gelöscht. Auf der Seite der Person einen neuen Link erzeugen."
-msgstr "The message with the link was deleted when sending failed. Create a new link on the person's page."
+#: templates/kern/einst_mailversand.html
+msgid "Neuen Link erzeugen"
+msgstr "Create new link"
 
-#: templates/kern/einst_mailversand.html:48
-msgid "neuen Link erzeugen"
-msgstr "create a new link"
+#: templates/kern/einst_mailversand.html
+#, python-format
+msgid "Das Konto ist deaktiviert. Für einen neuen Link zuerst auf der <a href=\"%(person_url)s\">Seite der Person</a> reaktivieren."
+msgstr "This account is deactivated. For a new link, first reactivate it on the <a href=\"%(person_url)s\">person's page</a>."
+
+#: templates/kern/einst_mailversand.html
+#, python-format
+msgid "Für einen neuen Link zuerst auf der <a href=\"%(person_url)s\">Seite der Person</a> eine neue E-Mail-Adresse eintragen."
+msgstr "For a new link, first enter a new email address on the <a href=\"%(person_url)s\">person's page</a>."
+
+#: templates/kern/einst_mailversand.html
+#, python-format
+msgid "Ihr eigenes Konto: Das Passwort ändern Sie unter <a href=\"%(sicherheit_url)s\">Anmeldung &amp; Sicherheit</a>."
+msgstr "Your own account: change the password under <a href=\"%(sicherheit_url)s\">Sign-in &amp; security</a>."
+
+#: templates/kern/einst_mailversand.html
+msgid "Einen neuen Link fordern Sie auf der Anmeldeseite über „Passwort vergessen?“ an."
+msgstr "You can request a new link on the sign-in page via “Forgot your password?”."
+
+#: templates/kern/einst_mailversand.html
+#, python-format
+msgid "Dieses Konto war bis vor Kurzem Admin. Ein neuer Link lässt sich hier erst ab %(datum)s erzeugen, vorher nur am Server:"
+msgstr "This account was an admin until recently. A new link cannot be created here until %(datum)s; before that only on the server:"
 
 #: templates/kern/einst_mailversand.html:53
 msgid "Keine E-Mails."
@@ -3976,3 +3996,11 @@ msgstr "This link has expired, has already been used or belongs to another accou
 #: templates/kern/email_bestaetigen.html
 msgid "Zu meinem Konto"
 msgstr "Go to my account"
+
+#: templates/teile/anhang_feld.html
+msgid "Datei hierher ziehen oder auswählen"
+msgstr "Drop a file here or choose one"
+
+#: templates/teile/anhang_feld.html
+msgid "Datei auswählen"
+msgstr "Choose file"

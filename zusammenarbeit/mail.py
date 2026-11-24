@@ -199,7 +199,9 @@ def _postausgang_versenden(limit):
                 m.versuche += 1
                 _protokoll_fehler(m.art, m.empfaenger, f"System-Mail {m.pk}", m.versuche, fehler)
                 if m.versuche >= MAX_VERSUCHE:
-                    m.status, m.text, m.html = MailStatus.FEHLER, "", ""
+                    m.status = MailStatus.FEHLER
+                    if m.art != Postausgang.Art.SICHERHEIT:  # ohne Passwort-Link, bleibt wiederholbar
+                        m.text, m.html = "", ""
                 m.save(update_fields=["versuche", "status", "text", "html"])
                 continue
             # Text und HTML enthalten ggf. einen Passwort-Link – nach dem Versand nicht aufheben
@@ -270,8 +272,9 @@ def _mail_versenden(liste):
     return 1
 
 
-def _einreihen(art, empfaenger, betreff, text, html=""):
-    Postausgang.objects.create(art=art, empfaenger=empfaenger, betreff=betreff[:200], text=text, html=html)
+def _einreihen(art, konto, betreff, text, html="", an=None):
+    Postausgang.objects.create(art=art, konto=konto, empfaenger=an or konto.email, betreff=betreff[:200],
+                               text=text, html=html)
 
 
 def einladung_senden(konto, link):
@@ -287,7 +290,7 @@ def einladung_senden(konto, link):
         betreff = f"[{_('Teamplaner')}] " + _("Einladung")
         html = _html(betreff, [{"absatz": gruss}, {"absatz": bitte}, {"knopf": _("Passwort festlegen"), "url": link},
                                {"link": link}, {"absatz": gilt}], _("Einladung"))
-        _einreihen(Postausgang.Art.EINLADUNG, konto.email, betreff, text + _fusszeile(), html)
+        _einreihen(Postausgang.Art.EINLADUNG, konto, betreff, text + _fusszeile(), html)
     return True
 
 
@@ -305,7 +308,7 @@ def reset_senden(konto, link):
         html = _html(betreff, [{"absatz": gruss}, {"absatz": bitte}, {"knopf": _("Passwort festlegen"), "url": link},
                                {"link": link}, {"absatz": gilt}, {"absatz": ignorieren}],
                      _("Passwort zurücksetzen"))
-        _einreihen(Postausgang.Art.RESET, konto.email, betreff, text + _fusszeile(), html)
+        _einreihen(Postausgang.Art.RESET, konto, betreff, text + _fusszeile(), html)
     return True
 
 
@@ -326,7 +329,7 @@ def email_bestaetigung_senden(konto, wechsel):
         html = _html(betreff, [{"absatz": gruss}, {"absatz": bitte}, {"knopf": _("Adresse bestätigen"), "url": link},
                                {"link": link}, {"absatz": bisher}, {"absatz": gilt}, {"absatz": ignorieren}],
                      _("E-Mail-Adresse bestätigen"))
-        _einreihen(Postausgang.Art.EMAIL_WECHSEL, wechsel.email, betreff, text + _fusszeile(), html)
+        _einreihen(Postausgang.Art.EMAIL_WECHSEL, konto, betreff, text + _fusszeile(), html, an=wechsel.email)
     return True
 
 
@@ -364,4 +367,4 @@ def sicherheitshinweis(konto, anlass, an=None, **werte):
         html = _html(betreff, [{"absatz": gruss}, {"absatz": hinweis}, {"absatz": warnung, "wichtig": True},
                                {"knopf": _("Zur Anmeldung"), "url": absolute_url(reverse("login"))}],
                      _("Sicherheitshinweis zu Ihrem Konto"))
-        _einreihen(Postausgang.Art.SICHERHEIT, an or konto.email, betreff, text + _fusszeile(), html)
+        _einreihen(Postausgang.Art.SICHERHEIT, konto, betreff, text + _fusszeile(), html, an=an)
