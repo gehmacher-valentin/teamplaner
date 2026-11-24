@@ -1,16 +1,19 @@
 """Admin-Konten: herabstufen, deaktivieren, letzter Admin, Schutzfrist, konto_aendern."""
 
 from datetime import timedelta
+from importlib import import_module
 from io import StringIO
 
 import pytest
+from django.apps import apps
 from django.core.management import CommandError, call_command
 from django.test import Client
 from django.utils import timezone
 
 from kern import rechte, zwei_faktor
 from kern.hilfen import passwort_link
-from kern.models import Konto, Protokolleintrag, Rolle
+from kern.models import Konto, Person, Protokolleintrag, Rolle
+from verwaltung.aufraeumen import aufraeumen
 from zusammenarbeit.models import Postausgang
 
 from .conftest import TESTPASSWORT, konto_anlegen
@@ -214,3 +217,54 @@ def test_befehl_weist_falsche_eingaben_ab(konten, zweiter):
     zweiter.person.archivieren()
     with pytest.raises(CommandError, match="deaktiviert"):
         befehl(zweiter, "--passwort-link")
+
+
+# --- Nach der Frist bereinigte Admins ---
+
+def bereinigt(konto):
+    konto.person.archivieren()
+    Person.objects.filter(pk=konto.pk).update(archiviert_am=timezone.now() - timedelta(days=91))
+    aufraeumen()
+    return frisch(konto)
+
+
+def test_bereinigter_admin_verliert_die_rolle(konten, zweiter):
+    Konto.objects.filter(pk=zweiter.pk).update(admin_bis=timezone.now())
+    neu = bereinigt(zweiter)
+    assert (neu.rolle, neu.admin_bis, neu.email_entfernt) == (Rolle.LESEND, None, True)
+    eintrag = Protokolleintrag.objects.get(objekt_typ="konto", objekt_id=neu.pk, aktion="geaendert")
+    assert eintrag.daten["rolle"] == ["admin", "lesend"] and eintrag.akteur is None
+
+
+def test_bereinigte_rollen_unter_admin_bleiben(konten):
+    assert bereinigt(konten[P]).rolle == P
+
+
+def test_bereinigten_admin_wieder_in_betrieb_nehmen(konten, zweiter, settings):
+    settings.EMAIL_HOST = "mail.example.test"
+    bereinigt(zweiter)
+    c = angemeldet(konten[A])
+    assert "Nach dem Reaktivieren" in c.get(seite(zweiter)).content.decode()
+    aktion(konten[A], zweiter, "reaktivieren")
+    html = c.get(seite(zweiter)).content.decode()
+    assert "die Rolle neu vergeben" in html and "Neuen Einladungslink erzeugen" not in html
+    # Vor der neuen Adresse kein Link
+    aktion(konten[A], zweiter, "link")
+    assert not Postausgang.objects.exists()
+    rolle_senden(konten[A], frisch(zweiter), M, email="wieder@example.test")
+    neu = frisch(zweiter)
+    assert (neu.email, neu.rolle, neu.is_active) == ("wieder@example.test", M, True)
+    assert not Postausgang.objects.exists()  # kein Hinweis an die Ersatzadresse
+    aktion(konten[A], neu, "link")
+    assert Postausgang.objects.get().empfaenger == "wieder@example.test"
+
+
+def test_migration_fuer_bereits_bereinigte_admins(konten, zweiter, bereich_a):
+    migration = import_module("kern.migrations.0009_bereinigte_admins")
+    Konto.objects.filter(pk=zweiter.pk).update(email=f"entfernt-{zweiter.pk}@konto.invalid", password="!x")
+    benutzt = konto_anlegen("Person 92", bereich_a, A)
+    Konto.objects.filter(pk=benutzt.pk).update(email=f"entfernt-{benutzt.pk}@konto.invalid")
+    migration.herabsetzen(apps, None)
+    assert frisch(zweiter).rolle == Rolle.LESEND
+    assert frisch(benutzt).rolle == A and frisch(konten[A]).rolle == A
+    assert Protokolleintrag.objects.get(objekt_id=zweiter.pk).daten["rolle"] == ["admin", "lesend"]

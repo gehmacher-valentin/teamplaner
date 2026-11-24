@@ -40,14 +40,14 @@
 
 <section class="karte" aria-labelledby="anm-titel">
   <div class="karte__kopf"><h2 id="anm-titel">{% translate "Anmeldung" %}</h2></div>
-  {% if ziel.daten_entfernt_am %}<div class="karte--innen"><div class="meldung meldung--info klein">{% blocktranslate with datum=ziel.daten_entfernt_am|date:"d.m.Y" %}Persönliche Daten am {{ datum }} entfernt (Frist nach der Deaktivierung). Zum Reaktivieren eine neue E-Mail-Adresse eintragen und eine Einladung schicken.{% endblocktranslate %}</div></div>{% endif %}
+  {% if ziel.email_entfernt %}<div class="karte--innen"><div class="meldung meldung--info klein">{% if ziel.daten_entfernt_am %}{% blocktranslate with datum=ziel.daten_entfernt_am|date:"d.m.Y" %}Persönliche Daten am {{ datum }} entfernt (Frist nach der Deaktivierung).{% endblocktranslate %}{% else %}{% translate "Persönliche Daten nach der Deaktivierung entfernt." %}{% endif %} {% if ziel.is_active %}{% translate "Bitte eine neue E-Mail-Adresse eintragen, die Rolle neu vergeben und danach einen Einladungslink erzeugen." %}{% else %}{% translate "Nach dem Reaktivieren eine neue E-Mail-Adresse eintragen, die Rolle neu vergeben und einen Einladungslink erzeugen." %}{% endif %}</div></div>{% endif %}
   {% if schutz_bis and ziel.pk != user.pk and bearbeitbar %}<div class="karte--innen"><div class="meldung meldung--info klein">{% blocktranslate with datum=schutz_bis|date:"d.m.Y H:i" %}Dieses Konto war bis vor Kurzem Admin. E-Mail, Passwort und Zwei-Faktor-Anmeldung lassen sich erst ab {{ datum }} verwalten.{% endblocktranslate %}</div></div>{% endif %}
   <div class="einstellungszeile">
     <div class="luecke">
       <div>{% if ziel.has_usable_password %}{% translate "Passwort gesetzt" %}{% else %}{% translate "Einladung noch nicht angenommen" %}{% endif %}</div>
       {% if ziel.last_login %}<div class="klein gedaempft">{% translate "Letzte Anmeldung" %} <span class="mono">{{ ziel.last_login|date:"d.m.Y H:i" }}</span></div>{% endif %}
     </div>
-    {% if anmeldung_zuruecksetzbar %}
+    {% if anmeldung_zuruecksetzbar and not ziel.email_entfernt %}
       <form method="post" action="{% url 'person_aktion' ziel.pk 'link' %}"{% if ziel.has_usable_password and not mail_aktiv %} data-bestaetigen="{% translate 'Das bisherige Passwort gilt danach nicht mehr, bis die Person über den Link ein neues festlegt. Fortfahren?' %}"{% endif %}>{% csrf_token %}
         <button type="submit" class="knopf">{% if not ziel.has_usable_password %}{% translate "Neuen Einladungslink erzeugen" %}{% elif mail_aktiv %}{% translate "Link zum Zurücksetzen schicken" %}{% else %}{% translate "Passwort zurücksetzen und Link erzeugen" %}{% endif %}</button>
       </form>

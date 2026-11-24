@@ -30,6 +30,7 @@ from kern import fotos, rechte, zwei_faktor
 from kern.auth import code_zugang, sperre_aufheben, zu_viele_fehlversuche_von_ip
 from kern.hilfen import als_zahl, erfordert, link_qr_svg, passwort_link, passwort_links
 from kern.models import (
+    ENTFERNT_DOMAIN,
     Bereich,
     Konto,
     Person,
@@ -492,7 +493,7 @@ def person_bearbeiten(request, pk):
         except konten.LetzterAdmin:
             messages.error(request, LETZTER_ADMIN)
             return redirect("einst_person", pk=pk)
-        if "email" in diff:
+        if "email" in diff and not alt["email"].endswith(ENTFERNT_DOMAIN):
             # An die bisherige Adresse: die Person merkt es, auch wenn jemand anderes ihr Konto übernehmen will
             sicherheitshinweis(ziel, "email_geaendert", an=alt["email"], neu=ziel.email)
         messages.success(request, _("Gespeichert."))
@@ -548,7 +549,9 @@ def person_aktion(request, pk, aktion):
             "foto_entfernen": rechte.darf_konto_bearbeiten}.get(aktion)
     if darf is None or not darf(konto, ziel):
         raise PermissionDenied
-    if aktion == "link":
+    if aktion == "link" and ziel.email_entfernt:
+        messages.error(request, _("Bitte zuerst eine neue E-Mail-Adresse eintragen."))
+    elif aktion == "link":
         if ziel.has_usable_password():
             # Link zum Zurücksetzen nur an die Person selbst – sonst könnte die Verwaltung das Konto
             # übernehmen. Ohne Mailversand: bisheriges Passwort sperren, dann wie eine Einladung.

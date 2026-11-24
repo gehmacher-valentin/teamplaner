@@ -4,7 +4,8 @@
   das erzwingt der Datenbank-Trigger), Anmeldeprotokoll mit IP-Adressen (django-axes),
   Benachrichtigungen und Postausgang.
 * Deaktivierte Personen nach TEAMPLANER_DEAKTIVIERT_TAGE (90): E-Mail, Passwort, Zwei-Faktor,
-  E-Mail-Einstellungen, Foto, persönliche Notizen und Freigaben werden entfernt. Der Name bleibt – in
+  E-Mail-Einstellungen, Foto, persönliche Notizen und Freigaben werden entfernt, aus Admins wird
+  „Lesend“. Der Name bleibt – in
   alten Einteilungen, Aufgaben und Kommentaren; Kommentare und Anhänge werden nie gelöscht.
   Archivierte Platzhalter verlieren ihre Notiz.
 """
@@ -17,7 +18,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from kern import fotos, zwei_faktor
-from kern.models import Konto, Person, Protokolleintrag, Resetanfrage
+from kern.models import ENTFERNT_DOMAIN, Konto, Person, Protokolleintrag, Resetanfrage, Rolle
 from kern.protokoll import protokollieren
 from notizen.models import Notiz, NotizAnhang
 from zusammenarbeit.models import Benachrichtigung, Postausgang
@@ -61,11 +62,18 @@ def deaktivierte_bereinigen(jetzt):
             konto.gantt_freigaben.all().delete()
             fotos.entfernen(person)
             zwei_faktor.zuruecksetzen(konto)
-            konto.email = f"entfernt-{konto.pk}@konto.invalid"
+            konto.email = f"entfernt-{konto.pk}{ENTFERNT_DOMAIN}"
             konto.set_unusable_password()
             konto.mail_einstellungen = {}
             konto.daten_entfernt_am = jetzt
-            konto.save(update_fields=["email", "password", "mail_einstellungen", "daten_entfernt_am"])
+            war_admin = konto.rolle == Rolle.ADMIN
+            if war_admin:
+                # Sonst könnte danach niemand mehr die Adresse eintragen. Ohne Schutzfrist: es gibt nichts zu übernehmen
+                konto.rolle, konto.admin_bis = Rolle.LESEND, None
+            konto.save(update_fields=["email", "password", "mail_einstellungen", "daten_entfernt_am", "rolle", "admin_bis"])
             protokollieren(None, "konto", konto.pk, "daten_entfernt", {"person": person})
+            if war_admin:
+                protokollieren(None, "konto", konto.pk, "geaendert",
+                               {"person": person, "rolle": [Rolle.ADMIN, Rolle.LESEND]})
         anzahl += 1
     return anzahl

@@ -196,6 +196,10 @@ class Farbschema(models.TextChoices):
     DUNKEL = "dark", _("Dunkel")
 
 
+# Domain der Ersatzadresse nach dem Entfernen der persönlichen Daten (verwaltung.aufraeumen)
+ENTFERNT_DOMAIN = "@konto.invalid"
+
+
 class Konto(AbstractBaseUser):
     """Anmeldedaten und Rolle einer Person. Platzhalter haben strukturell kein Konto."""
 
@@ -249,6 +253,11 @@ class Konto(AbstractBaseUser):
     def is_active(self):
         # Deaktivierte Konten = archivierte Personen
         return self.person.archiviert_am is None
+
+    @property
+    def email_entfernt(self):
+        """Nach der Frist bereinigt: braucht vor dem Einladen eine neue Adresse."""
+        return self.email.endswith(ENTFERNT_DOMAIN)
 
     @property
     def zugang_marke(self):
