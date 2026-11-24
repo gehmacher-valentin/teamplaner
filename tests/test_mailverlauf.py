@@ -13,10 +13,20 @@ from django.core.management import call_command
 from django.test import Client
 from django.utils import timezone
 
-from kern.models import Konto, Protokolleintrag, Rolle, Systemeinstellungen
+from kern.models import ENTFERNT_DOMAIN, Konto, Protokolleintrag, Rolle, Systemeinstellungen
+from kern.rechte import ADMIN_SCHUTZFRIST
+from verwaltung.aufraeumen import aufraeumen
 from zusammenarbeit import mailverlauf
-from zusammenarbeit.mail import MAX_VERSUCHE, einladung_senden, offene_versenden
+from zusammenarbeit.mail import (
+    MAX_VERSUCHE,
+    einladung_senden,
+    offene_versenden,
+    reset_senden,
+    sicherheitshinweis,
+)
 from zusammenarbeit.models import Benachrichtigung, Benachrichtigungsart, MailStatus, Postausgang
+
+from .conftest import konto_anlegen
 
 pytestmark = pytest.mark.django_db
 A, BL, P, M = Rolle.ADMIN, Rolle.BEREICHSLEITUNG, Rolle.PLANER, Rolle.MITARBEITER
@@ -31,12 +41,13 @@ def smtp(settings):
     settings.TEAMPLANER_ADRESSE = "https://teamplaner.example.test"
 
 
+def _verbindung_abgelehnt(*args, **kwargs):
+    raise ConnectionRefusedError("Verbindung abgelehnt")
+
+
 @pytest.fixture
 def smtp_kaputt(monkeypatch):
-    def fehler(*args, **kwargs):
-        raise ConnectionRefusedError("Verbindung abgelehnt")
-
-    monkeypatch.setattr("zusammenarbeit.mail._senden", fehler)
+    monkeypatch.setattr("zusammenarbeit.mail._senden", _verbindung_abgelehnt)
 
 
 def angemeldet(konto):
@@ -314,12 +325,200 @@ def test_erneut_versuchen_nur_admin_und_nur_per_post(konten):
     assert b.mail_status == MailStatus.FEHLER
 
 
-def test_aufgegebene_system_mail_ist_nicht_wiederholbar(konten, smtp_kaputt):
-    """Ihr Text mit dem Passwort-Link ist gelöscht: die Seite verweist auf einen neuen Link."""
-    einladung_senden(konten[M], "https://teamplaner.example.test/passwort/setzen/MQ/geheim/")
+# ---------- Aufgegebene System-Mails (#69) ----------
+
+LINK = "https://teamplaner.example.test/passwort/setzen/MQ/geheim/"
+NEUER_LINK = "Neuen Link erzeugen"
+
+
+def aufgegeben(konto, senden=einladung_senden, *werte):
+    """System-Mail zu ``konto``, die der Versand nach allen Versuchen aufgegeben hat (braucht ``smtp_kaputt``)."""
+    senden(konto, *(werte or (LINK,)))
     for _i in range(MAX_VERSUCHE):
         offene_versenden()
+    m = Postausgang.objects.latest("id")
+    assert (m.status, m.konto_id) == (MailStatus.FEHLER, konto.pk)
+    return m
+
+
+def zeile(konto, m):
+    """HTML der Zeile zur System-Mail ``m``, wie ``konto`` sie sieht."""
+    seite = angemeldet(konto).get(SEITE).content.decode()
+    return seite.split(f'data-mail="system-{m.pk}"')[1].split("data-mail=")[0].split("</section>")[0]
+
+
+def ohne_aktion(html):
+    return "<a " not in html and "<form" not in html and "liste__hinweis" not in html
+
+
+def zur_person(konto):
+    return f'href="/einstellungen/personen/{konto.pk}/"'
+
+
+def link_knopf(admin, ziel):
+    """Steht der Knopf für einen neuen Link wirklich auf der Seite der Person?"""
+    return f'action="/personen/{ziel.pk}/link/"' in (
+        angemeldet(admin).get(f"/einstellungen/personen/{ziel.pk}/").content.decode())
+
+
+@pytest.mark.parametrize("senden", [einladung_senden, reset_senden])
+@pytest.mark.parametrize("rolle", [BL, M])
+def test_aufgegebener_link_fuehrt_zur_seite_der_person(konten, smtp_kaputt, senden, rolle):
+    """Der Text mit dem Passwort-Link ist gelöscht: wiederholen geht nicht, ein neuer Link schon."""
+    ziel = konten[rolle]
+    m = aufgegeben(ziel, senden)
+    assert (m.text, m.html) == ("", "")
     eintrag = mailverlauf.verlauf()[0]
-    assert (eintrag.quelle, eintrag.status, eintrag.wiederholbar) == ("system", MailStatus.FEHLER, False)
-    seite = angemeldet(konten[A]).get(SEITE).content.decode()
-    assert "Erneut versuchen" not in seite and "neuen Link erzeugen" in seite
+    assert (eintrag.quelle, eintrag.wiederholbar, eintrag.neuer_link_fuer) == ("system", False, ziel)
+    html = zeile(konten[A], m)
+    assert "Erneut versuchen" not in html and NEUER_LINK in html and zur_person(ziel) in html
+    assert link_knopf(konten[A], ziel)
+
+
+def test_link_folgt_dem_konto_nicht_der_adresse(konten, smtp_kaputt):
+    m = aufgegeben(konten[M])
+    alt = konten[M].email
+    Konto.objects.filter(pk=konten[M].pk).update(email="neu@example.test")
+    Konto.objects.filter(pk=konten[P].pk).update(email=alt)  # die alte Adresse gehört jetzt jemand anderem
+    html = zeile(konten[A], m)
+    assert zur_person(konten[M]) in html and zur_person(konten[P]) not in html
+
+
+def test_ohne_konto_keine_aktion(konten, smtp_kaputt):
+    """E-Mails aus der Zeit vor dem Verweis, oder das Konto gibt es nicht mehr."""
+    m = aufgegeben(konten[M])
+    Postausgang.objects.update(konto=None)
+    html = zeile(konten[A], m)
+    assert "aufgegeben" in html and ohne_aktion(html)
+
+
+def test_nur_aufgegebene_bekommen_eine_aktion(konten):
+    einladung_senden(konten[M], LINK)
+    m = Postausgang.objects.get()
+    assert ohne_aktion(zeile(konten[A], m))
+    offene_versenden()
+    assert ohne_aktion(zeile(konten[A], m))
+
+
+def test_anderer_admin_link_nur_mit_versand(konten, bereich_a, smtp_kaputt, settings):
+    """Anderen Admins lässt sich ein Link nur mailen (``darf_link_mailen``), ohne Versand nur am Server erzeugen."""
+    anderer = konto_anlegen("Person 91", bereich_a, A)
+    m = aufgegeben(anderer)
+    html = zeile(konten[A], m)
+    assert NEUER_LINK in html and zur_person(anderer) in html and link_knopf(konten[A], anderer)
+    settings.EMAIL_HOST = ""
+    html = zeile(konten[A], m)
+    assert NEUER_LINK not in html and not link_knopf(konten[A], anderer)
+    assert f"sudo teamplaner konto-aendern {anderer.email} --passwort-link" in html
+
+
+def test_eigenes_konto_verweist_auf_anmeldung_und_sicherheit(konten, smtp_kaputt, settings):
+    m = aufgegeben(konten[A], reset_senden)
+    html = zeile(konten[A], m)
+    assert NEUER_LINK not in html and "/einstellungen/sicherheit/" in html and "Passwort vergessen" in html
+    settings.EMAIL_HOST = ""
+    html = zeile(konten[A], m)
+    assert "/einstellungen/sicherheit/" in html and "Passwort vergessen" not in html  # gibt es dann nicht
+
+
+def test_ehemaliger_admin_in_der_schutzfrist(konten, smtp_kaputt):
+    m = aufgegeben(konten[BL], reset_senden)
+    seit = timezone.now() - timedelta(days=2)
+    Konto.objects.filter(pk=konten[BL].pk).update(admin_bis=seit)
+    html = zeile(konten[A], m)
+    ab = timezone.localtime(seit + ADMIN_SCHUTZFRIST).strftime("%d.%m.%Y %H:%M")
+    assert NEUER_LINK not in html and f"erst ab {ab}" in html and "--passwort-link" in html
+    assert not link_knopf(konten[A], konten[BL])
+    Konto.objects.filter(pk=konten[BL].pk).update(admin_bis=timezone.now() - ADMIN_SCHUTZFRIST)
+    assert NEUER_LINK in zeile(konten[A], m) and link_knopf(konten[A], konten[BL])
+
+
+def test_deaktiviertes_oder_bereinigtes_konto(konten, smtp_kaputt):
+    m = aufgegeben(konten[M])
+    konten[M].person.archivieren()
+    html = zeile(konten[A], m)
+    assert NEUER_LINK not in html and "Das Konto ist deaktiviert" in html and zur_person(konten[M]) in html
+    konten[M].person.wiederherstellen()
+    Konto.objects.filter(pk=konten[M].pk).update(email=f"entfernt-{konten[M].pk}{ENTFERNT_DOMAIN}")
+    html = zeile(konten[A], m)
+    assert NEUER_LINK not in html and "eine neue E-Mail-Adresse eintragen" in html and zur_person(konten[M]) in html
+    assert not link_knopf(konten[A], konten[M])
+
+
+def test_sicherheitshinweis_erneut_versuchen(konten, monkeypatch):
+    with monkeypatch.context() as kaputt:
+        kaputt.setattr("zusammenarbeit.mail._senden", _verbindung_abgelehnt)
+        m = aufgegeben(konten[M], sicherheitshinweis, "passwort_geaendert")
+    assert "das Passwort Ihres Teamplaner-Kontos" in m.text and m.html
+    html = zeile(konten[A], m)
+    assert "Erneut versuchen" in html and NEUER_LINK not in html
+    assert "das Passwort Ihres" not in html  # der Text bleibt, erscheint aber nie im Verlauf
+    c = angemeldet(konten[A])
+    antwort = c.post(f"{SEITE}system/{m.pk}/erneut/")
+    assert antwort.status_code == 302 and antwort.url == SEITE
+    m.refresh_from_db()
+    assert (m.status, m.versuche) == (MailStatus.OFFEN, 0)
+    eintrag = Protokolleintrag.objects.get(objekt_typ="systemmail", aktion="mail_erneut")
+    assert (eintrag.objekt_id, eintrag.akteur) == (m.pk, konten[A].person)
+    assert eintrag.daten["person"]["id"] == konten[M].person.pk
+    assert "System-Mail E-Mail erneut eingereiht" in c.get("/protokoll/").content.decode()
+    assert offene_versenden() == 1 and "das Passwort Ihres Teamplaner-Kontos" in mail.outbox[0].body
+    m.refresh_from_db()
+    assert (m.status, m.text, m.html) == (MailStatus.GESENDET, "", "")
+    # Ein zweites Mal gibt es nichts mehr einzureihen
+    c.post(f"{SEITE}system/{m.pk}/erneut/")
+    assert Protokolleintrag.objects.filter(aktion="mail_erneut").count() == 1
+
+
+def test_sicherheitshinweis_geht_erneut_an_dieselbe_adresse(konten, monkeypatch):
+    """Nach einer Änderung der E-Mail geht der Hinweis an die bisherige Adresse, gehört aber zum Konto."""
+    def an_alte_adresse(konto, an):
+        sicherheitshinweis(konto, "email_geaendert", an=an, neu=konto.email)
+
+    with monkeypatch.context() as kaputt:
+        kaputt.setattr("zusammenarbeit.mail._senden", _verbindung_abgelehnt)
+        m = aufgegeben(konten[M], an_alte_adresse, "alt@example.test")
+    angemeldet(konten[A]).post(f"{SEITE}system/{m.pk}/erneut/")
+    assert offene_versenden() == 1 and mail.outbox[0].to == ["alt@example.test"]
+
+
+def test_alter_sicherheitshinweis_ohne_text_hat_keine_aktion(konten, smtp_kaputt):
+    """Früher wurde auch ihr Text beim Aufgeben gelöscht."""
+    m = aufgegeben(konten[M], sicherheitshinweis, "passwort_geaendert")
+    Postausgang.objects.update(text="", html="")
+    assert ohne_aktion(zeile(konten[A], m))
+    angemeldet(konten[A]).post(f"{SEITE}system/{m.pk}/erneut/")
+    m.refresh_from_db()
+    assert m.status == MailStatus.FEHLER
+
+
+def test_einladung_und_passwort_link_lassen_sich_nicht_erneut_einreihen(konten, smtp_kaputt):
+    m = aufgegeben(konten[M])
+    Postausgang.objects.update(text="Rest")  # selbst wenn noch Text da wäre
+    angemeldet(konten[A]).post(f"{SEITE}system/{m.pk}/erneut/")
+    m.refresh_from_db()
+    assert m.status == MailStatus.FEHLER and not Protokolleintrag.objects.filter(aktion="mail_erneut").exists()
+
+
+def test_sicherheitshinweis_erneut_nur_admin_und_nur_per_post(konten, smtp_kaputt):
+    m = aufgegeben(konten[M], sicherheitshinweis, "passwort_geaendert")
+    assert angemeldet(konten[BL]).post(f"{SEITE}system/{m.pk}/erneut/").status_code == 403
+    assert angemeldet(konten[A]).get(f"{SEITE}system/{m.pk}/erneut/").status_code == 405
+    m.refresh_from_db()
+    assert m.status == MailStatus.FEHLER
+
+
+def test_text_des_sicherheitshinweises_endet_mit_der_aufbewahrungsfrist(konten, smtp_kaputt, settings):
+    m = aufgegeben(konten[M], sicherheitshinweis, "passwort_geaendert")
+    Postausgang.objects.update(erstellt_am=timezone.now() - timedelta(days=settings.TEAMPLANER_AUFBEWAHRUNG_TAGE + 1))
+    aufraeumen()
+    assert not Postausgang.objects.filter(pk=m.pk).exists()
+
+
+def test_aktionen_auf_englisch(konten, smtp_kaputt):
+    m = aufgegeben(konten[M])
+    Konto.objects.filter(pk=konten[A].pk).update(sprache="en")
+    admin = Konto.objects.select_related("person").get(pk=konten[A].pk)
+    assert "Create new link" in zeile(admin, m)
+    konten[M].person.archivieren()
+    assert "This account is deactivated" in zeile(admin, m)
