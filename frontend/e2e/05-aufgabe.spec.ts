@@ -17,6 +17,19 @@ test("Aufgabe: anlegen, in der Seitenleiste bearbeiten, erwähnen, Anhang, Poste
   await expect(zeile).toHaveCount(1);
   await expect(neu, "Eingabefeld ist für die nächste Aufgabe wieder leer").toHaveValue("");
 
+  // Anlegen per Knopf neben dem Feld: erscheint mit Fokus oder Text, danach bleibt der Fokus im Feld
+  const formular = seite.locator(".neue-aufgabe").first();
+  const knopf = formular.getByRole("button", { name: "Hinzufügen" });
+  await expect(knopf, "Knopf mit Fokus im Feld sichtbar").toBeVisible();
+  const ZWEITE = `Probebohrung Fundament${info.retry ? ` V${info.retry + 1}` : ""}`;
+  await neu.fill(ZWEITE);
+  await knopf.click();
+  await expect(seite.locator(".aufgabe-zeile", { hasText: ZWEITE })).toHaveCount(1);
+  await expect(neu).toHaveValue("");
+  await expect(neu, "Fokus für die nächste Aufgabe").toBeFocused();
+  await neu.blur();
+  await expect(knopf, "ohne Fokus und Text zurückhaltend ausgeblendet").toBeHidden();
+
   // Seitenleiste neben der Liste
   await zeile.locator(".aufgabe-titel").click();
   const leiste = seite.locator("#seitenleiste, .seitenleiste").first();

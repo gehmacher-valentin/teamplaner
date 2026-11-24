@@ -80,7 +80,8 @@
             <form class="liste__zeile neue-aufgabe" hx-post="{% url 'aufgabe_anlegen_ohne_abschnitt' projekt.pk %}"
                   hx-target="previous .abschnitt-aufgaben" hx-swap="beforeend" data-nach-erfolg-leeren>
               <label class="sr-only" for="neu-ohne">{% translate "Neue Aufgabe" %}</label>
-              <input id="neu-ohne" type="text" name="titel" placeholder="+ {% translate 'Aufgabe hinzufügen' %}" class="inline-eingabe" style="max-width: 420px; background: transparent" required>
+              <input id="neu-ohne" type="text" name="titel" placeholder="+ {% translate 'Aufgabe hinzufügen' %}" class="inline-eingabe" maxlength="300" pattern=".*\S.*" required>
+              <button type="submit" class="knopf knopf--klein neue-aufgabe__knopf">{% translate "Hinzufügen" %}</button>
             </form>
           {% elif not ohne_abschnitt %}<div class="leer">{% translate "Noch keine Aufgaben." %}</div>{% endif %}
         {% endif %}
@@ -109,7 +110,8 @@
             <form class="liste__zeile neue-aufgabe" hx-post="{% url 'aufgabe_anlegen' projekt.pk abschnitt.pk %}"
                   hx-target="previous .abschnitt-aufgaben" hx-swap="beforeend" data-nach-erfolg-leeren>
               <label class="sr-only" for="neu-{{ abschnitt.pk }}">{% translate "Neue Aufgabe" %}</label>
-              <input id="neu-{{ abschnitt.pk }}" type="text" name="titel" placeholder="+ {% translate 'Aufgabe hinzufügen' %}" class="inline-eingabe" style="max-width: 420px; background: transparent" required>
+              <input id="neu-{{ abschnitt.pk }}" type="text" name="titel" placeholder="+ {% translate 'Aufgabe hinzufügen' %}" class="inline-eingabe" maxlength="300" pattern=".*\S.*" required>
+              <button type="submit" class="knopf knopf--klein neue-aufgabe__knopf">{% translate "Hinzufügen" %}</button>
             </form>
           {% endif %}
         </div>
