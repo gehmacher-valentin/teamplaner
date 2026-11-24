@@ -45,7 +45,7 @@ test("Aufgabe: anlegen, in der Seitenleiste bearbeiten, erwähnen, Anhang, Poste
     name: "messprotokoll.txt", mimeType: "text/plain", buffer: Buffer.from("Messreihe 1: in Ordnung"),
   });
   await leiste.getByRole("button", { name: "Hochladen" }).click();
-  await expect(leiste.locator(".anhaenge")).toContainText("messprotokoll.txt");
+  await expect(leiste.locator(".anhang-kachel:not(.anhang-feld)")).toContainText("messprotokoll.txt");
   await ruhe(seite);
 
   // Alles gespeichert: die eigene Seite der Aufgabe zeigt Titel, Kommentar und Anhang
@@ -55,7 +55,7 @@ test("Aufgabe: anlegen, in der Seitenleiste bearbeiten, erwähnen, Anhang, Poste
   await seite.goto((await eintrag.locator(".aufgabe-titel").getAttribute("href"))!);
   await expect(seite.locator(".titel-eingabe")).toHaveValue(`${TITEL} Nord`);
   await expect(seite.locator(".kommentar__text")).toContainText("Bitte gegenlesen");
-  await expect(seite.locator(".anhaenge")).toContainText("messprotokoll.txt");
+  await expect(seite.locator(".anhang-kachel:not(.anhang-feld)")).toContainText("messprotokoll.txt");
 
   // Die erwähnte Person (Person 01) sieht die Erwähnung im Posteingang
   const erwaehnt = await seiteFuer("mitarbeit");

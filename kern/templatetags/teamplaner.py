@@ -3,6 +3,7 @@
 import re
 
 from django import template
+from django.conf import settings
 from django.utils import timezone
 from django.utils.formats import date_format
 from django.utils.html import escape, format_html, format_html_join
@@ -162,6 +163,11 @@ def dateigroesse(wert):
             return f"{wert:.0f} {einheit}" if einheit == "B" else f"{wert:.1f} {einheit}".replace(".", ",")
         wert /= 1024
     return ""
+
+
+@register.simple_tag
+def anhang_max_mb():
+    return settings.TEAMPLANER_ANHANG_MAX_MB
 
 
 @register.filter

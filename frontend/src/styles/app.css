@@ -1035,28 +1035,58 @@ a.eltern-hinweis:hover { text-decoration: underline; }
   .zugewiesen__status { display: none; }
 }
 .aufklapper { cursor: pointer; }
-.anhaenge { display: flex; flex-wrap: wrap; gap: 10px; }
-.anhang {
-  border: 1px solid var(--rand); border-radius: var(--radius); padding: 8px 12px; font-size: 14px;
-  display: inline-flex; gap: 10px; align-items: center; color: var(--text); text-decoration: none; max-width: 100%;
-}
-/* Anhänge als Kacheln mit Vorschau */
+/* Anhänge als Kacheln mit Vorschau, als letzte das Feld zum Hochladen (lib/anhangfeld.ts) */
+.anhaenge { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 12px; --anhang-vorschau: 112px; --anhang-fuss: 48px; }
 .anhang-kachel {
-  width: 168px; border: 1px solid var(--rand); border-radius: var(--radius); overflow: hidden; background: var(--flaeche);
-  display: flex; flex-direction: column;
+  width: 172px; border: 1px solid var(--rand); border-radius: var(--radius-gross); overflow: hidden; background: var(--flaeche);
+  display: flex; flex-direction: column; transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
 }
 .anhang-kachel:hover { border-color: var(--rand-stark); box-shadow: var(--schatten-klein); }
 .anhang-kachel__vorschau {
-  height: 112px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  height: var(--anhang-vorschau); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
   background: var(--flaeche-3); color: var(--text-3); text-decoration: none;
 }
 .anhang-kachel__vorschau img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .anhang-kachel__endung { font-family: var(--mono); font-size: 12px; font-weight: 600; }
-.anhang-kachel__fuss { display: flex; align-items: center; gap: 6px; padding: 6px 4px 6px 8px; font-size: 13px; min-width: 0; border-top: 1px solid var(--linie); }
-.anhang-kachel__fuss > a { flex: 1; color: var(--text); text-decoration: none; }
-.anhang-kachel__fuss > a:hover { text-decoration: underline; }
-.anhang-kachel__fuss .knopf { height: 22px; }
-@media (max-width: 520px) { .anhang-kachel { width: calc(50% - 5px); } }
+.anhang-kachel__fuss { display: flex; align-items: center; gap: 4px; min-height: var(--anhang-fuss); padding: 4px 6px 4px 10px; min-width: 0; border-top: 1px solid var(--linie); }
+.anhang-kachel__text { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.3; }
+.anhang-kachel__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: var(--text); text-decoration: none; }
+a.anhang-kachel__name:hover { text-decoration: underline; }
+.anhang-kachel__groesse { font-size: 12px; color: var(--text-3); }
+.anhang-kachel__fuss .symbolknopf:hover { color: var(--gefahr); }
+.anhang-feld { border: 1.5px dashed var(--rand-stark); background: var(--flaeche-3); }
+.anhang-feld:hover { border-color: var(--akzent); box-shadow: none; }
+.anhang-feld__flaeche { position: relative; display: flex; flex-direction: column; cursor: pointer; min-height: calc(var(--anhang-vorschau) + var(--anhang-fuss)); }
+.anhang-feld__datei { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; }
+.anhang-feld:has(.anhang-feld__datei:focus-visible) { outline: 2px solid var(--akzent); outline-offset: 2px; }
+.anhang-feld__leer { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 12px; text-align: center; color: var(--text-3); font-size: 13px; line-height: 1.35; }
+.anhang-feld:hover .anhang-feld__leer { color: var(--akzent); }
+.anhang-feld__text--tippen { display: none; }
+@media (hover: none), (pointer: coarse) {
+  .anhang-feld__text { display: none; }
+  .anhang-feld__text--tippen { display: inline; }
+}
+.anhang-feld__vorschau, .anhang-feld__marke, .anhang-feld__fuss, .anhang-feld__aktionen { display: none; }
+.anhang-feld--ziel, .anhang-feld--ziel:hover { border-color: var(--akzent); background: var(--akzent-hell); box-shadow: 0 0 0 3px var(--akzent-hell); }
+.anhang-feld--ziel .anhang-feld__leer { color: var(--akzent); }
+/* Ausgewählt, aber noch nicht oben: klar anders als ein fertiger Anhang */
+.anhang-feld--gewaehlt { border-color: var(--akzent); background: var(--flaeche); }
+.anhang-feld--gewaehlt .anhang-feld__leer { display: none; }
+.anhang-feld--gewaehlt .anhang-feld__vorschau, .anhang-feld--gewaehlt .anhang-feld__fuss { display: flex; }
+.anhang-feld--gewaehlt .anhang-feld__marke { display: block; padding: 4px 8px; text-align: center; font-size: 12px; font-weight: 600; background: var(--akzent-hell); color: var(--akzent-dunkel); }
+.anhang-feld--gewaehlt .anhang-feld__fuss { border-top: 0; }
+.anhang-feld--gewaehlt .anhang-feld__aktionen { display: flex; flex-direction: column; gap: 6px; padding: 0 8px 8px; }
+.anhang-feld--laedt .anhang-feld__flaeche { pointer-events: none; opacity: 0.6; }
+@media (max-width: 520px) { .anhang-kachel { width: calc(50% - 6px); } }
+@media (prefers-reduced-motion: reduce) { .anhang-kachel { transition: none; } }
+/* Ohne JavaScript bleibt das normale Formular */
+@media (scripting: none) {
+  .anhang-feld { width: auto; }
+  .anhang-feld__leer, .anhang-feld__entfernen { display: none; }
+  .anhang-feld__flaeche { min-height: 0; padding: 10px; }
+  .anhang-feld__datei { position: static; width: auto; height: auto; margin: 0; clip: auto; }
+  .anhang-feld__aktionen { display: block; padding: 0 10px 10px; }
+}
 .kommentar { display: flex; gap: 10px; font-size: 14px; }
 .kommentar__inhalt { min-width: 0; flex: 1; }
 form.inline { display: inline; }

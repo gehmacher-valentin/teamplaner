@@ -55,6 +55,6 @@ test("Rundgang: Aufgabe mit Anhang zeigt keine Vorlagenreste", async ({ seiteFue
     name: "messprotokoll.txt", mimeType: "text/plain", buffer: Buffer.from("Messreihe 1"),
   });
   await seite.getByRole("button", { name: "Hochladen" }).click();
-  await expect(seite.locator(".anhaenge")).toContainText("messprotokoll.txt");
+  await expect(seite.locator(".anhang-kachel:not(.anhang-feld)").last()).toContainText("messprotokoll.txt");
   await ohneVorlagenreste(seite);
 });

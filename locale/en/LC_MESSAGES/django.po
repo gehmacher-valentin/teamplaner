@@ -3889,3 +3889,11 @@ msgstr "Personal data removed on %(datum)s (retention period after deactivation)
 #: templates/kern/person_eingeladen.html
 msgid "Die Anmeldung von Konten mit gleicher oder höherer Rolle können Sie danach nicht verwalten. Einen neuen Link erzeugt eine höhere Rolle; Admins bekommen ihn von einem anderen Admin per E-Mail oder über die Kommandozeile."
 msgstr "You cannot manage sign-in for accounts with the same or a higher role afterwards. A higher role can create a new link; admins receive one by email from another admin or via the command line."
+
+#: templates/teile/anhang_feld.html
+msgid "Datei hierher ziehen oder auswählen"
+msgstr "Drop a file here or choose one"
+
+#: templates/teile/anhang_feld.html
+msgid "Datei auswählen"
+msgstr "Choose file"

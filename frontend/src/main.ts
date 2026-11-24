@@ -13,6 +13,7 @@ import "./styles/app.css";
 
 import htmx from "htmx.org";
 import { initAbhaken } from "./lib/abhaken";
+import { anhangfelderAbgleichen, initAnhangfelder } from "./lib/anhangfeld";
 import { initAufgabenBaum } from "./lib/aufgabenbaum";
 import { initBestaetigen } from "./lib/dialog";
 import { initErwaehnungen } from "./lib/erwaehnungen";
@@ -73,6 +74,7 @@ function init(wurzel: ParentNode) {
   initReihenfolge(wurzel);
   initFreigaben(wurzel);
   seitenleisteAbgleichen();
+  anhangfelderAbgleichen(wurzel);
 }
 
 // Kategorie-Schalter schaltet alle Ereignisse darin (E-Mail-Benachrichtigungen); gespeichert wird
@@ -97,6 +99,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initSeitenleiste();
   init(document);
   initAbhaken();
+  initAnhangfelder();
   initFeiern();
   initInline();
   initListeneditor();
