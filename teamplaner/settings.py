@@ -154,6 +154,8 @@ TEAMPLANER_ZWEI_FAKTOR_PFLICHT = True
 # Zusätzlich je IP-Adresse über alle Konten (kern.auth.zu_viele_fehlversuche_von_ip); 0 = aus
 TEAMPLANER_FEHLVERSUCHE_JE_IP = int(env("TEAMPLANER_FEHLVERSUCHE_JE_IP", "20"))
 AXES_RESET_ON_SUCCESS = True
+# Versuche während der Sperre verlängern sie nicht, sonst ließe sie sich von außen beliebig ausdehnen
+AXES_RESET_COOL_OFF_ON_FAILURE_DURING_LOCKOUT = False
 AXES_LOCKOUT_TEMPLATE = "registration/gesperrt.html"
 AXES_VERBOSE = False
 

@@ -1,6 +1,7 @@
 from asgiref.sync import sync_to_async
 from axes.helpers import get_client_ip_address, get_cool_off
 from axes.models import AccessAttempt
+from axes.utils import reset
 from django.conf import settings
 from django.contrib.auth.backends import ModelBackend
 from django.db.models import Sum
@@ -35,6 +36,18 @@ def axes_benutzername(request, credentials):
     else:
         wert = None
     return wert.strip().lower() if isinstance(wert, str) and wert.strip() else None
+
+
+def code_zugang(konto):
+    """Eigener Schlüssel für falsche Codes beim zweiten Faktor. Ein neues Passwort hebt nur die Sperre nach
+    falschen Passwörtern auf – sonst gäbe es mit jedem „Passwort vergessen“ weitere Versuche für den Code.
+    Keine E-Mail-Adresse, kann also nicht über das Anmeldeformular getroffen werden."""
+    return {settings.AXES_USERNAME_FORM_FIELD: f"code:{konto.pk}"}
+
+
+def sperre_aufheben(zugang):
+    """Fehlversuche dieses Schlüssels vergessen (``zugang`` wie ``code_zugang``)."""
+    reset(username=axes_benutzername(None, zugang))
 
 
 class KontoBackend(ModelBackend):

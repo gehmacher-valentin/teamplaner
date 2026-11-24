@@ -27,7 +27,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
 from kern import fotos, rechte, zwei_faktor
-from kern.auth import zu_viele_fehlversuche_von_ip
+from kern.auth import code_zugang, sperre_aufheben, zu_viele_fehlversuche_von_ip
 from kern.hilfen import als_zahl, erfordert, link_qr_svg, passwort_link, passwort_links
 from kern.models import (
     Bereich,
@@ -80,6 +80,8 @@ class AnmeldenView(auth_views.LoginView):
         konto = form.get_user()
         if not zwei_faktor.aktiv(konto):
             return super().form_valid(form)
+        if _gesperrt(self.request, code_zugang(konto)):
+            return render(self.request, "registration/gesperrt.html", status=429)
         # Passwort stimmt; angemeldet wird erst nach dem Code aus der App
         self.request.session[ANMELDUNG_OFFEN] = {
             "konto": konto.pk, "backend": konto.backend, "seit": time.time(),
@@ -100,13 +102,13 @@ def _zugang(konto):
     return {settings.AXES_USERNAME_FORM_FIELD: konto.email}
 
 
-def _fehlversuch(request, konto):
+def _fehlversuch(request, zugang):
     """Falscher Code oder falsches Passwort zählt wie ein Fehlversuch bei der Anmeldung (Sperre)."""
-    user_login_failed.send(sender=__name__, credentials=_zugang(konto), request=request)
+    user_login_failed.send(sender=__name__, credentials=zugang, request=request)
 
 
-def _gesperrt(request, konto):
-    return AxesProxyHandler.is_locked(request, _zugang(konto)) or zu_viele_fehlversuche_von_ip(request)
+def _gesperrt(request, zugang):
+    return AxesProxyHandler.is_locked(request, zugang) or zu_viele_fehlversuche_von_ip(request)
 
 
 @never_cache
@@ -122,12 +124,13 @@ def anmelden_code(request):
         return redirect("login")
     form = ZweiFaktorCodeForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
-        if _gesperrt(request, konto):
+        if _gesperrt(request, _zugang(konto)) or _gesperrt(request, code_zugang(konto)):
             request.session.pop(ANMELDUNG_OFFEN, None)
             return render(request, "registration/gesperrt.html", status=429)
         art = zwei_faktor.pruefen(konto, form.cleaned_data["code"])
         if art:
             del request.session[ANMELDUNG_OFFEN]
+            sperre_aufheben(code_zugang(konto))
             login(request, konto, backend=offen["backend"])
             zwei_faktor.bestanden(request, konto)
             if art == "ersatz":
@@ -136,7 +139,7 @@ def anmelden_code(request):
                                             "oder ein neues Telefon richten Sie unter „Mein Konto“ ein.")
                                  % {"n": zwei_faktor.ersatzcodes_uebrig(konto)})
             return redirect(offen["weiter"])
-        _fehlversuch(request, konto)
+        _fehlversuch(request, code_zugang(konto))
         offen["fehler"] += 1
         if offen["fehler"] >= CODE_VERSUCHE:
             del request.session[ANMELDUNG_OFFEN]
@@ -156,11 +159,11 @@ def zwei_faktor_einrichten(request):
     request.session[NEUES_GEHEIMNIS] = geheimnis
     form = ZweiFaktorEinrichtenForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
-        if _gesperrt(request, konto):
+        if _gesperrt(request, _zugang(konto)):
             return render(request, "registration/gesperrt.html", status=429)
         schritt = zwei_faktor.passender_schritt(geheimnis, form.cleaned_data["code"])
         if not konto.check_password(form.cleaned_data["passwort"]):
-            _fehlversuch(request, konto)
+            _fehlversuch(request, _zugang(konto))
             form.add_error("passwort", _("Das Passwort stimmt nicht."))
         elif schritt is None:
             form.add_error("code", _("Der Code passt nicht. Bitte den aktuellen Code aus der App eingeben; "
@@ -193,11 +196,11 @@ def zwei_faktor_aendern(request, aktion):
         raise PermissionDenied
     if aktion == "ausschalten" and zwei_faktor.pflicht(konto):
         raise PermissionDenied
-    if _gesperrt(request, konto):
+    if _gesperrt(request, _zugang(konto)):
         return render(request, "registration/gesperrt.html", status=429)
     form = PasswortBestaetigenForm(request.POST)
     if not form.is_valid() or not konto.check_password(form.cleaned_data["passwort"]):
-        _fehlversuch(request, konto)
+        _fehlversuch(request, _zugang(konto))
         messages.error(request, _("Das Passwort stimmt nicht."))
         return redirect(reverse("einst_sicherheit") + "#zwei-faktor")
     if aktion == "ersatzcodes":
@@ -261,6 +264,7 @@ class PasswortSetzenView(auth_views.PasswordResetConfirmView):
         messages.success(self.request, _("Passwort gespeichert. Sie können sich jetzt anmelden."))
         protokollieren(self.user, "konto", self.user.pk, "passwort_gesetzt")
         antwort = super().form_valid(form)
+        sperre_aufheben(_zugang(self.user))  # der zweite Faktor wird weiter verlangt
         if zuruecksetzen:
             sicherheitshinweis(self.user, "passwort_zurueckgesetzt")
         return antwort
