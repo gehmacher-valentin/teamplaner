@@ -109,6 +109,18 @@ Ein Feld der Aufgaben-Detailseite: direkt bearbeitbar, speichert beim Verlassen 
   {% elif aufgabe.gewerk %}<span class="tag">{{ aufgabe.gewerk }}</span>{% else %}–{% endif %}
   {% include "projekte/_detail_fehler.html" %}
 </dd>
+{% elif feld == "raum" %}
+<dd id="{{ fid }}" class="detailfeld"{% if oob %} hx-swap-oob="true"{% endif %}>
+  {% if darf_bearbeiten %}
+    <form {% include "projekte/_detail_form.html" %}>
+      <select id="{{ eid }}" name="wert">
+        <option value="">{% translate "– kein Raum –" %}</option>
+        {% for r in raeume %}<option value="{{ r.pk }}"{% if r.pk == aufgabe.raum_id %} selected{% endif %}>{{ r.name }}</option>{% endfor %}
+      </select>
+    </form>
+  {% else %}{{ aufgabe.raum|default:"–" }}{% endif %}
+  {% include "projekte/_detail_fehler.html" %}
+</dd>
 {% elif feld == "beschreibung" %}
 <section id="{{ fid }}" class="stapel detailfeld"{% if oob %} hx-swap-oob="true"{% endif %}>
   <h2 id="{{ eid }}-titel">{% translate "Beschreibung" %}</h2>

@@ -21,7 +21,7 @@ from django.views.decorators.http import require_POST
 from gantt import dienste as gantt_dienste
 from kern import rechte
 from kern.hilfen import TEXT_MAX_ZEICHEN, als_zahl, erfordert
-from kern.models import Gewerk, Person
+from kern.models import Gewerk, Person, Raum
 from kern.protokoll import protokollieren
 from planung import rechte as planungsrechte
 from planung.kalender import freie_tage, montag, werktage, zaehlende_tage
@@ -163,6 +163,11 @@ def projekt(request, pk):
         aufgaben = aufgaben.filter(verantwortlich_id=int(g["verantwortlich"]))
     if g.get("gewerk", "").isdigit():
         aufgaben = aufgaben.filter(gewerk_id=int(g["gewerk"]))
+    # Nur vorhandene Räume filtern; ein ungültiger Wert wird ignoriert und zählt nicht als Filter
+    raum_id = als_zahl(g.get("raum"))
+    filter_raum = Raum.objects.filter(pk=raum_id).first() if raum_id else None
+    if filter_raum:
+        aufgaben = aufgaben.filter(raum=filter_raum)
     if g.get("q"):
         aufgaben = aufgaben.filter(titel__icontains=g["q"].strip())
 
@@ -176,7 +181,8 @@ def projekt(request, pk):
 
     kontext = zeilen_kontext(request.user, projekt)
     # Am Filter-Knopf: wie viele Filter vom Standard („Offen“, sonst nichts) abweichen
-    anzahl_filter = (filter_status != "offen") + sum(bool(g.get(k)) for k in ("verantwortlich", "gewerk", "q"))
+    anzahl_filter = ((filter_status != "offen") + sum(bool(g.get(k)) for k in ("verantwortlich", "gewerk", "q"))
+                     + bool(filter_raum))
     # ?aufgabe=<id>: Aufgabendetail als Seitenleiste; Aufgaben anderer Projekte zählen nicht
     aktive_aufgabe = projekt.aufgaben.filter(pk=als_zahl(g.get("aufgabe"))).values_list("pk", flat=True).first()
     return render(request, "projekte/projekt.html", {
@@ -190,6 +196,9 @@ def projekt(request, pk):
         # Ziehen geht auch mit Filtern: ausgeblendete Aufgaben behalten ihren Platz (aufgabe_verschieben)
         "manuell_sortierbar": sortierung == "manuell" and kontext["darf_bearbeiten"],
         "anzahl_filter": anzahl_filter,
+        # Zur Auswahl nur Räume, die im Projekt vorkommen (und der gewählte)
+        "raeume": Raum.objects.filter(Q(aufgaben__projekt=projekt) | Q(pk=getattr(filter_raum, "pk", None))).distinct(),
+        "filter_raum": filter_raum,
         "darf_verwalten": rechte.darf_projekte_verwalten(request.user),
         "darf_planen": planungsrechte.hat_planungsansicht(request.user),
         "aktiv": "projekt", "aktives_projekt": projekt.pk, **kontext,
@@ -347,7 +356,7 @@ def aufgabe_verschieben(request, pk):
 INLINE_FELDER = {"verantwortlich", "gewerk", "faellig_am", "status"}
 # Auf der Detailseite ist jedes Feld direkt bearbeitbar
 DETAIL_FELDER = INLINE_FELDER | {"titel", "abschnitt", "beginn_am", "schaetzung_personentage", "beschreibung",
-                                  "wiederholung"}
+                                  "wiederholung", "raum"}
 
 
 class _Ungueltig(Exception):
@@ -392,6 +401,8 @@ def _feld_wert(aufgabe, feld, roh):
             return aufgabe.projekt.abschnitte.get(pk=roh) if roh else None
         if feld == "gewerk":
             return Gewerk.objects.get(pk=roh) if roh else None
+        if feld == "raum":
+            return Raum.objects.get(pk=roh) if roh else None
         if feld == "status":
             return Status.objects.get(pk=roh)
         if feld == "schaetzung_personentage":
@@ -402,8 +413,8 @@ def _feld_wert(aufgabe, feld, roh):
                 raise _Ungueltig(_("Bitte eine Zahl ab 0 eingeben."))
             return wert
         wert = date.fromisoformat(roh) if roh else None
-    except (ValueError, InvalidOperation, Person.DoesNotExist, Gewerk.DoesNotExist, Status.DoesNotExist,
-            Abschnitt.DoesNotExist) as fehler:
+    except (ValueError, InvalidOperation, Person.DoesNotExist, Gewerk.DoesNotExist, Raum.DoesNotExist,
+            Status.DoesNotExist, Abschnitt.DoesNotExist) as fehler:
         raise _Ungueltig(_("Ungültige Eingabe.")) from fehler
     if aufgabe.wiederholung and feld == "faellig_am" and wert is None:
         raise _Ungueltig(_("Wiederkehrende Aufgaben brauchen einen Stichtag."))
@@ -501,7 +512,7 @@ def _detail_feld_antwort(request, aufgabe, feld, fehler=None, konflikt=None, ein
     """Das geänderte Feld, dazu (out of band) Version, Kopf mit Status und Pfad; aus der Seitenleiste auch
     die Zeile der Liste, damit dort keine alte Version stehen bleibt."""
     aufgabe = (Aufgabe.objects.select_related("projekt", "abschnitt", "verantwortlich__konto", "verantwortlich__bereich",
-                                              "gewerk", "status").get(pk=aufgabe.pk))
+                                              "gewerk", "raum", "status").get(pk=aufgabe.pk))
     seitenleiste = offene_seitenleiste(request)
     antwort = render(request, "projekte/_detail_antwort.html", {
         **(liste_oob(request.user, aufgabe.projekt, [aufgabe.pk]) if seitenleiste else {}),

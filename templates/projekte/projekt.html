@@ -55,6 +55,14 @@
       {% for g in gewerke %}<option value="{{ g.pk }}" {% if request.GET.gewerk == g.pk|stringformat:"d" %}selected{% endif %}>{{ g.name }}</option>{% endfor %}
     </select>
   </label>
+  {% if raeume %}
+  <label class="feld"><span class="sr-only">{% translate "Raum" %}</span>
+    <select name="raum" data-auto-absenden>
+      <option value="">{% translate "Alle Räume" %}</option>
+      {% for r in raeume %}<option value="{{ r.pk }}" {% if r.pk == filter_raum.pk %}selected{% endif %}>{{ r.name }}</option>{% endfor %}
+    </select>
+  </label>
+  {% endif %}
   <label class="feld"><span class="sr-only">{% translate "Sortieren" %}</span>
     <select name="sort" data-auto-absenden>
       <option value="manuell" {% if sortierung == "manuell" %}selected{% endif %}>{% translate "Sortieren: Reihenfolge" %}</option>

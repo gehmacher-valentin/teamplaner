@@ -19,7 +19,7 @@ from django.utils import timezone
 
 from bestellungen.models import Bestellung
 from gantt.models import GanttAnsicht, GanttFreigabe
-from kern.models import Bereich, Gewerk, Konto, Person, Rolle, Systemeinstellungen
+from kern.models import Bereich, Gewerk, Konto, Person, Raum, Rolle, Systemeinstellungen
 from notizen.models import Notiz, Ordner
 from planung.kalender import montag
 from planung.models import (
@@ -294,6 +294,13 @@ class Command(BaseCommand):
             "inventur": aufgabe(D, d_ab["Einrichtung"], "Inventur Werkzeuge", None, 2, 27),
         })
         aufgabe(A, None, "Konstruktionszeichnung Halle", "Konstruktion", 2, -5, "Erledigt", p[7], h["planung_a"])
+        # Räume (Einstellungen → Listen) an einigen Aufgaben, Filter „Raum“ in der Projektliste
+        raeume = {n: Raum.objects.create(name=n, sortierung=(i + 1) * 10) for i, n in enumerate(
+            ["Halle 1", "Halle 2", "Werkstatt", "Lagerraum", "Prüfstand", "Besprechungsraum"])}
+        for raum, schluessel in [("Halle 1", ["hallenboden", "beschichten", "rolltor"]), ("Halle 2", ["regalsystem", "sensorik"]),
+                                 ("Werkstatt", ["rahmen", "bohrungen", "werkbank", "wochencheck"]),
+                                 ("Lagerraum", ["regal", "lager", "inventur"]), ("Prüfstand", ["testreihe", "sensoren"])]:
+            Aufgabe.objects.filter(pk__in=[t[k].pk for k in schluessel]).update(raum=raeume[raum])
 
         def ein(aufg, person, von, bis=None):
             Einteilung.objects.create(aufgabe=t[aufg], person=person, von=tag(von), bis=tag(bis if bis is not None else von), erstellt_von=p[0])

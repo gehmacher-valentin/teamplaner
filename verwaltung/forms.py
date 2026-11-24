@@ -4,7 +4,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.utils.translation import gettext_lazy as _
 
 from kern import rechte
-from kern.models import Bereich, Gewerk, Konto, Person, Rolle, Systemeinstellungen
+from kern.models import Bereich, Gewerk, Konto, Person, Raum, Rolle, Systemeinstellungen
 from planung.models import FreierTag, FreigabeStufe
 from projekte.forms import PersonenMehrfachAuswahl
 from projekte.models import Status
@@ -212,6 +212,12 @@ class GewerkForm(forms.ModelForm):
 class BereichForm(forms.ModelForm):
     class Meta:
         model = Bereich
+        fields = ["name"]
+
+
+class RaumForm(forms.ModelForm):
+    class Meta:
+        model = Raum
         fields = ["name"]
 
 

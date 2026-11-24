@@ -11,7 +11,7 @@ from django.utils.formats import date_format
 
 from gantt.daten import ist_zeitraeume, verletzt
 from kern import rechte
-from kern.models import Gewerk, Person
+from kern.models import Gewerk, Person, Raum
 from planung import rechte as planungsrechte
 from planung.kalender import arbeitstage, freie_tage, werktage, zaehlende_tage
 from planung.models import Einteilung
@@ -105,6 +105,7 @@ def detail_kontext(konto, aufgabe):
         "statusliste": Status.objects.all(),
         "erledigt_status": ",".join(str(s.pk) for s in Status.objects.filter(ist_erledigt=True)),
         "gewerke": Gewerk.objects.all(),
+        "raeume": Raum.objects.all(),
         "sammelaufgabe": termine.ist_sammelaufgabe(aufgabe),
         "darf_bearbeiten": rechte.darf_aufgaben_bearbeiten(konto, aufgabe.projekt),
         "darf_abschliessen": rechte.darf_abschliessen_und_kommentieren(konto),
@@ -131,7 +132,7 @@ def wiederholung_kontext(aufgabe):
 def aufgabe_laden(pk):
     return get_object_or_404(
         Aufgabe.objects.select_related("projekt", "abschnitt", "verantwortlich__konto", "verantwortlich__bereich",
-                                       "gewerk", "status"),
+                                       "gewerk", "raum", "status"),
         pk=pk,
     )
 
