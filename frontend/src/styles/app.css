@@ -1246,7 +1246,7 @@ form.inline { display: inline; }
 .editor__leiste .editor__knopf--kursiv { font-style: italic; }
 .editor__leiste button:has(> svg) { padding: 0 6px; }
 .editor__leiste button > svg { display: block; margin: 0 auto; }
-.editor__leiste button.editor__knopf--schriftfarbe { font-weight: 700; color: var(--tf-rot); } /* auch gedrückt rot; kein Strich, sonst liest es sich als Unterstreichen */
+.editor__leiste button.editor__knopf--schriftfarbe { font-weight: 700; color: var(--tf-blau); } /* auch gedrückt so; kein Strich, sonst liest es sich als Unterstreichen */
 .editor__leiste .editor__knopf--marker { background: linear-gradient(var(--mk-gelb), var(--mk-gelb)) center / 22px 18px no-repeat; }
 .editor__farbwahl { position: absolute; top: calc(100% + 4px); z-index: 20; display: flex; align-items: center; gap: 4px; padding: 6px; background: var(--flaeche); border: 1px solid var(--rand); border-radius: var(--radius); box-shadow: var(--schatten); }
 .editor__leiste .editor__farbwahl button { width: 28px; padding: 0; border: 1px solid var(--rand); font-weight: 700; }
