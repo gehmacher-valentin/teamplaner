@@ -12,7 +12,7 @@ from kern import rechte, zwei_faktor
 from kern.models import Konto, Protokolleintrag, Rolle
 from zusammenarbeit.models import Postausgang
 
-from .conftest import konto_anlegen
+from .conftest import TESTPASSWORT, konto_anlegen
 
 A, BL, P, M = Rolle.ADMIN, Rolle.BEREICHSLEITUNG, Rolle.PLANER, Rolle.MITARBEITER
 
@@ -21,7 +21,10 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture
 def zweiter(konten, bereich_a):
-    return konto_anlegen("Person 91", bereich_a, A)
+    """Zweiter Admin. Beide haben sich schon einmal angemeldet und schützen einander als letzter Admin."""
+    neu = konto_anlegen("Person 91", bereich_a, A)
+    Konto.objects.filter(pk__in=[neu.pk, konten[A].pk]).update(last_login=timezone.now())
+    return frisch(neu)
 
 
 def angemeldet(konto):
@@ -119,12 +122,14 @@ def test_weit_herabgestuft_fuehrt_zur_startseite(konten, zweiter):
     assert frisch(konten[A]).rolle == M
 
 
-@pytest.mark.parametrize("zustand", ["keiner", "deaktiviert", "ohne_passwort"])
+@pytest.mark.parametrize("zustand", ["keiner", "deaktiviert", "ohne_passwort", "nie_angemeldet"])
 def test_letzter_admin_bleibt(konten, zweiter, zustand):
     if zustand == "keiner":
         Konto.objects.filter(pk=zweiter.pk).update(rolle=BL)
     elif zustand == "deaktiviert":
         zweiter.person.archivieren()
+    elif zustand == "nie_angemeldet":
+        Konto.objects.filter(pk=zweiter.pk).update(last_login=None)
     else:
         zweiter.set_unusable_password()
         zweiter.save()
@@ -134,6 +139,13 @@ def test_letzter_admin_bleibt(konten, zweiter, zustand):
         with pytest.raises(CommandError, match="letzte Admin"):
             befehl(konten[A], *option)
     assert frisch(konten[A]).rolle == A and frisch(konten[A]).is_active
+
+
+def test_anmeldung_setzt_last_login(konten):
+    """Darauf baut der Schutz des letzten Admins, auch bei Konten von vor dieser Regel."""
+    assert konten[A].last_login is None
+    Client().post("/anmelden/", {"username": konten[A].email, "password": TESTPASSWORT})
+    assert frisch(konten[A]).last_login is not None
 
 
 def test_bereichsleitung_weder_sich_noch_admins(konten, zweiter):

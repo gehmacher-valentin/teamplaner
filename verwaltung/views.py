@@ -441,7 +441,7 @@ def _hinweis_planer_ohne_ansicht(konto, ziel):
     )
 
 
-LETZTER_ADMIN = gettext_lazy("Nicht möglich: Es muss ein weiterer aktiver Admin mit gesetztem Passwort bleiben.")
+LETZTER_ADMIN = gettext_lazy("Nicht möglich: Es muss ein weiterer aktiver Admin bleiben, der sich schon einmal angemeldet hat.")
 
 
 @erfordert(rechte.darf_konten_verwalten)

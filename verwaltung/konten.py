@@ -20,10 +20,11 @@ class LetzterAdmin(Exception):
 
 
 def anderer_admin_vorhanden(ziel, konten=None):
-    """Gibt es außer ``ziel`` einen aktiven Admin mit gesetztem Passwort?"""
+    """Gibt es außer ``ziel`` einen aktiven Admin mit gesetztem Passwort, der sich schon einmal angemeldet
+    hat? Bei einem nie benutzten Konto steht nicht fest, dass jemand hineinkommt."""
     if konten is None:
         konten = Konto.objects.select_related("person").filter(rolle=Rolle.ADMIN)
-    return any(k.pk != ziel.pk and k.is_active and k.has_usable_password() for k in konten)
+    return any(k.pk != ziel.pk and k.is_active and k.has_usable_password() and k.last_login is not None for k in konten)
 
 
 def _sperren(akteur, ziel):

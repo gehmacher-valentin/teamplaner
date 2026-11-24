@@ -380,8 +380,8 @@ Erhalten bleiben Datenbank, `/var/lib/teamplaner`, `/var/backups/teamplaner` und
 - Das Änderungsprotokoll ist in der Datenbank per Trigger gegen Ändern geschützt und erst nach einem Jahr
   löschbar. Die Löschfristen wendet `teamplaner-mailer` täglich an, sofort mit
   `sudo teamplaner verwalten aufraeumen`.
-- Admins können andere Admins herabstufen und deaktivieren, sich selbst herabstufen; ein Admin, der sich
-  anmelden kann, bleibt immer übrig. E-Mail, Passwort-Link und Zwei-Faktor-Anmeldung anderer Admins sind
+- Admins können andere Admins herabstufen und deaktivieren, sich selbst herabstufen; ein aktiver Admin, der
+  sich schon einmal angemeldet hat, bleibt immer übrig. E-Mail, Passwort-Link und Zwei-Faktor-Anmeldung anderer Admins sind
   in der Oberfläche gesperrt, nach dem Herabstufen noch 7 Tage. Auf dem Server geht das jederzeit:
   `sudo teamplaner konto-aendern <email>` (siehe unten „Konten auf dem Server ändern“).
 
