@@ -15,6 +15,7 @@ import { erweiterungen } from "./erweiterungen";
 import { MARKERFARBEN, SCHRIFTFARBEN } from "./farben";
 import { gemeinsamVorbereiten } from "./gemeinsam";
 import { hatFormatierung, siehtNachMarkdownAus } from "./markdown";
+import { imZitat, zitatUmschalten } from "./zitat";
 
 // Nach so langer Tipp-Pause wird gespeichert, damit bei langen Texten nichts verloren geht
 const PAUSE_MS = 3000;
@@ -37,6 +38,7 @@ const ziffer = (n: number, y: number) =>
 const SYMBOLE = {
   kette: symbol('<g transform="rotate(-45 12 12) translate(12 12) scale(0.92) translate(-12 -12)"><path d="M10 8H7a4 4 0 0 0 0 8h3"/><path d="M14 8h3a4 4 0 0 1 0 8h-3"/><path d="M8 12h8"/></g>'),
   punkte: symbol('<path d="M10 5.5h11M10 12h11M10 18.5h11"/><path d="M4.5 5.5h.01M4.5 12h.01M4.5 18.5h.01" stroke-width="3"/>'),
+  zitat: symbol('<path d="M3.5 4h7v8c0 4.2-2 7-5.6 8l-.9-2.2c2-.7 3-2.1 3.1-4.3H3.5z" fill="currentColor" stroke="none"/><path d="M13.5 4h7v8c0 4.2-2 7-5.6 8l-.9-2.2c2-.7 3-2.1 3.1-4.3h-3.6z" fill="currentColor" stroke="none"/>'),
   ziffern: symbol(`<path d="M10 7.5h11M10 16.5h11"/>${ziffer(1, 11)}${ziffer(2, 20)}`),
 };
 
@@ -118,6 +120,7 @@ function knoepfe(): Knopf[] {
     })),
     { symbol: SYMBOLE.punkte, titel: t("aufzaehlung"), aktion: (e) => e.chain().focus().toggleBulletList().run(), aktiv: (e) => e.isActive("bulletList") },
     { symbol: SYMBOLE.ziffern, titel: t("nummerierte_liste"), aktion: (e) => e.chain().focus().toggleOrderedList().run(), aktiv: (e) => e.isActive("orderedList") },
+    { symbol: SYMBOLE.zitat, titel: t("zitat"), aktion: zitatUmschalten, aktiv: imZitat },
     {
       titel: t("link_einfuegen"),
       symbol: SYMBOLE.kette,

@@ -114,7 +114,7 @@ test("Editor: Schriftfarbe, Marker und Überschrift bleiben nach dem Neuladen", 
   const leiste = seite.locator(".editor__leiste");
   await expect(leiste.locator('button[title="Fett"]')).toHaveCSS("font-weight", "700");
   await expect(leiste.locator('button[title="Kursiv"]')).toHaveCSS("font-style", "italic");
-  for (const name of ["Aufzählung", "Nummerierte Liste", "Link einfügen"]) {
+  for (const name of ["Aufzählung", "Nummerierte Liste", "Zitat", "Link einfügen"]) {
     await expect(leiste.getByRole("button", { name }).locator("svg")).toBeVisible();
   }
   await expect(leiste.locator("button[aria-haspopup]")).toHaveCount(2);
@@ -124,6 +124,27 @@ test("Editor: Schriftfarbe, Marker und Überschrift bleiben nach dem Neuladen", 
   await expect(neu.locator('span[data-farbe="rot"]')).toHaveText("Achtung");
   await expect(neu.locator('mark[data-farbe="gelb"]')).toHaveText("wichtig");
   await expect(neu.locator("h3")).toHaveText("Ablauf");
+});
+
+test("Editor: Zitat setzen und entfernen", async ({ seiteFuer }) => {
+  const seite = await seiteFuer("planer");
+  await seite.goto("/notizen/");
+  await seite.getByRole("link", { name: "Neue Notiz" }).click();
+  await seite.locator("#notiz-titel-eingabe").fill("Zitatprobe");
+  await seite.locator("#notiz-titel-eingabe").press("Tab");
+  const editor = seite.locator("[data-editor='notiz-text'] [contenteditable='true']");
+  await editor.click();
+  await editorBereit(seite);
+  await seite.keyboard.type("Laut Protokoll");
+  const zitat = seite.locator(".editor__leiste").getByRole("button", { name: "Zitat" });
+  await zitat.click();
+  await expect(editor.locator("blockquote")).toHaveText("Laut Protokoll");
+  await expect(zitat).toHaveAttribute("aria-pressed", "true");
+  await expect(seite.locator("#notiz-text")).toHaveValue(/^> Laut Protokoll\s*$/);
+  await zitat.click();
+  await expect(editor.locator("blockquote")).toHaveCount(0);
+  await expect(zitat).toHaveAttribute("aria-pressed", "false");
+  await expect(seite.locator("#notiz-text")).toHaveValue(/^Laut Protokoll\s*$/);
 });
 
 test("Bestellung: Zeile anlegen, Status ändern, für alle sichtbar", async ({ seiteFuer }) => {
