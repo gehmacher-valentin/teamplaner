@@ -15,17 +15,32 @@ import { erweiterungen } from "./erweiterungen";
 import { MARKERFARBEN, SCHRIFTFARBEN } from "./farben";
 import { gemeinsamVorbereiten } from "./gemeinsam";
 import { hatFormatierung, siehtNachMarkdownAus } from "./markdown";
+import { imZitat, zitatUmschalten } from "./zitat";
 
 // Nach so langer Tipp-Pause wird gespeichert, damit bei langen Texten nichts verloren geht
 const PAUSE_MS = 3000;
 
 interface Knopf {
-  label: string;
+  label?: string;
   titel: string;
   aktion: (e: Editor, knopf: HTMLButtonElement) => void;
   aktiv: (e: Editor) => boolean;
+  symbol?: string; // SVG statt der Beschriftung, vorgelesen wird dann der Titel
   klasse?: string;
+  menue?: boolean; // öffnet eine Auswahl unter dem Knopf
 }
+
+// Alle Symbole füllen im Raster 24 × 24 genau die Höhe von 4 bis 20, damit sie gleich hoch wirken
+const symbol = (inhalt: string) =>
+  `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inhalt}</svg>`;
+const ziffer = (n: number, y: number) =>
+  `<text x="4.5" y="${y}" font-size="10" font-weight="700" text-anchor="middle" fill="currentColor" stroke="none">${n}</text>`;
+const SYMBOLE = {
+  kette: symbol('<g transform="rotate(-45 12 12) translate(12 12) scale(0.92) translate(-12 -12)"><path d="M10 8H7a4 4 0 0 0 0 8h3"/><path d="M14 8h3a4 4 0 0 1 0 8h-3"/><path d="M8 12h8"/></g>'),
+  punkte: symbol('<path d="M10 5.5h11M10 12h11M10 18.5h11"/><path d="M4.5 5.5h.01M4.5 12h.01M4.5 18.5h.01" stroke-width="3"/>'),
+  zitat: symbol('<path d="M3.5 4h7v8c0 4.2-2 7-5.6 8l-.9-2.2c2-.7 3-2.1 3.1-4.3H3.5z" fill="currentColor" stroke="none"/><path d="M13.5 4h7v8c0 4.2-2 7-5.6 8l-.9-2.2c2-.7 3-2.1 3.1-4.3h-3.6z" fill="currentColor" stroke="none"/>'),
+  ziffern: symbol(`<path d="M10 7.5h11M10 16.5h11"/>${ziffer(1, 11)}${ziffer(2, 20)}`),
+};
 
 type FarbArt = "schriftfarbe" | "marker";
 
@@ -93,21 +108,22 @@ function farbwahl(e: Editor, knopf: HTMLButtonElement, art: FarbArt) {
 
 function knoepfe(): Knopf[] {
   return [
-    { label: "B", titel: t("fett"), aktion: (e) => e.chain().focus().toggleBold().run(), aktiv: (e) => e.isActive("bold") },
-    { label: "I", titel: t("kursiv"), aktion: (e) => e.chain().focus().toggleItalic().run(), aktiv: (e) => e.isActive("italic") },
-    { label: "A", titel: t("schriftfarbe"), klasse: "editor__knopf--schriftfarbe", aktion: (e, k) => farbwahl(e, k, "schriftfarbe"), aktiv: (e) => e.isActive("schriftfarbe") },
-    { label: "ab", titel: t("marker"), klasse: "editor__knopf--marker", aktion: (e, k) => farbwahl(e, k, "marker"), aktiv: (e) => e.isActive("marker") },
+    { label: "B", titel: t("fett"), klasse: "editor__knopf--fett", aktion: (e) => e.chain().focus().toggleBold().run(), aktiv: (e) => e.isActive("bold") },
+    { label: "I", titel: t("kursiv"), klasse: "editor__knopf--kursiv", aktion: (e) => e.chain().focus().toggleItalic().run(), aktiv: (e) => e.isActive("italic") },
+    { label: "A", titel: t("schriftfarbe"), klasse: "editor__knopf--schriftfarbe", menue: true, aktion: (e, k) => farbwahl(e, k, "schriftfarbe"), aktiv: (e) => e.isActive("schriftfarbe") },
+    { label: "ab", titel: t("marker"), klasse: "editor__knopf--marker", menue: true, aktion: (e, k) => farbwahl(e, k, "marker"), aktiv: (e) => e.isActive("marker") },
     ...([1, 2, 3] as const).map((level): Knopf => ({
       label: `H${level}`,
       titel: t("ueberschrift", { n: level }),
       aktion: (e) => e.chain().focus().toggleHeading({ level }).run(),
       aktiv: (e) => e.isActive("heading", { level }),
     })),
-    { label: t("liste"), titel: t("aufzaehlung"), aktion: (e) => e.chain().focus().toggleBulletList().run(), aktiv: (e) => e.isActive("bulletList") },
-    { label: t("nummern"), titel: t("nummerierte_liste"), aktion: (e) => e.chain().focus().toggleOrderedList().run(), aktiv: (e) => e.isActive("orderedList") },
+    { symbol: SYMBOLE.punkte, titel: t("aufzaehlung"), aktion: (e) => e.chain().focus().toggleBulletList().run(), aktiv: (e) => e.isActive("bulletList") },
+    { symbol: SYMBOLE.ziffern, titel: t("nummerierte_liste"), aktion: (e) => e.chain().focus().toggleOrderedList().run(), aktiv: (e) => e.isActive("orderedList") },
+    { symbol: SYMBOLE.zitat, titel: t("zitat"), aktion: zitatUmschalten, aktiv: imZitat },
     {
-      label: t("link"),
       titel: t("link_einfuegen"),
+      symbol: SYMBOLE.kette,
       aktion: async (e) => {
         const alt = e.getAttributes("link").href as string | undefined;
         const url = await eingeben(t("link_frage"), alt ?? "https://");
@@ -187,10 +203,15 @@ function einrichten(halter: HTMLElement) {
   const liste = knoepfe().map((k) => {
     const b = document.createElement("button");
     b.type = "button";
-    b.textContent = k.label;
+    if (k.symbol) {
+      b.innerHTML = k.symbol;
+      b.setAttribute("aria-label", k.titel);
+    } else {
+      b.textContent = k.label ?? "";
+    }
     b.title = k.titel;
-    if (k.klasse) {
-      b.className = k.klasse;
+    if (k.klasse) b.className = k.klasse;
+    if (k.menue) {
       b.setAttribute("aria-label", k.titel);
       b.setAttribute("aria-haspopup", "true");
       b.setAttribute("aria-expanded", "false");

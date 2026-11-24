@@ -1238,12 +1238,16 @@ form.inline { display: inline; }
 /* Rich-Text-Editor */
 .editor { border: 1px solid var(--rand-stark); border-radius: var(--radius); background: var(--flaeche); }
 .editor__leiste { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; border-bottom: 1px solid var(--linie); }
-.editor__leiste button { height: 28px; min-width: 28px; border: 0; background: transparent; border-radius: 4px; cursor: pointer; font: inherit; font-size: 13px; }
+.editor__leiste button { height: 28px; min-width: 28px; border: 0; background: transparent; border-radius: 4px; cursor: pointer; font: inherit; font-size: 13px; padding: 2px 6px 0; } /* 2px: Schrift sitzt sonst über der Mitte, Symbole nicht */
 .editor__leiste button[aria-pressed="true"] { background: var(--akzent-hell); color: var(--akzent); }
 /* Schriftfarbe und Marker: Knöpfe, Farbauswahl und die Farben im Text (auch in gespeicherten Texten) */
 .editor__leiste { position: relative; }
-.editor__leiste .editor__knopf--schriftfarbe { font-weight: 700; text-decoration: underline 3px var(--tf-rot); text-underline-offset: 3px; }
-.editor__leiste .editor__knopf--marker { background-image: linear-gradient(transparent 58%, var(--mk-gelb) 58%); background-size: 60% 100%; background-position: center; background-repeat: no-repeat; }
+.editor__leiste .editor__knopf--fett { font-weight: 700; }
+.editor__leiste .editor__knopf--kursiv { font-style: italic; }
+.editor__leiste button:has(> svg) { padding: 0 6px; }
+.editor__leiste button > svg { display: block; margin: 0 auto; }
+.editor__leiste button.editor__knopf--schriftfarbe { font-weight: 700; color: var(--tf-blau); } /* auch gedrückt so; kein Strich, sonst liest es sich als Unterstreichen */
+.editor__leiste .editor__knopf--marker { background: linear-gradient(var(--mk-gelb), var(--mk-gelb)) center / 22px 18px no-repeat; }
 .editor__farbwahl { position: absolute; top: calc(100% + 4px); z-index: 20; display: flex; align-items: center; gap: 4px; padding: 6px; background: var(--flaeche); border: 1px solid var(--rand); border-radius: var(--radius); box-shadow: var(--schatten); }
 .editor__leiste .editor__farbwahl button { width: 28px; padding: 0; border: 1px solid var(--rand); font-weight: 700; }
 .editor__leiste .editor__farbwahl .editor__farbe-keine { width: auto; padding: 0 8px; font-weight: 500; }
