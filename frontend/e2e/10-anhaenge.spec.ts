@@ -1,10 +1,35 @@
 // Ablauf 10: Anhänge über die Kachel hochladen: auswählen, ziehen, verwerfen, hochladen, zu große Datei,
-// Auswahl bleibt in der Seitenleiste erhalten, Rückfrage vor dem Verlassen.
+// Auswahl bleibt in der Seitenleiste erhalten, Rückfrage vor dem Verlassen, PDF mit Vorschau der ersten Seite.
 import type { Locator, Page } from "@playwright/test";
 import { expect, ruhe, test } from "./hilfen";
 
 const datei = (name: string, inhalt = "Messreihe") => ({ name, mimeType: "text/plain", buffer: Buffer.from(inhalt) });
 const fertig = (ort: Page | Locator) => ort.locator(".anhang-kachel:not(.anhang-feld)");
+
+/** Kleines PDF mit einer Seite (oben ein blauer Balken) und richtiger Querverweistabelle. */
+function pdf(name: string) {
+  const inhalt = "0.12 0.31 0.72 rg 40 700 515 100 re f";
+  const objekte = [
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R >>",
+    `<< /Length ${inhalt.length} >>\nstream\n${inhalt}\nendstream`,
+  ];
+  let text = "%PDF-1.4\n";
+  const stellen = objekte.map((objekt, i) => {
+    const stelle = text.length;
+    text += `${i + 1} 0 obj\n${objekt}\nendobj\n`;
+    return stelle;
+  });
+  const xref = text.length;
+  text += `xref\n0 ${objekte.length + 1}\n0000000000 65535 f \n`;
+  text += stellen.map((s) => `${String(s).padStart(10, "0")} 00000 n \n`).join("");
+  text += `trailer\n<< /Size ${objekte.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+  return { name, mimeType: "application/pdf", buffer: Buffer.from(text, "latin1") };
+}
+
+/** Vorschau geladen (nicht nur das Element da). */
+const geladen = (bild: Locator) => bild.evaluate((b: HTMLImageElement) => b.complete && b.naturalWidth > 0);
 
 /** Dateien aus dem Dateimanager über einem Element ablegen. */
 async function ablegen(seite: Page, ziel: Locator, dateien: { name: string; groesse?: number }[], nur: "dragover" | "drop" = "drop") {
@@ -137,4 +162,45 @@ test("Anhang an einer Notiz: hochladen und löschen", async ({ seiteFuer }) => {
   await fertig(seite).getByRole("button", { name: /Anhang löschen/ }).click();
   await seite.getByRole("dialog").getByRole("button", { name: "Löschen" }).click();
   await expect(fertig(seite)).toHaveCount(0);
+});
+
+test("PDF-Anhang zeigt die erste Seite, der Link führt zum PDF", async ({ seiteFuer }) => {
+  const seite = await seiteFuer("planer");
+  await seite.goto("/aufgaben/2/");
+  const feld = seite.locator(".anhang-feld");
+  await feld.locator('input[type="file"]').setInputFiles(pdf("Lageplan.pdf"));
+  await expect(feld.locator(".anhang-feld__vorschau")).toContainText("PDF"); // vor dem Hochladen: Symbol mit Endung
+  await expect(feld.locator(".anhang-feld__vorschau img")).toHaveCount(0);
+  await feld.getByRole("button", { name: "Hochladen" }).click();
+  const kachel = fertig(seite).filter({ hasText: "Lageplan.pdf" });
+  await expect(kachel).toHaveClass(/anhang-kachel--pdf/);
+  const bild = kachel.locator("img");
+  await expect(bild).toHaveAttribute("src", /\/anhaenge\/\d+\/vorschau\/$/);
+  await expect.poll(() => geladen(bild)).toBe(true);
+  await expect(kachel.locator(".anhang-kachel__marke")).toHaveText("PDF");
+  const link = kachel.locator(".anhang-kachel__vorschau");
+  await expect(link).toHaveAttribute("href", /\/anhaenge\/\d+\/$/);
+  await expect(link).toHaveAttribute("target", "_blank"); // öffnet das PDF, nicht die Vorschau
+
+  // In der Seitenleiste dieselbe Kachel
+  const projekt = await seite.locator(".pfad a[href*='/projekte/']").last().getAttribute("href");
+  await seite.goto(`${projekt}?aufgabe=2`);
+  const leiste = fertig(seite.locator("#seitenleiste")).filter({ hasText: "Lageplan.pdf" });
+  await expect.poll(() => geladen(leiste.locator("img"))).toBe(true);
+});
+
+test("PDF-Anhang an einer Notiz mit Vorschau", async ({ seiteFuer }) => {
+  const seite = await seiteFuer("planer");
+  await seite.goto("/notizen/");
+  await seite.getByRole("link", { name: "Neue Notiz" }).click();
+  await seite.locator("#notiz-titel-eingabe").fill("PDF-Probe");
+  await seite.locator("#notiz-titel-eingabe").press("Tab");
+  await expect(seite).toHaveURL(/\/notizen\/\d+\/$/);
+  const feld = seite.locator(".anhang-feld");
+  await feld.locator('input[type="file"]').setInputFiles(pdf("Angebot.pdf"));
+  await feld.getByRole("button", { name: "Hochladen" }).click();
+  const kachel = fertig(seite).filter({ hasText: "Angebot.pdf" });
+  await expect(kachel.locator("img")).toHaveAttribute("src", /\/notizen\/anhaenge\/\d+\/vorschau\/$/);
+  await expect.poll(() => geladen(kachel.locator("img"))).toBe(true);
+  await expect(kachel.locator(".anhang-kachel__marke")).toHaveText("PDF");
 });

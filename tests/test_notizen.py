@@ -175,7 +175,7 @@ def test_vorschau_ohne_markdown_zeichen():
     assert als_text("A & B <script>x</script>") == "A & B"
 
 
-def test_anhaenge_an_notizen(konten, ordner, settings, tmp_path):
+def test_anhaenge_an_notizen(konten, ordner, settings, tmp_path, django_capture_on_commit_callbacks):
     from django.core.files.uploadedfile import SimpleUploadedFile
 
     from notizen.models import NotizAnhang
@@ -199,7 +199,8 @@ def test_anhaenge_an_notizen(konten, ordner, settings, tmp_path):
     assert client_fuer(konten[BL]).get(f"/notizen/anhaenge/{anhang.pk}/").status_code == 403  # Ordner nicht freigegeben
     assert client_fuer(konten[A]).get(f"/notizen/anhaenge/{anhang.pk}/").status_code == 200  # Admin sieht alle Gruppenordner
     assert client_fuer(konten[L]).post(f"/notizen/anhaenge/{anhang.pk}/loeschen/").status_code == 403
-    assert client_fuer(konten[M]).post(f"/notizen/{notiz.pk}/loeschen/").status_code == 302
+    with django_capture_on_commit_callbacks(execute=True):  # Dateien erst nach dem Löschen in der Datenbank
+        assert client_fuer(konten[M]).post(f"/notizen/{notiz.pk}/loeschen/").status_code == 302
     assert not NotizAnhang.objects.exists() and not list(tmp_path.rglob("*.jpg"))
 
 

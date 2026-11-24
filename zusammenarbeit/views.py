@@ -5,7 +5,6 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
-from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -20,7 +19,8 @@ from kern.protokoll import protokollieren
 from projekte.models import Aufgabe
 from projekte.seitenleiste import offene_seitenleiste, seitenleiste_antwort
 
-from .anhaenge import INLINE_TYPEN, dateityp
+from . import pdf_vorschau
+from .anhaenge import ausliefern, dateityp
 from .dienste import erwaehnung_benachrichtigen, kommentar_benachrichtigen
 from .models import Anhang, Benachrichtigung, Benachrichtigungsart, Erwaehnung, Kommentar
 from .verlauf import ERWAEHNUNG
@@ -88,9 +88,11 @@ def anhang_hochladen(request, pk):
         messages.error(request, _("Die Datei ist zu groß (höchstens %(mb)s MB).") % {"mb": max_mb})
         return _zurueck(request, aufgabe, "anhaenge")
     datei = heic_umwandeln(datei) or datei  # iPhone-Fotos als JPEG, damit jeder Browser sie zeigt
+    content_type = dateityp(datei)
     anhang = Anhang.objects.create(
         aufgabe=aufgabe, datei=datei, dateiname=datei.name[:255], groesse=datei.size,
-        content_type=dateityp(datei), hochgeladen_von=request.user.person,
+        content_type=content_type, hochgeladen_von=request.user.person,
+        vorschau=pdf_vorschau.fuer_upload(datei, content_type),  # erste Seite eines PDFs, sonst leer
     )
     protokollieren(request.user, "anhang", anhang.pk, "angelegt", {"name": anhang.dateiname}, aufgabe_id=aufgabe.pk)
     return _zurueck(request, aufgabe, "anhaenge")
@@ -101,16 +103,16 @@ def anhang_herunterladen(request, pk):
     anhang = get_object_or_404(Anhang, pk=pk)
     if not rechte.darf_lesen(request.user):
         raise PermissionDenied
-    try:
-        datei = anhang.datei.open("rb")
-    except FileNotFoundError:
-        raise Http404 from None
-    inline = anhang.content_type in INLINE_TYPEN
-    antwort = FileResponse(datei, as_attachment=not inline, filename=anhang.dateiname,
-                           content_type=anhang.content_type if inline else "application/octet-stream")
-    antwort["X-Content-Type-Options"] = "nosniff"
-    antwort["Content-Security-Policy"] = "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'"
-    return antwort
+    return ausliefern(anhang.datei, anhang.content_type, anhang.dateiname)
+
+
+@login_required
+def anhang_vorschau(request, pk):
+    """Erste Seite eines PDF-Anhangs als Bild, mit denselben Rechten wie der Anhang selbst."""
+    anhang = get_object_or_404(Anhang, pk=pk)
+    if not rechte.darf_lesen(request.user):
+        raise PermissionDenied
+    return ausliefern(anhang.vorschau, "image/webp")
 
 
 @require_POST
@@ -121,8 +123,7 @@ def anhang_loeschen(request, pk):
     if anhang.hochgeladen_von_id != request.user.person_id and not rechte.darf_aufgaben_bearbeiten(request.user, aufgabe.projekt):
         raise PermissionDenied
     protokollieren(request.user, "anhang", anhang.pk, "geloescht", {"name": anhang.dateiname}, aufgabe_id=aufgabe.pk)
-    anhang.datei.delete(save=False)
-    anhang.delete()
+    anhang.delete()  # Datei und Vorschau löscht anhaenge.dateien_entfernen
     return _zurueck(request, aufgabe, "anhaenge")
 
 

@@ -91,6 +91,10 @@ def anhang_pfad(instanz, dateiname):
     return f"notizen/{timezone.now():%Y/%m}/{uuid.uuid4().hex}{endung}"
 
 
+def vorschau_pfad(instanz, dateiname):
+    return f"notizen/vorschau/{timezone.now():%Y/%m}/{uuid.uuid4().hex}.webp"
+
+
 class NotizAnhang(models.Model):
     """Datei an einer Notiz; sichtbar für alle, die die Notiz sehen."""
 
@@ -101,6 +105,8 @@ class NotizAnhang(models.Model):
     content_type = models.CharField(max_length=120, blank=True)
     hochgeladen_von = models.ForeignKey(Person, on_delete=models.PROTECT, related_name="+")
     hochgeladen_am = models.DateTimeField(default=timezone.now)
+    # Erste Seite eines PDFs als Bild (zusammenarbeit.pdf_vorschau); leer bei allen anderen Dateien
+    vorschau = models.FileField(upload_to=vorschau_pfad, max_length=200, blank=True)
 
     class Meta:
         ordering = ["hochgeladen_am", "id"]

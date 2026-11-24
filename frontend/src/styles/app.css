@@ -1057,6 +1057,14 @@ a.eltern-hinweis:hover { text-decoration: underline; }
 }
 .anhang-kachel__vorschau img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .anhang-kachel__endung { font-family: var(--mono); font-size: 12px; font-weight: 600; }
+/* PDF: oberer Teil der ersten Seite, mit Kennzeichnung, damit sie sich von einem Foto unterscheidet */
+.anhang-kachel--pdf .anhang-kachel__vorschau { position: relative; }
+.anhang-kachel--pdf .anhang-kachel__vorschau img { object-position: top; }
+.anhang-kachel__marke {
+  position: absolute; top: 6px; right: 6px; padding: 1px 6px; border-radius: var(--radius);
+  font-family: var(--mono); font-size: 11px; font-weight: 600; line-height: 16px;
+  background: var(--kopf); color: var(--kopf-text); box-shadow: var(--schatten-klein);
+}
 .anhang-kachel__fuss { display: flex; align-items: center; gap: 4px; min-height: var(--anhang-fuss); padding: 4px 6px 4px 10px; min-width: 0; border-top: 1px solid var(--linie); }
 .anhang-kachel__text { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.3; }
 .anhang-kachel__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: var(--text); text-decoration: none; }

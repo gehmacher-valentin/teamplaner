@@ -101,6 +101,7 @@ Für Rechteprüfung und Einteilungslogik sind automatische Tests Pflicht.
 | `tests/test_tagesfreigabe.py` | Zeile „Tagesfreigabe“: eigenes Recht (Haken am Konto, nur Admin vergibt ihn, nur mit Teamplaner-Zugang), Protokoll, Stufen, Name, Ein- und Ausschalten |
 | `tests/test_notizen.py`, `tests/test_bestellungen.py` | Notizen (Sichtbarkeit, Ordnerrechte, Markdown, Längengrenze und Frist der Umwandlung) und Bestellungen (Prio, Liefertermin und Warnung, „bestellt“ ausfüllen, Lieferanten-Vorschläge) |
 | `tests/test_heic.py` | HEIC-Fotos werden zu JPEG (Anhänge, Notiz-Anhänge, Profilfoto), Testbild in `tests/daten/` |
+| `tests/test_pdf_vorschau.py` | Vorschau der ersten Seite bei PDF-Anhängen: eine und mehrere Seiten, beschädigt, verschlüsselt, Zeit-, Speicher- und Rechenzeitgrenze, Rechte und Kopfzeilen der Vorschau-Adresse, Löschen mit Anhang, Aufgabe, Notiz, Ordner und beim Aufräumen, Nachtragen mit `pdf_vorschauen` |
 | `tests/test_projektliste.py` | Projektpriorität, Navigation, Mitgliederauswahl, Aufgabe anlegen per Knopf, Protokoll „erledigt“, Posteingang im Kopf, Gesamtansicht |
 | `tests/test_version.py` | Versionsanzeige auf der Seite „Über“ |
 | `tests/test_schichten.py` | Abhängigkeitsrichtung der Apps, keine Importe aus fremden `views.py` |
@@ -130,7 +131,7 @@ Für Rechteprüfung und Einteilungslogik sind automatische Tests Pflicht.
 | `frontend/e2e/07-notizen-gemeinsam.spec.ts` | Notiz gemeinsam bearbeiten |
 | `frontend/e2e/08-darstellung.spec.ts` | Farbschema mehrfach umstellen: Auswahl und `data-theme` stimmen nach jedem Neuladen |
 | `frontend/e2e/09-meine-aufgaben.spec.ts` | Abgehakte Aufgaben 5 s sichtbar, rückgängig, Folgeaufgabe danach (Meine Aufgaben, Projektliste); betreute Platzhalter in drei Breiten; Einteilungen nebeneinander |
-| `frontend/e2e/10-anhaenge.spec.ts` | Anhänge über die Kachel: auswählen, ziehen, verwerfen, hochladen, zu große Datei, Auswahl in der Seitenleiste, Rückfrage beim Verlassen, Notizen |
+| `frontend/e2e/10-anhaenge.spec.ts` | Anhänge über die Kachel: auswählen, ziehen, verwerfen, hochladen, zu große Datei, Auswahl in der Seitenleiste, Rückfrage beim Verlassen, Notizen; PDF mit Vorschau der ersten Seite (Aufgabe, Seitenleiste, Notiz) |
 
 Dazu prüft `shellcheck` die Betriebs- und Bauskripte.
 
@@ -141,11 +142,11 @@ Dazu prüft `shellcheck` die Betriebs- und Bauskripte.
 | `kern/` | Basis für alle anderen Apps: Person, Konto, Rolle, Bereich, Gewerk (angezeigt als „Gruppe“), Raum, Protokoll; `rechte.py` = zentrale Rechteprüfung, `middleware.py` (Sitzung, Zwei-Faktor, CSP, Abweisen von NUL-Zeichen), `hilfen.py` (`als_zahl`, `TEXT_MAX_ZEICHEN`, `einstellungsseite`), `freigaben.py` (Freigaben je Ansicht), `zwei_faktor.py`, Profilfotos |
 | `projekte/` | Projekte, Abschnitte, Status, Aufgaben (Unteraufgaben = Aufgaben mit `eltern`); Projekt-Tags nur noch im Datenmodell, nicht in der Oberfläche; `dienste.py` (Schreiben mit Verlauf, Folgeaufgabe wiederkehrender Aufgaben), `wiederholung.py` (Regel, nächster Termin), `ansicht.py` (Aufgaben für Liste und Detail laden und aufbereiten), `seitenleiste.py` (Aufgabendetail neben der Liste) |
 | `planung/` | Einteilung, Abwesenheit, Freitext, freie Tage, Ansichten; `kalender.py` (Feiertage, Regeln), `dienste.py` (Schreiben mit Prüfungen), `api.py`, `live.py` (SSE) |
-| `zusammenarbeit/` | Kommentare, Erwähnungen, Anhänge, Benachrichtigungen mit Posteingang; `mail.py` (E-Mail-Kategorien und Versand, je E-Mail eine Protokollzeile), `mailverlauf.py` (Versandverlauf für Befehl und Einstellungsseite), `verlauf.py` (Kommentare und Änderungen als lesbare Einträge), `anhaenge.py` (Inhaltstyp, Anzeige im Browser) |
+| `zusammenarbeit/` | Kommentare, Erwähnungen, Anhänge, Benachrichtigungen mit Posteingang; `mail.py` (E-Mail-Kategorien und Versand, je E-Mail eine Protokollzeile), `mailverlauf.py` (Versandverlauf für Befehl und Einstellungsseite), `verlauf.py` (Kommentare und Änderungen als lesbare Einträge), `anhaenge.py` (Inhaltstyp, Anzeige im Browser, Dateien mit dem Anhang löschen), `pdf_vorschau.py` (erste Seite eines PDFs als Bild, gerendert in einem eigenen Prozess mit Grenzen: `pdf_vorschau_prozess.py`) |
 | `gantt/` | Gantt-Ansichten mit Freigaben; `daten.py` (Abgleich, Verletzungen), `dienste.py` (Termine, Abhängigkeiten, neue Projekte in Gesamtansichten) |
 | `notizen/` | Persönliche Notizen und freigegebene Gruppenordner; `rechte.py`, `markdown.py` (Markdown → bereinigtes HTML, mit Frist gegen aufwendige Eingaben) |
 | `bestellungen/` | Bestellungsverfolgung (eine Liste für alle); `warnungen.py` (überschrittene Liefertermine) |
-| `verwaltung/` | Oberste Schicht ohne eigene Modelle: Anmeldung, Passwort und Zwei-Faktor-Oberfläche, Personenverwaltung, Einstellungsseiten (`einstellungen.py`), Protokollseite, Speicherplatz, Navigation (`context_processors.py`), Aufräumen nach Fristen (`aufraeumen.py`); Versandverlauf der E-Mails (Seite „E-Mail-Versand“); Befehle `mails_versenden`, `mail_protokoll`, `konto_anlegen`, `konto_aendern`, `aufraeumen`, `demodaten`, `lasttest` |
+| `verwaltung/` | Oberste Schicht ohne eigene Modelle: Anmeldung, Passwort und Zwei-Faktor-Oberfläche, Personenverwaltung, Einstellungsseiten (`einstellungen.py`), Protokollseite, Speicherplatz, Navigation (`context_processors.py`), Aufräumen nach Fristen (`aufraeumen.py`); Versandverlauf der E-Mails (Seite „E-Mail-Versand“); Befehle `mails_versenden`, `mail_protokoll`, `konto_anlegen`, `konto_aendern`, `aufraeumen`, `pdf_vorschauen`, `demodaten`, `lasttest` |
 | `templates/` | Django-Templates (HTMX); die Seiten von `verwaltung` liegen unter `templates/kern/` |
 | `frontend/` | Vite-Projekt: `src/main.ts` (alle Seiten), `src/teamplaner/` und `src/gantt/` (React), `src/editor/` (Tiptap); `e2e/` (Browser-Tests) |
 | `locale/en/` | englische Übersetzung |

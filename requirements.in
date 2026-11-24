@@ -11,6 +11,8 @@ nh3>=0.2.17
 Pillow>=11
 # HEIC/HEIF-Fotos (iPhone) lesen und beim Hochladen in JPEG umwandeln; nur Decoder, LGPLv3
 pi-heif>=1.0
+# Vorschau der ersten Seite von PDF-Anhängen (PDFium, nur in einem eigenen Prozess); Apache-2.0 und BSD-3-Clause
+pypdfium2>=5.0
 # QR-Code für die Zwei-Faktor-Anmeldung (reines Python, ohne Abhängigkeiten)
 segno>=1.6
 uvicorn[standard]>=0.30

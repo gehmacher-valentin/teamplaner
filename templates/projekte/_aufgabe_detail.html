@@ -84,7 +84,7 @@
     <section class="stapel" id="anhaenge">
       <h2>{% translate "Anhänge" %}</h2>
       {% if darf_abschliessen %}{% url 'anhang_hochladen' aufgabe.pk as hochladen %}{% endif %}
-      {% if anhaenge or hochladen %}{% include "teile/anhaenge.html" with url_name="anhang" loeschen_name="anhang_loeschen" alle_loeschbar=darf_bearbeiten %}{% endif %}
+      {% if anhaenge or hochladen %}{% include "teile/anhaenge.html" with url_name="anhang" vorschau_name="anhang_vorschau" loeschen_name="anhang_loeschen" alle_loeschbar=darf_bearbeiten %}{% endif %}
     </section>
 
     <section class="stapel kommentare" id="kommentare">

@@ -278,6 +278,7 @@ Danach in der Anwendung unter **Einstellungen**:
 | `sudo teamplaner neu-aufbauen` | Python-Umgebung nach einem Upgrade der Distribution neu bauen |
 | `sudo teamplaner verwalten BEFEHL` | Django-Verwaltungsbefehl als Dienstbenutzer |
 | `sudo teamplaner verwalten mail_protokoll [--tage N] [--status offen\|gesendet\|fehler]` | was wann an wen verschickt wurde, was offen ist, was fehlschlug |
+| `sudo teamplaner verwalten pdf_vorschauen` | Vorschau der ersten Seite für PDF-Anhänge nachtragen, die noch keine haben (einmal nach dem Update auf die erste Version mit PDF-Vorschau) |
 
 **E-Mail-Versand.** Der Dienst `teamplaner-mailer` verschickt alle paar Sekunden, was offen ist, und
 versucht es bei Fehlern bis zu fünfmal. Nachvollziehen lässt sich der Versand auf drei Wegen:
@@ -336,6 +337,14 @@ dem Update bleiben erhalten:
 
 ```bash
 sudo teamplaner zurueck
+```
+
+Die erste Version mit Vorschau der ersten Seite bei PDF-Anhängen erzeugt sie nur für neu hochgeladene
+PDFs. Für die vorhandenen einmal nach dem Update (dauert je PDF meist unter einer Sekunde, Teamplaner
+läuft dabei weiter):
+
+```bash
+sudo teamplaner verwalten pdf_vorschauen
 ```
 
 Die letzten drei Versionen bleiben unter `versionen` im Programmverzeichnis. Betriebssystem, PostgreSQL und
