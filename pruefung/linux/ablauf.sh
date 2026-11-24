@@ -5,6 +5,8 @@
 # Beide auf Ubuntu 24.04: ubuntu-nginx mit den Standardpfaden, ubuntu-apache mit eigenen Pfaden für
 # Konfiguration, Programm, Daten, Sicherungen.
 #   ablauf.sh ubuntu-nginx|ubuntu-apache [nach-neustart]
+#   ablauf.sh ubuntu-nginx von-release   frischer Server: letztes Release installieren, mit Daten auf den
+#                                        aktuellen Stand (99.0.0) aktualisieren, zurück, wieder aktualisieren
 set -euo pipefail
 ART=$1
 PHASE=${2:-voll}
@@ -40,6 +42,168 @@ lesbar() {  # alles unter der aktuellen Version für den Dienstbenutzer lesbar, 
   f="$(cd / && runuser -u teamplaner -- find "$PROG/aktuell/" ! -readable -print -quit)" && [[ -z $f ]]
 }
 
+datenbank_anlegen() {
+  runuser -u postgres -- psql -q -c "CREATE ROLE teamplaner LOGIN PASSWORD '$DBPASS'"
+  runuser -u postgres -- psql -q -c "CREATE DATABASE teamplaner OWNER teamplaner ENCODING 'UTF8' TEMPLATE template0"
+}
+konfig_eintragen() {
+  sed -i -e "s|^DJANGO_ALLOWED_HOSTS=.*|DJANGO_ALLOWED_HOSTS=$DOMAIN|" \
+    -e "s|^DJANGO_CSRF_TRUSTED_ORIGINS=.*|DJANGO_CSRF_TRUSTED_ORIGINS=https://$DOMAIN|" \
+    -e "s|^TEAMPLANER_ADRESSE=.*|TEAMPLANER_ADRESSE=https://$DOMAIN|" \
+    -e "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$DBPASS|" "$KONF"
+}
+zertifikat_anlegen() {
+  mkdir -p /etc/ssl/teamplaner
+  openssl req -x509 -newkey rsa:2048 -nodes -days 30 -subj "/CN=$DOMAIN" \
+    -keyout /etc/ssl/teamplaner/schluessel.pem -out /etc/ssl/teamplaner/zertifikat.pem 2>/dev/null
+}
+nginx_einrichten() {
+  sed -e "s/teamplaner.example.org/$DOMAIN/g" -e "s|/opt/teamplaner/wartung|$PROG/wartung|g" "$PROG"/aktuell/betrieb/linux/nginx/teamplaner.conf \
+    > /etc/nginx/sites-available/teamplaner.conf
+  # Docker-Host ohne IPv6 (Kernel mit ipv6.disable=1): wie installation-linux.md die listen [::]-Zeilen entfernen
+  if [[ ! -e /proc/net/if_inet6 ]]; then
+    sed -i '/^[[:space:]]*listen \[::\]/d' /etc/nginx/sites-available/teamplaner.conf
+    echo "  Hinweis ohne IPv6: listen [::] entfernt"
+  fi
+  ln -sf /etc/nginx/sites-available/teamplaner.conf /etc/nginx/sites-enabled/
+  nginx -t 2>&1 | tail -n 1
+  systemctl reload nginx
+}
+demodaten() {  # nur mit TEAMPLANER_DEMO=1; verwalten liest die Konfiguration, danach wieder wie im Betrieb
+  echo TEAMPLANER_DEMO=1 >> "$KONF"
+  teamplaner verwalten demodaten | tail -n 1
+  sed -i '/^TEAMPLANER_DEMO=/d' "$KONF"
+}
+csrf() { awk '$6 == "csrftoken" { print $7 }' /tmp/jar; }
+anmelden() {
+  rm -f /tmp/jar
+  https -c /tmp/jar -b /tmp/jar -o /dev/null "https://$DOMAIN/anmelden/"
+  https -c /tmp/jar -b /tmp/jar -o /dev/null -e "https://$DOMAIN/anmelden/" \
+    --data-urlencode "username=planer@example.test" --data-urlencode "password=$DEMO" \
+    --data-urlencode "csrfmiddlewaretoken=$(csrf)" "https://$DOMAIN/anmelden/"
+}
+angemeldet() { grep -q sessionid /tmp/jar && [[ $(https -b /tmp/jar -o /dev/null -w "%{http_code}" "https://$DOMAIN/meine-aufgaben/") == 200 ]]; }
+pdf_hochladen() {  # kleines PDF an eine Aufgabe anhängen, setzt ANHANG auf dessen ID
+  local aufgabe
+  aufgabe="$(sql "select min(id) from projekte_aufgabe")"
+  cat > /tmp/probe.pdf <<'PDF'
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> >>
+endobj
+4 0 obj
+<< /Length 44 >>
+stream
+BT /F1 36 Tf 60 740 Td (Probe-Anhang) Tj ET 
+endstream
+endobj
+trailer
+<< /Root 1 0 R /Size 5 >>
+%%EOF
+PDF
+  https -c /tmp/jar -b /tmp/jar -o /dev/null -e "https://$DOMAIN/projekte/" -F "datei=@/tmp/probe.pdf;type=application/pdf" \
+    -F "csrfmiddlewaretoken=$(csrf)" "https://$DOMAIN/aufgaben/$aufgabe/anhaenge/"
+  ANHANG="$(sql "select max(id) from zusammenarbeit_anhang where dateiname='probe.pdf'")"
+}
+anhang_unveraendert() { https -b /tmp/jar "https://$DOMAIN/anhaenge/$ANHANG/" | cmp -s - /tmp/probe.pdf; }
+vorschau_da() {  # WebP über HTTPS ausgeliefert
+  [[ $(https -b /tmp/jar -o /tmp/vorschau -w '%{http_code} %{content_type}' "https://$DOMAIN/anhaenge/$ANHANG/vorschau/") == "200 image/webp" ]] \
+    && [[ $(head -c 4 /tmp/vorschau) == RIFF ]]
+}
+
+# Inhalt aller Tabellen in den Spalten, die das Release kennt: je Tabelle Zeilenzahl und Prüfsumme.
+# Ohne Tabellen und Spalten, die sich im Betrieb, durch Migrationen oder durch die Probe selbst ändern.
+datenspalten() {
+  sql "select table_name || '|' || string_agg(quote_ident(column_name), ',' order by column_name)
+       from information_schema.columns join information_schema.tables using (table_schema, table_name)
+       where table_schema = 'public' and table_type = 'BASE TABLE'
+         and table_name not in ('django_migrations', 'django_content_type', 'django_session', 'auth_permission', 'kern_protokolleintrag')
+         and table_name not like 'axes\\_%'
+         and (table_name, column_name) not in (('kern_konto', 'rolle'), ('kern_konto', 'last_login'))
+       group by table_name order by table_name"
+}
+datenstand() {
+  local tabelle spalten
+  while IFS='|' read -r tabelle spalten; do
+    echo "$tabelle $(sql "select count(*), md5(coalesce(string_agg(z, E'\n' order by z), '')) from (select row($spalten)::text as z from $tabelle) as t" < /dev/null)"
+  done < /tmp/datenspalten
+}
+daten_gleich() { datenstand > /tmp/stand-jetzt; diff /tmp/stand-vorher /tmp/stand-jetzt; }
+
+if [[ $PHASE == von-release ]]; then
+  ALT="$(cat "$P/release")"
+  schritt "Release $ALT installieren"
+  datenbank_anlegen
+  cd /root && tar -xzf "$P/teamplaner-$ALT.tar.gz" --no-same-permissions && cd "teamplaner-$ALT"
+  ./installieren.sh
+  konfig_eintragen
+  ./installieren.sh
+  zertifikat_anlegen
+  nginx_einrichten
+  pruefe "Version $ALT aktiv und erreichbar" '[[ $(version) == "$ALT" && $(code /gesund/) == 200 ]]'
+
+  schritt "Daten mit $ALT anlegen"
+  demodaten
+  anmelden
+  pruefe "Anmeldung" 'angemeldet'
+  pdf_hochladen
+  pruefe "PDF-Anhang hochgeladen" '[[ -n $ANHANG ]] && anhang_unveraendert'
+  # Admin, dessen Daten nach der Frist entfernt wurden (kern.0009_bereinigte_admins)
+  sql "update kern_konto set rolle='admin', email='entfernt@konto.invalid', password='!probe' where email='lesend@example.test'"
+  bereinigt() { sql "select rolle from kern_konto where email='entfernt@konto.invalid'"; }
+  pruefe "bereinigtes Admin-Konto angelegt" '[[ $(bereinigt) == admin ]]'
+  datenspalten > /tmp/datenspalten
+  datenstand > /tmp/stand-vorher
+  pruefe "Datenstand von $(wc -l < /tmp/stand-vorher) Tabellen festgehalten" '[[ $(wc -l < /tmp/stand-vorher) -gt 20 ]]'
+  MIGRATIONEN=$(sql "select count(*) from django_migrations")
+
+  schritt "Update von $ALT auf den aktuellen Stand"
+  teamplaner update "$P/teamplaner-99.0.0.tar.gz" --ja
+  pruefe "Version 99.0.0 aktiv und erreichbar" '[[ $(version) == 99.0.0 && $(code /gesund/) == 200 ]]'
+  echo "  neue Migrationen: $(($(sql "select count(*) from django_migrations") - MIGRATIONEN))"
+  daten_gleich || { echo "  FEHLER  Daten nach dem Update verändert"; exit 1; }
+  echo "  OK      Daten unverändert"
+  pruefe "bereinigtes Admin-Konto herabgesetzt" '[[ $(bereinigt) == lesend ]]'
+  pruefe "Prüfung ohne Fehler" 'teamplaner pruefen'
+  anmelden
+  pruefe "Anmeldung nach dem Update" 'angemeldet'
+  pruefe "Anhang von vor dem Update lesbar" 'anhang_unveraendert'
+
+  schritt "Eintrag in neuen Tabellen, dann Rücksprung auf $ALT"
+  if [[ $(sql "select to_regclass('kern_raum') is not null") == t ]]; then
+    sql "with r as (insert into kern_raum (name, sortierung) values ('Proberaum', 1) returning id)
+         update projekte_aufgabe set raum_id = r.id from r where projekte_aufgabe.id = (select min(id) from projekte_aufgabe)"
+  fi
+  teamplaner zurueck --ja | tee /tmp/zurueck.txt
+  pruefe "ohne Einspielen der Sicherung" '! grep -q "lassen sich nicht automatisch" /tmp/zurueck.txt'
+  pruefe "Version $ALT aktiv und erreichbar" '[[ $(version) == "$ALT" && $(code /gesund/) == 200 ]]'
+  pruefe "alle neuen Migrationen zurückgenommen" '[[ $(sql "select count(*) from django_migrations") == "$MIGRATIONEN" ]]'
+  datenspalten > /tmp/datenspalten-jetzt
+  pruefe "Tabellen und Spalten wie vorher" 'cmp /tmp/datenspalten /tmp/datenspalten-jetzt'
+  daten_gleich || { echo "  FEHLER  Daten nach dem Rücksprung verändert"; exit 1; }
+  echo "  OK      Daten unverändert"
+  anmelden
+  pruefe "Anmeldung und Anhang nach dem Rücksprung" 'angemeldet && anhang_unveraendert'
+
+  schritt "Erneutes Update"
+  teamplaner update "$P/teamplaner-99.0.0.tar.gz" --ja | tail -n 3
+  pruefe "Version 99.0.0 aktiv und erreichbar" '[[ $(version) == 99.0.0 && $(code /gesund/) == 200 ]]'
+  daten_gleich || { echo "  FEHLER  Daten nach dem zweiten Update verändert"; exit 1; }
+  echo "  OK      Daten unverändert"
+  teamplaner verwalten pdf_vorschauen
+  anmelden
+  pruefe "Vorschau des älteren PDF-Anhangs nachgetragen" 'vorschau_da'
+  pruefe "Prüfung ohne Fehler" 'teamplaner pruefen'
+  printf '\n%s: ALLES OK\n' "$ART von $ALT"
+  exit 0
+fi
+
 if [[ $PHASE == nach-neustart ]]; then
   schritt "nach dem Neustart"
   pruefe "Dienste und Timer laufen wieder" 'systemctl is-active teamplaner-web teamplaner-mailer teamplaner-sicherung.timer'
@@ -49,8 +213,7 @@ if [[ $PHASE == nach-neustart ]]; then
 fi
 
 schritt "1 Datenbank (wie INSTALLATION.md)"
-runuser -u postgres -- psql -q -c "CREATE ROLE teamplaner LOGIN PASSWORD '$DBPASS'"
-runuser -u postgres -- psql -q -c "CREATE DATABASE teamplaner OWNER teamplaner ENCODING 'UTF8' TEMPLATE template0"
+datenbank_anlegen
 pruefe "PostgreSQL $(runuser -u postgres -- psql -XAt -c 'show server_version' | cut -d' ' -f1) bereit" 'sql "select 1"'
 
 schritt "2 Teamplaner installieren (umask 0077, Python $ALT_PYTHON)"
@@ -68,10 +231,7 @@ fi
 pruefe "Konfiguration angelegt (root:teamplaner 640)" '[[ $(stat -c "%U:%G %a" "$KONF") == "root:teamplaner 640" ]]'
 pruefe "Geheimschlüssel erzeugt" '! grep -q "^DJANGO_SECRET_KEY=wird-bei" "$KONF"'
 pruefe "ohne Datenbankpasswort keine Installation" '! ./installieren.sh'
-sed -i -e "s|^DJANGO_ALLOWED_HOSTS=.*|DJANGO_ALLOWED_HOSTS=$DOMAIN|" \
-  -e "s|^DJANGO_CSRF_TRUSTED_ORIGINS=.*|DJANGO_CSRF_TRUSTED_ORIGINS=https://$DOMAIN|" \
-  -e "s|^TEAMPLANER_ADRESSE=.*|TEAMPLANER_ADRESSE=https://$DOMAIN|" \
-  -e "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$DBPASS|" "$KONF"
+konfig_eintragen
 if [[ $ART == ubuntu-apache ]]; then
   pfad_in_konfig TEAMPLANER_PROGRAMM "$PROG"
   pfad_in_konfig TEAMPLANER_DATEN /srv
@@ -102,20 +262,9 @@ pruefe "erneutes installieren.sh verweist auf update" '{ ./installieren.sh 2>&1 
 pruefe "teamplaner ohne sudo wird abgewiesen" '{ runuser -u nobody -- /usr/local/sbin/teamplaner status 2>&1 || true; } | grep -q "sudo"'
 
 schritt "3 Webserver mit Zertifikat"
-mkdir -p /etc/ssl/teamplaner
-openssl req -x509 -newkey rsa:2048 -nodes -days 30 -subj "/CN=$DOMAIN" \
-  -keyout /etc/ssl/teamplaner/schluessel.pem -out /etc/ssl/teamplaner/zertifikat.pem 2>/dev/null
+zertifikat_anlegen
 if [[ $ART == ubuntu-nginx ]]; then
-  sed -e "s/teamplaner.example.org/$DOMAIN/g" -e "s|/opt/teamplaner/wartung|$PROG/wartung|g" "$PROG"/aktuell/betrieb/linux/nginx/teamplaner.conf \
-    > /etc/nginx/sites-available/teamplaner.conf
-  # Docker-Host ohne IPv6 (Kernel mit ipv6.disable=1): wie installation-linux.md die listen [::]-Zeilen entfernen
-  if [[ ! -e /proc/net/if_inet6 ]]; then
-    sed -i '/^[[:space:]]*listen \[::\]/d' /etc/nginx/sites-available/teamplaner.conf
-    echo "  Hinweis ohne IPv6: listen [::] entfernt"
-  fi
-  ln -sf /etc/nginx/sites-available/teamplaner.conf /etc/nginx/sites-enabled/
-  nginx -t 2>&1 | tail -n 1
-  systemctl reload nginx
+  nginx_einrichten
 else
   sed -e "s/teamplaner.example.org/$DOMAIN/g" -e "s|/opt/teamplaner/wartung|$PROG/wartung|g" "$PROG"/aktuell/betrieb/linux/apache/teamplaner.conf \
     > /etc/apache2/sites-available/teamplaner.conf
@@ -151,24 +300,19 @@ pruefe "Let's Encrypt: Prüfdatei über die Weiterleitung von Port 80 erreichbar
 pruefe "übrige Anfragen weiter an die Anwendung" '[[ $(code /gesund/) == 200 ]]'
 
 schritt "4 Konto, Demodaten, Anmeldung, Live-Verbindung"
-# demodaten nur mit TEAMPLANER_DEMO=1; verwalten liest die Konfiguration, danach wieder wie im Betrieb
-echo TEAMPLANER_DEMO=1 >> "$KONF"
-teamplaner verwalten demodaten | tail -n 1
-sed -i '/^TEAMPLANER_DEMO=/d' "$KONF"
+demodaten
 teamplaner konto-anlegen --email probe-admin@example.test --name "Person 91" --bereich Produktion \
   --rolle admin --adresse "https://$DOMAIN" | tail -n 1
 runuser -u teamplaner -- sh -c "mkdir -p $DAT/medien/probe && echo hallo > $DAT/medien/probe/datei.txt"
 AUFGABEN=$(aufgaben)
 pruefe "Demodaten ($AUFGABEN Aufgaben)" '[[ $AUFGABEN -gt 0 ]]'
-rm -f /tmp/jar
-https -c /tmp/jar -b /tmp/jar -o /dev/null "https://$DOMAIN/anmelden/"
-TOKEN="$(awk '$6 == "csrftoken" { print $7 }' /tmp/jar)"
-https -c /tmp/jar -b /tmp/jar -o /dev/null -e "https://$DOMAIN/anmelden/" \
-  --data-urlencode "username=planer@example.test" --data-urlencode "password=$DEMO" \
-  --data-urlencode "csrfmiddlewaretoken=$TOKEN" "https://$DOMAIN/anmelden/"
-pruefe "Anmeldung über HTTPS (Sitzungscookie Secure)" 'grep -q sessionid /tmp/jar && [[ $(https -b /tmp/jar -o /dev/null -w "%{http_code}" "https://$DOMAIN/meine-aufgaben/") == 200 ]]'
+anmelden
+pruefe "Anmeldung über HTTPS (Sitzungscookie Secure)" 'angemeldet'
 timeout 6 curl -sk -N --resolve "$DOMAIN:443:127.0.0.1" -b /tmp/jar -D /tmp/sse-kopf -o /tmp/sse "https://$DOMAIN/api/planung/stream" || true
 pruefe "Live-Verbindung kommt ungepuffert durch" 'grep -qi "text/event-stream" /tmp/sse-kopf && grep -q "verbunden" /tmp/sse'
+pdf_hochladen
+pruefe "PDF-Anhang hochgeladen" '[[ -n $ANHANG ]] && anhang_unveraendert'
+pruefe "Vorschau der ersten Seite im Dienst erzeugt (systemd-Härtung, Speichergrenze)" 'vorschau_da'
 
 schritt "5 Wartungsseite"
 teamplaner stop

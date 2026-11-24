@@ -215,7 +215,10 @@ X für große Umbrüche.
    mit Zertifikat, Anmeldung und Live-Verbindung über HTTPS, Wartungsseite, Sicherung, Update
    mit Migration, Rücksprung ohne Datenverlust, defektes Update mit automatischem Rücksprung,
    Wiederherstellung, Python-Wechsel nach einem Upgrade der Distribution (`neu-aufbauen`),
-   Neustart des Servers. `ubuntu-nginx` läuft mit nginx und den Standardpfaden, `ubuntu-apache`
+   Neustart des Servers; außerdem wird ein PDF hochgeladen und seine Vorschau geprüft. Mit
+   `ubuntu-nginx` folgt auf einem frischen Server das Update vom letzten veröffentlichten Release mit
+   Daten auf den aktuellen Stand, der Rücksprung und das erneute Update (anderes Release: `VON=1.5.0`).
+   `ubuntu-nginx` läuft mit nginx und den Standardpfaden, `ubuntu-apache`
    mit Apache und eigenen Pfaden für Konfiguration, Programm, Daten und Sicherungen. Am Ende muss
    je Server „ALLES OK“ stehen.
    Mit `BEHALTEN=1` bleiben die Probeserver stehen (`docker exec -it tp-linux-ubuntu-nginx bash`).
