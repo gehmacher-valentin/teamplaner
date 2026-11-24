@@ -11,6 +11,8 @@
  * träfe sonst die nächste Aufgabe. Die Breite gilt bis zum Neuladen, nichts wird gespeichert.
  */
 
+import { auswahlVergessen, auswahlVerlassen } from "./anhangfeld";
+
 export const UMBRUCH = 1100; // wie in app.css
 export const MINDESTBREITE = 380;
 export const HOECHSTBREITE = 900;
@@ -186,14 +188,19 @@ export function initSeitenleiste() {
   document.addEventListener("click", (event) => {
     const ziel = event.target as HTMLElement;
     if (ziel.closest("[data-seitenleiste-schliessen]")) {
-      schliessen("neu");
+      auswahlVerlassen(platz(), () => schliessen("neu"));
       return;
     }
     const link = ziel.closest<HTMLAnchorElement>("a[data-aufgabe-link]");
     if (!link || !leiste() || !klickAbfangen(event, istBreit())) return;
     event.preventDefault();
-    if (link.dataset.aufgabeLink !== offen) oeffnen(link.dataset.aufgabeLink!, true);
-    platz()?.focus({ preventScroll: true });
+    const neu = link.dataset.aufgabeLink!;
+    const fokus = () => platz()?.focus({ preventScroll: true });
+    if (neu === offen) return fokus();
+    auswahlVerlassen(platz(), () => {
+      oeffnen(neu, true);
+      fokus();
+    });
   });
 
   document.addEventListener("pointerdown", (event) => {
@@ -207,15 +214,19 @@ export function initSeitenleiste() {
     const feld = document.activeElement as HTMLElement | null;
     if (document.querySelector("dialog[open]") || feld?.closest(".kopf")) return;
     if (feld?.matches("input, textarea, select, [contenteditable]")) feld.blur();
-    else schliessen("neu");
+    else auswahlVerlassen(platz(), () => schliessen("neu"));
   });
 
   window.addEventListener("popstate", (event) => {
     if (event.state?.htmx || !leiste()) return;
     const id = aufgabeInAdresse(location.search);
     if (id === offen) return;
-    if (id) oeffnen(id, false);
-    else schliessen("keine");
+    const vorher = offen;
+    auswahlVerlassen(
+      platz(),
+      () => (id ? oeffnen(id, false) : schliessen("keine")),
+      () => history.pushState({ seitenleiste: true }, "", adresseMit(location.href, vorher)), // hierbleiben
+    );
   });
 
   // Ereignisse vom Server (HX-Trigger-After-Settle) und vom Ziehen in der Liste
@@ -223,5 +234,8 @@ export function initSeitenleiste() {
     const ids = (event as CustomEvent).detail.ids as number[];
     if (offen && ids.map(String).includes(offen)) laden(offen, false);
   });
-  document.addEventListener("seitenleiste-schliessen", () => schliessen("ersetzen"));
+  document.addEventListener("seitenleiste-schliessen", () => {
+    auswahlVergessen(platz());
+    schliessen("ersetzen");
+  });
 }

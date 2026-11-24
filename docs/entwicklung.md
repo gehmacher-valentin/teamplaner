@@ -128,6 +128,7 @@ Für Rechteprüfung und Einteilungslogik sind automatische Tests Pflicht.
 | `frontend/e2e/07-notizen-gemeinsam.spec.ts` | Notiz gemeinsam bearbeiten |
 | `frontend/e2e/08-darstellung.spec.ts` | Farbschema mehrfach umstellen: Auswahl und `data-theme` stimmen nach jedem Neuladen |
 | `frontend/e2e/09-meine-aufgaben.spec.ts` | Abgehakte Aufgaben 5 s sichtbar, rückgängig, Folgeaufgabe danach (Meine Aufgaben, Projektliste); betreute Platzhalter in drei Breiten; Einteilungen nebeneinander |
+| `frontend/e2e/10-anhaenge.spec.ts` | Anhänge über die Kachel: auswählen, ziehen, verwerfen, hochladen, zu große Datei, Auswahl in der Seitenleiste, Rückfrage beim Verlassen, Notizen |
 
 Dazu prüft `shellcheck` die Betriebs- und Bauskripte.
 
