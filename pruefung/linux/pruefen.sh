@@ -7,7 +7,8 @@
 # Wiederherstellung, Python-Wechsel nach einem Upgrade der Distribution (neu-aufbauen) und einen
 # Neustart des Servers durch (ablauf.sh). Mit ubuntu-nginx außerdem auf einem frischen Server das Update
 # vom letzten veröffentlichten Release (von GitHub geladen) mit Daten auf den aktuellen Stand.
-# Braucht auf dem Entwicklungsrechner Docker (nur für die Probeserver) und alles für werkzeuge/paket-bauen.sh (Python 3.12, Node.js 22).
+# Braucht auf dem Entwicklungsrechner Docker (nur für die Probeserver) und alles für
+# werkzeuge/paket-bauen.sh (Python 3.12, Node.js 22).
 #   pruefung/linux/pruefen.sh                beide Probeserver
 #   pruefung/linux/pruefen.sh ubuntu-nginx   nur einer
 #   VON=1.5.0 pruefung/linux/pruefen.sh      Update von diesem Release statt vom letzten
