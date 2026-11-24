@@ -76,6 +76,17 @@ def darf_anmeldung_zuruecksetzen(konto, ziel):
     return ziel.pk != konto.pk and darf_anmeldung_verwalten(konto, ziel)
 
 
+def nie_benutzt(ziel):
+    """Noch nie ein Passwort gesetzt und nie angemeldet, z. B. eine Einladung an eine falsche Adresse. Ein
+    fehlendes Passwort allein reicht nicht: das entsteht auch beim Zurücksetzen ohne E-Mail-Versand."""
+    return not ziel.has_usable_password() and ziel.last_login is None
+
+
+def darf_adresse_korrigieren(konto, ziel):
+    """E-Mail-Adresse eines anderen Admins, solange das Konto nie benutzt wurde – es gibt noch nichts zu übernehmen."""
+    return _anderer_admin(konto, ziel) and nie_benutzt(ziel)
+
+
 def darf_link_mailen(konto, ziel):
     """Anderen aktiven Admins einen Einladungs- oder Passwort-Link an ihre hinterlegte Adresse schicken,
     ohne ihn zu sehen. Alles andere an ihrer Anmeldung bleibt gesperrt."""

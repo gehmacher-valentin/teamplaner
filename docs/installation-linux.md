@@ -383,7 +383,8 @@ Erhalten bleiben Datenbank, `/var/lib/teamplaner`, `/var/backups/teamplaner` und
 - Admins können andere Admins herabstufen und deaktivieren, sich selbst herabstufen; ein aktiver Admin, der
   sich schon einmal angemeldet hat, bleibt immer übrig. E-Mail, Passwort-Link und Zwei-Faktor-Anmeldung anderer Admins sind
   in der Oberfläche gesperrt, nach dem Herabstufen noch 7 Tage. Mit E-Mail-Versand können sie anderen Admins
-  einen Link an die hinterlegte Adresse schicken, ohne ihn zu sehen. Auf dem Server geht das jederzeit:
+  einen Link an die hinterlegte Adresse schicken, ohne ihn zu sehen. Solange sich mit einem Admin-Konto noch nie
+  jemand angemeldet hat und kein Passwort gesetzt ist, lässt sich seine Adresse korrigieren. Auf dem Server geht das jederzeit:
   `sudo teamplaner konto-aendern <email>` (siehe unten „Konten auf dem Server ändern“).
 
 ### Konten auf dem Server ändern

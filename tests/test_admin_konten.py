@@ -6,6 +6,7 @@ from io import StringIO
 
 import pytest
 from django.apps import apps
+from django.core.exceptions import PermissionDenied
 from django.core.management import CommandError, call_command
 from django.test import Client
 from django.utils import timezone
@@ -13,6 +14,7 @@ from django.utils import timezone
 from kern import rechte, zwei_faktor
 from kern.hilfen import passwort_link
 from kern.models import Konto, Person, Protokolleintrag, Rolle
+from verwaltung import konten as kontenlogik
 from verwaltung.aufraeumen import aufraeumen
 from zusammenarbeit.models import Postausgang
 
@@ -174,6 +176,67 @@ def test_link_mailen_nur_mit_versand_und_nur_aktiven_admins(konten, zweiter, set
     zweiter.person.archivieren()
     assert aktion(konten[A], zweiter, "link").status_code == 403
     assert not Postausgang.objects.filter(art=Postausgang.Art.RESET).exists()
+
+
+@pytest.fixture
+def eingeladen(konten, zweiter, bereich_a):
+    """Admin mit noch nicht angenommener Einladung."""
+    return Konto.objects.anlegen("falsch@example.test", anzeigename="Person 93", bereich=bereich_a, rolle=A)
+
+
+def test_adresse_eines_nie_benutzten_admins_korrigieren(konten, eingeladen, settings):
+    settings.EMAIL_HOST = "mail.example.test"
+    link = passwort_link(eingeladen)
+    c = angemeldet(konten[A])
+    assert 'name="email"' in c.get(seite(eingeladen)).content.decode()
+    antwort = c.post(seite(eingeladen), {"rolle": A, "email": "Richtig@example.test", "anzeigename": "Übernommen"})
+    danach = c.get(antwort.url).content.decode()
+    neu = frisch(eingeladen)
+    assert (neu.email, neu.rolle, neu.person.anzeigename) == ("richtig@example.test", A, "Person 93")
+    # Nur die neue Einladung, nichts an die falsche Adresse; der Link wird nicht angezeigt
+    mail = Postausgang.objects.get()
+    assert (mail.empfaenger, mail.art) == ("richtig@example.test", Postausgang.Art.EINLADUNG)
+    assert "/passwort/setzen/" not in danach and "/passwort/setzen/" not in str(dict(c.session))
+    assert "ungültig" in Client().get(link, follow=True).content.decode()
+    eintrag = Protokolleintrag.objects.get(objekt_id=neu.pk, aktion="geaendert")
+    assert eintrag.daten["email"] == ["falsch@example.test", "richtig@example.test"]
+
+
+def test_adresse_korrigieren_ohne_versand_nennt_den_befehl(konten, eingeladen):
+    c = angemeldet(konten[A])
+    antwort = c.post(seite(eingeladen), {"rolle": A, "email": "richtig@example.test"})
+    danach = c.get(antwort.url).content.decode()
+    assert "konto-aendern richtig@example.test --passwort-link" in danach and "/passwort/setzen/" not in danach
+
+
+def test_unveraenderte_oder_vergebene_adresse(konten, eingeladen, settings):
+    settings.EMAIL_HOST = "mail.example.test"
+    c = angemeldet(konten[A])
+    c.post(seite(eingeladen), {"rolle": A, "email": eingeladen.email})
+    assert c.post(seite(eingeladen), {"rolle": A, "email": konten[M].email}).status_code == 200
+    assert frisch(eingeladen).email == "falsch@example.test" and not Postausgang.objects.exists()
+
+
+@pytest.mark.parametrize("zustand", ["passwort", "angemeldet"])
+def test_adresse_benutzter_admins_bleibt_gesperrt(konten, eingeladen, zustand):
+    if zustand == "passwort":
+        eingeladen.set_password(TESTPASSWORT)
+    else:
+        eingeladen.last_login = timezone.now()
+    eingeladen.save()
+    c = angemeldet(konten[A])
+    assert 'name="email"' not in c.get(seite(eingeladen)).content.decode()
+    c.post(seite(eingeladen), {"rolle": A, "email": "boese@example.test"})
+    assert frisch(eingeladen).email == "falsch@example.test"
+    with pytest.raises(PermissionDenied):
+        kontenlogik.adresse_korrigieren(konten[A], eingeladen, "boese@example.test")
+
+
+def test_nie_benutzter_admin_ohne_schutzfrist(konten, eingeladen):
+    rolle_senden(konten[A], eingeladen, P)
+    neu = frisch(eingeladen)
+    assert neu.rolle == P and neu.admin_bis is None
+    assert aktion(konten[BL], neu, "link").status_code == 302
 
 
 def test_schutzfrist_nach_dem_herabstufen(konten, zweiter):

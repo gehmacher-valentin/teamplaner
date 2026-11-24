@@ -49,7 +49,8 @@ def rolle_setzen(akteur, ziel, rolle):
     if war_admin:
         if not anderer_admin_vorhanden(konto, admins):
             raise LetzterAdmin
-        konto.admin_bis = timezone.now()
+        if not rechte.nie_benutzt(konto):  # sonst gibt es nichts zu schützen
+            konto.admin_bis = timezone.now()
     konto.rolle = rolle
     konto.save(update_fields=["rolle", "admin_bis"])
     ziel.rolle, ziel.admin_bis = konto.rolle, konto.admin_bis
@@ -58,6 +59,19 @@ def rolle_setzen(akteur, ziel, rolle):
     if war_admin:
         sicherheitshinweis(konto, "admin_entzogen")
     return True
+
+
+@transaction.atomic
+def adresse_korrigieren(akteur, ziel, email):
+    """Falsche Adresse eines noch nie benutzten Admin-Kontos. Der alte Einladungslink wird dadurch ungültig.
+    Kein Sicherheitshinweis an die bisherige Adresse: sie gehört womöglich jemand Fremdem."""
+    _admins, akteur, konto = _sperren(akteur, ziel)
+    if not rechte.darf_adresse_korrigieren(akteur, konto):
+        raise PermissionDenied
+    alt, konto.email = konto.email, email
+    konto.save(update_fields=["email"])
+    ziel.email = email
+    protokollieren(akteur, "konto", konto.pk, "geaendert", {"person": konto.person, "email": [alt, email]})
 
 
 @transaction.atomic

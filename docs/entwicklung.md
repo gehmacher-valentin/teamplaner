@@ -106,7 +106,7 @@ Für Rechteprüfung und Einteilungslogik sind automatische Tests Pflicht.
 | `tests/test_schichten.py` | Abhängigkeitsrichtung der Apps, keine Importe aus fremden `views.py` |
 | `tests/test_direkt_bearbeiten.py` | Aufgabendetail direkt bearbeiten, Konflikte, Toasts, Gantt-Einstellung am Konto |
 | `tests/test_sicherheit.py` | Zwei-Faktor-Anmeldung, Sitzungen, Konten übernehmen, Passwort-Links und Postausgang, Live-Verbindung, ungültige Eingaben (400 statt 500, NUL-Zeichen) |
-| `tests/test_admin_konten.py` | Admins herabstufen und deaktivieren, letzter Admin, Schutzfrist, `konto_aendern` |
+| `tests/test_admin_konten.py` | Admins herabstufen und deaktivieren, letzter Admin, Schutzfrist, Link per E-Mail, Adresse korrigieren, bereinigte Admins, Deaktivieren beendet Sitzungen, `konto_aendern` |
 | `tests/test_mailverlauf.py` | Protokollzeilen je E-Mail, Ausgabe des Versanddienstes, `mail_protokoll`, Einladung bei `konto_anlegen`, Seite „E-Mail-Versand“ |
 | `tests/test_mail_versand.py`, `tests/test_organisation.py` | E-Mail-Versand global abschaltbar, Passwort-Link als QR-Code, Organisationsname |
 | `tests/test_aufgabenbaum.py`, `tests/test_unteraufgaben.py`, `tests/test_seitenleiste.py` | Projektliste als Baum (Ziehen, Ebenen, Rechte), Unteraufgaben bis drei Ebenen, Aufgabendetail als Seitenleiste |

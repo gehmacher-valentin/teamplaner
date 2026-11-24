@@ -20,6 +20,9 @@
         {% include "teile/feld.html" with feld=form.anzeigename %}
         {% include "teile/feld.html" with feld=form.email %}
       </div>
+      {% elif adresse_korrigierbar %}
+      {% include "teile/feld.html" with feld=form.email %}
+      <p class="klein gedaempft ohne-rand">{% translate "Mit diesem Konto hat sich noch niemand angemeldet, die Adresse lässt sich daher noch korrigieren. Danach geht eine neue Einladung an die neue Adresse, und der alte Link gilt nicht mehr." %}</p>
       {% else %}<p class="klein gedaempft ohne-rand">{{ ziel.email }}</p>{% endif %}
       <div class="formular__zeile">
         {% include "teile/feld.html" with feld=form.rolle %}
@@ -32,7 +35,7 @@
       {% include "teile/feld.html" with feld=form.darf_tagesfreigabe zeile=True %}
       {% if freigabe_zeile_aus %}<div class="meldung meldung--info klein">{% translate "Die Zeile ist unter Einstellungen → Allgemein ausgeschaltet; der Haken wirkt erst, wenn sie eingeschaltet ist." %}</div>{% endif %}
       {% if freigabe_ohne_teamplaner %}<div class="meldung meldung--warning klein">{% translate "Diese Person sieht den Teamplaner nicht und kann die Freigabe deshalb trotz Haken nicht setzen." %}</div>{% endif %}
-      {% else %}<p class="klein gedaempft ohne-rand">{% translate "Name, E-Mail-Adresse und Zwei-Faktor-Anmeldung anderer Admins lassen sich hier nicht ändern, nur über die Kommandozeile des Servers." %}</p>{% endif %}
+      {% elif not adresse_korrigierbar %}<p class="klein gedaempft ohne-rand">{% translate "Name, E-Mail-Adresse und Zwei-Faktor-Anmeldung anderer Admins lassen sich hier nicht ändern, nur über die Kommandozeile des Servers." %}</p>{% endif %}
     </div>
     {% url 'einst_personen' as zurueck %}{% include "teile/speicherleiste.html" with abbrechen=zurueck %}
   </section>

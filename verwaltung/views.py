@@ -374,6 +374,16 @@ def _link_nur_mailen(akteur, ziel):
     return True
 
 
+def _neu_einladen(request, ziel):
+    """Nach dem Korrigieren der Adresse: neue Einladung dorthin, der alte Link gilt nicht mehr."""
+    if ziel.is_active and _link_nur_mailen(request.user, ziel):
+        messages.info(request, _("Eine neue Einladung geht per E-Mail an %(email)s. Der bisherige Link gilt nicht mehr.")
+                      % {"email": ziel.email})
+    else:
+        messages.warning(request, _("Der bisherige Link gilt nicht mehr. Ein neuer lässt sich am Server erzeugen: %(befehl)s")
+                         % {"befehl": f"sudo teamplaner konto-aendern {ziel.email} --passwort-link"})
+
+
 def _nach_einladung(request, neu):
     """Link erzeugen und zur Seite, die ihn zeigt: die Seite der Person, wenn das Konto bearbeitet
     werden darf – sonst (gleiche Rolle) eine Bestätigungsseite, die kein Bearbeitungsrecht braucht."""
@@ -473,9 +483,11 @@ def person_bearbeiten(request, pk):
     eigene_rolle_aenderbar = ziel.pk == konto.pk and rechte.ist_admin(konto) and konten.anderer_admin_vorhanden(ziel)
     if ziel.pk == konto.pk and not eigene_rolle_aenderbar:
         form.fields["rolle"].disabled = True  # ohne weiteren Admin bleibt die eigene Rolle
+    adresse_korrigierbar = rechte.darf_adresse_korrigieren(konto, ziel)
     if not bearbeitbar:
         for feld in ("anzeigename", "email", "bereich", "gewerke", "systemkonto", "darf_tagesfreigabe"):
-            del form.fields[feld]
+            if feld != "email" or not adresse_korrigierbar:
+                del form.fields[feld]
     elif not anmeldung_verwaltbar:
         form.fields["email"].disabled = True
     if request.method == "POST" and form.is_valid():
@@ -487,6 +499,9 @@ def person_bearbeiten(request, pk):
         diff = {}
         try:
             with transaction.atomic():
+                korrigiert = adresse_korrigierbar and d["email"] != ziel.email
+                if korrigiert:
+                    konten.adresse_korrigieren(konto, ziel, d["email"])
                 rolle_neu = konten.rolle_setzen(konto, ziel, d["rolle"])
                 if bearbeitbar:
                     person.anzeigename, person.bereich = d["anzeigename"], d["bereich"]
@@ -507,6 +522,8 @@ def person_bearbeiten(request, pk):
             # An die bisherige Adresse: die Person merkt es, auch wenn jemand anderes ihr Konto übernehmen will
             sicherheitshinweis(ziel, "email_geaendert", an=alt["email"], neu=ziel.email)
         messages.success(request, _("Gespeichert."))
+        if korrigiert:
+            _neu_einladen(request, ziel)
         ich = ziel if ziel.pk == konto.pk else konto
         if not rechte.darf_konto_oeffnen(ich, ziel):
             # Sich selbst herabgestuft oder die Person auf die eigene Rolle angehoben
@@ -524,7 +541,7 @@ def person_bearbeiten(request, pk):
                  freigabe_ohne_teamplaner=ziel.darf_tagesfreigabe and not hat_planungsansicht(ziel), link=link, link_qr=link_qr_svg(link) if link else None, mail_aktiv=mail_aktiv(),
                  zwei_faktor_aktiv=zwei_faktor.aktiv(ziel),
                  immer_bearbeiten=rechte.sieht_alles_im_teamplaner(ziel), ab_planer=ziel.hat_mindestens(Rolle.PLANER),
-                 bearbeitbar=bearbeitbar, anmeldung_zuruecksetzbar=rechte.darf_anmeldung_zuruecksetzen(konto, ziel),
+                 bearbeitbar=bearbeitbar, adresse_korrigierbar=adresse_korrigierbar, anmeldung_zuruecksetzbar=rechte.darf_anmeldung_zuruecksetzen(konto, ziel),
                  link_nur_per_mail=rechte.darf_link_mailen(konto, ziel),
                  eigene_rolle_aenderbar=eigene_rolle_aenderbar,
                  schutz_bis=ziel.admin_bis + rechte.ADMIN_SCHUTZFRIST if rechte.in_schutzfrist(ziel) else None,
