@@ -511,7 +511,7 @@ def person_bearbeiten(request, pk):
                  freigabe_ohne_teamplaner=ziel.darf_tagesfreigabe and not hat_planungsansicht(ziel), link=link, link_qr=link_qr_svg(link) if link else None, mail_aktiv=mail_aktiv(),
                  zwei_faktor_aktiv=zwei_faktor.aktiv(ziel),
                  immer_bearbeiten=rechte.sieht_alles_im_teamplaner(ziel), ab_planer=ziel.hat_mindestens(Rolle.PLANER),
-                 bearbeitbar=bearbeitbar, anmeldung_verwaltbar=anmeldung_verwaltbar,
+                 bearbeitbar=bearbeitbar, anmeldung_zuruecksetzbar=rechte.darf_anmeldung_zuruecksetzen(konto, ziel),
                  eigene_rolle_aenderbar=eigene_rolle_aenderbar,
                  schutz_bis=ziel.admin_bis + rechte.ADMIN_SCHUTZFRIST if rechte.in_schutzfrist(ziel) else None,
                  freigaben=[g for g in _freigaben_der_person(ziel) if bearbeitbar and darf_freigaben[g["art"]]])
@@ -543,7 +543,8 @@ def person_aktion(request, pk, aktion):
     konto = request.user
     ziel = get_object_or_404(Konto.objects.select_related("person"), pk=pk)
     darf = {"deaktivieren": rechte.darf_konto_oeffnen, "reaktivieren": rechte.darf_konto_deaktivieren,
-            "link": rechte.darf_anmeldung_verwalten, "zwei_faktor_zuruecksetzen": rechte.darf_anmeldung_verwalten,
+            "link": rechte.darf_anmeldung_zuruecksetzen,
+            "zwei_faktor_zuruecksetzen": rechte.darf_anmeldung_zuruecksetzen,
             "foto_entfernen": rechte.darf_konto_bearbeiten}.get(aktion)
     if darf is None or not darf(konto, ziel):
         raise PermissionDenied

@@ -70,6 +70,12 @@ def darf_anmeldung_verwalten(konto, ziel):
     return darf_konto_bearbeiten(konto, ziel) and (ziel.pk == konto.pk or not in_schutzfrist(ziel))
 
 
+def darf_anmeldung_zuruecksetzen(konto, ziel):
+    """Passwort-Link und Zurücksetzen der Zwei-Faktor-Anmeldung durch die Verwaltung. Nie für das eigene
+    Konto: das geht nur mit dem Passwort unter „Anmeldung & Sicherheit“."""
+    return ziel.pk != konto.pk and darf_anmeldung_verwalten(konto, ziel)
+
+
 def darf_konto_deaktivieren(konto, ziel):
     """Deaktivieren und reaktivieren; Admins auch andere Admins, niemand sich selbst."""
     if ziel.pk == konto.pk:

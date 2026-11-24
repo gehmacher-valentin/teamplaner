@@ -47,7 +47,7 @@
       <div>{% if ziel.has_usable_password %}{% translate "Passwort gesetzt" %}{% else %}{% translate "Einladung noch nicht angenommen" %}{% endif %}</div>
       {% if ziel.last_login %}<div class="klein gedaempft">{% translate "Letzte Anmeldung" %} <span class="mono">{{ ziel.last_login|date:"d.m.Y H:i" }}</span></div>{% endif %}
     </div>
-    {% if anmeldung_verwaltbar and ziel.pk != user.pk %}
+    {% if anmeldung_zuruecksetzbar %}
       <form method="post" action="{% url 'person_aktion' ziel.pk 'link' %}"{% if ziel.has_usable_password and not mail_aktiv %} data-bestaetigen="{% translate 'Das bisherige Passwort gilt danach nicht mehr, bis die Person über den Link ein neues festlegt. Fortfahren?' %}"{% endif %}>{% csrf_token %}
         <button type="submit" class="knopf">{% if not ziel.has_usable_password %}{% translate "Neuen Einladungslink erzeugen" %}{% elif mail_aktiv %}{% translate "Link zum Zurücksetzen schicken" %}{% else %}{% translate "Passwort zurücksetzen und Link erzeugen" %}{% endif %}</button>
       </form>
@@ -57,7 +57,7 @@
     <div class="luecke">{% translate "Zwei-Faktor-Anmeldung" %}</div>
     {% if zwei_faktor_aktiv %}
       <span class="badge badge--ok">{% blocktranslate with seit=ziel.totp_seit|date:"d.m.Y" %}Eingerichtet seit {{ seit }}{% endblocktranslate %}</span>
-      {% if anmeldung_verwaltbar and ziel.pk != user.pk %}
+      {% if anmeldung_zuruecksetzbar %}
         <form method="post" action="{% url 'person_aktion' ziel.pk 'zwei_faktor_zuruecksetzen' %}" data-bestaetigen="{% if mail_aktiv %}{% translate 'Zwei-Faktor-Anmeldung zurücksetzen, z. B. weil das Telefon verloren ist? Die Person bekommt eine E-Mail.' %}{% else %}{% translate 'Zwei-Faktor-Anmeldung zurücksetzen, z. B. weil das Telefon verloren ist?' %}{% endif %}">{% csrf_token %}
           <button type="submit" class="knopf knopf--klein">{% translate "Zurücksetzen" %}</button>
         </form>

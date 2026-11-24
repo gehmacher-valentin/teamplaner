@@ -8,7 +8,7 @@ from django.core.management import CommandError, call_command
 from django.test import Client
 from django.utils import timezone
 
-from kern import rechte
+from kern import rechte, zwei_faktor
 from kern.models import Konto, Protokolleintrag, Rolle
 from zusammenarbeit.models import Postausgang
 
@@ -78,6 +78,21 @@ def test_anderen_admin_deaktivieren_und_reaktivieren(konten, zweiter):
 def test_anmeldung_anderer_admins_gesperrt(konten, zweiter, name):
     assert aktion(konten[A], zweiter, name).status_code == 403
     assert frisch(zweiter).has_usable_password()
+
+
+@pytest.mark.parametrize("rolle", [A, BL])
+@pytest.mark.parametrize("name", ["link", "zwei_faktor_zuruecksetzen"])
+def test_eigene_anmeldung_nicht_ueber_die_personenverwaltung(konten, rolle, name):
+    konto = konten[rolle]
+    zwei_faktor.einrichten(konto, zwei_faktor.neues_geheimnis(), 1)
+    c = angemeldet(konto)
+    sitzung = c.session
+    sitzung[zwei_faktor.SITZUNG] = zwei_faktor.marke(konto)
+    sitzung.save()
+    assert c.post(f"/personen/{konto.pk}/{name}/").status_code == 403
+    neu = frisch(konto)
+    assert neu.has_usable_password() and zwei_faktor.aktiv(neu)
+    assert c.get(seite(konto)).status_code == 200  # Sitzung läuft weiter
 
 
 def test_schutzfrist_nach_dem_herabstufen(konten, zweiter):
