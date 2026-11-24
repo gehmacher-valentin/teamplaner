@@ -110,6 +110,7 @@ test("Editor: Schriftfarbe, Marker und Überschrift bleiben nach dem Neuladen", 
   const leiste = seite.locator(".editor__leiste");
   await expect(leiste.locator('button[title="Fett"]')).toHaveCSS("font-weight", "700");
   await expect(leiste.locator('button[title="Kursiv"]')).toHaveCSS("font-style", "italic");
+  await expect(leiste.getByRole("button", { name: "Link", exact: true })).toHaveCSS("text-decoration-line", "underline");
   await expect(leiste.locator("button[aria-haspopup]")).toHaveCount(2);
 
   await seite.reload();

@@ -109,6 +109,7 @@ function knoepfe(): Knopf[] {
     {
       label: t("link"),
       titel: t("link_einfuegen"),
+      klasse: "editor__knopf--link",
       aktion: async (e) => {
         const alt = e.getAttributes("link").href as string | undefined;
         const url = await eingeben(t("link_frage"), alt ?? "https://");
