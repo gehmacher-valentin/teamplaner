@@ -22,7 +22,7 @@
       </div>
       {% elif adresse_korrigierbar %}
       {% include "teile/feld.html" with feld=form.email %}
-      <p class="klein gedaempft ohne-rand">{% translate "Mit diesem Konto hat sich noch niemand angemeldet, die Adresse lässt sich daher noch korrigieren. Danach geht eine neue Einladung an die neue Adresse, und der alte Link gilt nicht mehr." %}</p>
+      <p class="klein gedaempft ohne-rand">{% translate "Mit diesem Konto hat sich noch niemand angemeldet, die Adresse lässt sich daher noch korrigieren. Der alte Einladungslink gilt danach nicht mehr." %}{% if mail_aktiv %} {% translate "Eine neue Einladung geht an die neue Adresse." %}{% endif %}</p>
       {% else %}<p class="klein gedaempft ohne-rand">{{ ziel.email }}</p>{% endif %}
       <div class="formular__zeile">
         {% include "teile/feld.html" with feld=form.rolle %}

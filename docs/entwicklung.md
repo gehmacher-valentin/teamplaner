@@ -120,7 +120,7 @@ Für Rechteprüfung und Einteilungslogik sind automatische Tests Pflicht.
 | `frontend/src/gantt/logik.test.ts` | Zeitachse, Zeilen, Pfeile (rot nur bei verletzten geplanten Terminen), Warnzeichen je Zeile |
 
 | `frontend/e2e/01-rundgang.spec.ts` | alle Seiten der Navigation am Desktop und am Handy, Einstellungen, keine Vorlagenreste |
-| `frontend/e2e/02-einladen.spec.ts` | Konto einladen, auch in der eigenen Rolle: Link erscheint einmal und funktioniert |
+| `frontend/e2e/02-einladen.spec.ts` | Konto einladen, auch in der eigenen Rolle: Link erscheint einmal und funktioniert; auf die eigene Rolle anheben |
 | `frontend/e2e/03-einteilen.spec.ts` | Teamplaner: aus der Palette ziehen, verschieben, verlängern, rückgängig, live bei einer zweiten Person; Freitext-Chip ziehen, Text eingeben und ändern |
 | `frontend/e2e/04-gantt.spec.ts` | Gantt: Warnzeichen bei Verletzung durch Einteilungen, Hinweis klappt am unteren Rand nach oben, Balken ziehen und Nachziehen, schnelle Änderungen, Abhängigkeit anlegen und entfernen |
 | `frontend/e2e/05-aufgabe.spec.ts` | Aufgabe anlegen, Seitenleiste, direkt bearbeiten, Erwähnung, Anhang, Posteingang |

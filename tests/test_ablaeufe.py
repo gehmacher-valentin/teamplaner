@@ -47,9 +47,10 @@ def test_einladen_in_der_eigenen_rolle_zeigt_den_link(konten, bereich_a, rolle):
     antwort = c.get(f"/einstellungen/personen/{neu.pk}/")
     if rolle == BL:
         assert antwort.status_code == 403
-    else:  # Admins öffnen andere Admins, aber nur für Rolle und Deaktivieren
+    else:  # Admins öffnen andere Admins: Rolle, Deaktivieren und, solange nie benutzt, die Adresse
         inhalt = antwort.content.decode()
-        assert 'name="email"' not in inhalt and "/passwort/setzen/" not in inhalt
+        assert 'name="anzeigename"' not in inhalt and "/passwort/setzen/" not in inhalt
+        assert 'name="email"' in inhalt
 
 
 def test_link_erscheint_nur_beim_eingeladenen_konto(konten, bereich_a):
