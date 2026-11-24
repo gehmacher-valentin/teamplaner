@@ -105,13 +105,19 @@ export function knopfText(formular: HTMLFormElement, absender?: HTMLElement | nu
   return text.charAt(0).toLocaleUpperCase() + text.slice(1);
 }
 
+/** Frage vor dem Absenden: am Formular oder an der gerade gewählten Option einer Auswahlliste. */
+export function frageVon(formular: HTMLFormElement): string | undefined {
+  return formular.dataset?.bestaetigen
+    || formular.querySelector<HTMLOptionElement>("select option:checked[data-bestaetigen]")?.dataset.bestaetigen;
+}
+
 export function initBestaetigen() {
   // In der Capture-Phase, damit HTMX das Absenden erst nach der Antwort sieht
   document.addEventListener(
     "submit",
     (event) => {
       const formular = event.target as HTMLFormElement;
-      const frage = formular.dataset?.bestaetigen;
+      const frage = frageVon(formular);
       if (!frage || formular.dataset.bestaetigt === "1") return;
       event.preventDefault();
       event.stopImmediatePropagation();

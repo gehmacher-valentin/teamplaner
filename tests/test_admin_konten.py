@@ -190,6 +190,26 @@ def test_anmeldung_setzt_last_login(konten):
     assert frisch(konten[A]).last_login is not None
 
 
+def test_auf_die_eigene_rolle_anheben(konten):
+    """Bereichsleitung darf das Konto danach nicht mehr öffnen: zur Liste, mit Meldung, statt 403."""
+    html = angemeldet(konten[BL]).get(seite(konten[P])).content.decode()
+    assert "Danach kann nur ein Admin diese Rolle wieder ändern." in html
+    antwort = rolle_senden(konten[BL], konten[P], BL)
+    assert antwort.url == "/einstellungen/personen/"
+    assert "Gespeichert." in antwort.client.get(antwort.url).content.decode()
+    assert frisch(konten[P]).rolle == BL
+    # Admin: die Seite bleibt erreichbar
+    html = angemeldet(konten[A]).get(seite(konten[M])).content.decode()
+    assert "Zum Admin machen?" in html and "Danach kann nur ein Admin" not in html
+    assert rolle_senden(konten[A], konten[M], A).url == seite(konten[M])
+
+
+def test_keine_rueckfrage_ohne_anheben(konten, zweiter):
+    for wer, ziel in ((konten[A], zweiter), (konten[A], konten[A]), (konten[BL], konten[BL])):
+        assert "data-bestaetigen=\"Zum Admin" not in angemeldet(wer).get(seite(ziel)).content.decode()
+        assert "Auf Bereichsleitung anheben" not in angemeldet(wer).get(seite(ziel)).content.decode()
+
+
 def test_bereichsleitung_weder_sich_noch_admins(konten, zweiter):
     assert rolle_senden(konten[BL], zweiter, M).status_code == 403
     assert aktion(konten[BL], zweiter, "deaktivieren").status_code == 403

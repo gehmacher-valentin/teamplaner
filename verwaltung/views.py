@@ -497,8 +497,10 @@ def person_bearbeiten(request, pk):
             # An die bisherige Adresse: die Person merkt es, auch wenn jemand anderes ihr Konto übernehmen will
             sicherheitshinweis(ziel, "email_geaendert", an=alt["email"], neu=ziel.email)
         messages.success(request, _("Gespeichert."))
-        if ziel.pk == konto.pk and not rechte.darf_konten_verwalten(ziel):
-            return redirect(settings.LOGIN_REDIRECT_URL)  # sich selbst herabgestuft
+        ich = ziel if ziel.pk == konto.pk else konto
+        if not rechte.darf_konto_oeffnen(ich, ziel):
+            # Sich selbst herabgestuft oder die Person auf die eigene Rolle angehoben
+            return redirect(settings.LOGIN_REDIRECT_URL if ich is ziel else "einst_personen")
         if rolle_neu and ziel.rolle == Rolle.PLANER and not hat_planungsansicht(ziel):
             messages.info(request, _hinweis_planer_ohne_ansicht(konto, ziel))
         elif ziel.darf_tagesfreigabe and not hat_planungsansicht(ziel) and (
