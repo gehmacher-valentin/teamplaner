@@ -1,5 +1,5 @@
 // Ablauf 6: Notizen und Bestellungen je einmal anlegen, bearbeiten und wiederfinden.
-import { expect, ruhe, test } from "./hilfen";
+import { editorBereit, expect, ruhe, test } from "./hilfen";
 
 test("Notiz: anlegen, Text mit Markdown schreiben, über die Suche wiederfinden", async ({ seiteFuer }) => {
   const seite = await seiteFuer("planer");
@@ -49,6 +49,7 @@ test("Eigene Dialoge statt Browser-Dialog: Link im Editor, Notiz löschen", asyn
   await seite.locator("#notiz-titel-eingabe").press("Tab");
   const editor = seite.locator("[data-editor='notiz-text'] [contenteditable='true']");
   await editor.click();
+  await editorBereit(seite);
   await seite.keyboard.type("Webseite");
   await seite.keyboard.press("Shift+Home");
 
@@ -84,6 +85,7 @@ test("Editor: Schriftfarbe, Marker und Überschrift bleiben nach dem Neuladen", 
   await seite.locator("#notiz-titel-eingabe").press("Tab");
   const editor = seite.locator("[data-editor='notiz-text'] [contenteditable='true']");
   await editor.click();
+  await editorBereit(seite);
   // Erst den Text, dann formatieren (Farben setzen sich sonst in der nächsten Zeile fort);
   // Wörter per Doppelklick auswählen, das ist stabiler als Pfeiltasten. Der Absatz ist so breit wie
   // der Editor: auf das Wort am Zeilenanfang klicken, nicht in die Mitte
@@ -93,9 +95,11 @@ test("Editor: Schriftfarbe, Marker und Überschrift bleiben nach dem Neuladen", 
   }
   const wort = { position: { x: 12, y: 8 } };
   await seite.locator('.editor__leiste button[title="Überschrift 3"]').click();
+  await editorBereit(seite);
   await editor.getByText("wichtig", { exact: true }).dblclick(wort);
   await seite.getByRole("button", { name: "Marker" }).click();
   await seite.getByRole("group", { name: "Marker" }).getByRole("button", { name: "Gelb" }).click();
+  await editorBereit(seite);
   await editor.getByText("Achtung", { exact: true }).dblclick(wort);
   await seite.getByRole("button", { name: "Schriftfarbe" }).click();
   await seite.getByRole("group", { name: "Schriftfarbe" }).getByRole("button", { name: "Rot" }).click();

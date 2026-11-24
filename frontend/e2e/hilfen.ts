@@ -96,6 +96,17 @@ export async function mitte(ort: ReturnType<Page["locator"]>) {
 }
 
 /**
+ * Nach dem Fokussieren des Editors (Klick hinein oder auf die Werkzeugleiste), bevor Text ausgewählt
+ * wird: ProseMirror setzt 20 ms nach dem Fokus die ihm bekannte Auswahl wieder ein, falls die im
+ * Browser abweicht. Kommt dieser Timer verspätet, kann er eine gerade gesetzte Auswahl verwerfen.
+ * Der spätere Timer hier läuft im Browser und kommt deshalb danach an die Reihe. Tiptap fokussiert
+ * nach Knöpfen der Werkzeugleiste erst im nächsten Frame, daher zuerst requestAnimationFrame.
+ */
+export async function editorBereit(seite: Page) {
+  await seite.evaluate(() => new Promise((fertig) => requestAnimationFrame(() => setTimeout(fertig, 50))));
+}
+
+/**
  * Nach einem HTMX-Austausch: warten, bis HTMX den neuen Inhalt verarbeitet hat. Die Felder stehen
  * schon während der Settle-Verzögerung im DOM, hx-post und Co. greifen aber erst danach; eine
  * Eingabe in diesem Fenster ginge verloren.
