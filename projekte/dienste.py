@@ -22,7 +22,7 @@ from .models import UNTERAUFGABEN_EBENEN, Aufgabe, Status
 ERLAUBTE_TAGS = {"p", "br", "strong", "b", "em", "i", "u", "s", "ul", "ol", "li", "h1", "h2", "h3", "a", "blockquote", "code", "pre",
                  "hr", *textfarben.TAGS}
 
-VERLAUF_FELDER = ["titel", "abschnitt", "verantwortlich", "gewerk", "beginn_am", "faellig_am", "wiederholung", "status",
+VERLAUF_FELDER = ["titel", "abschnitt", "verantwortlich", "gewerk", "raum", "beginn_am", "faellig_am", "wiederholung", "status",
                   "schaetzung_personentage", "beschreibung"]
 
 
@@ -141,13 +141,13 @@ def aufgabe_speichern(konto, aufgabe, daten, version, nachziehen=True):
 
 
 def _kopie(konto, vorlage, *, eltern, abschnitt, versatz, **felder):
-    """Offene Kopie für die Wiederholung: Titel, Beschreibung, Verantwortlich, Gruppe, Schätzung, Regel,
+    """Offene Kopie für die Wiederholung: Titel, Beschreibung, Verantwortlich, Gruppe, Raum, Schätzung, Regel,
     Sortierung; Termine um ``versatz`` verschoben. Verlauf, Einteilungen, Kommentare, Anhänge und
     Abhängigkeiten bleiben bei der alten Aufgabe."""
     werte = {
         "projekt_id": vorlage.projekt_id, "abschnitt": abschnitt, "eltern": eltern, "titel": vorlage.titel,
         "beschreibung": vorlage.beschreibung, "verantwortlich_id": vorlage.verantwortlich_id,
-        "gewerk_id": vorlage.gewerk_id, "schaetzung_personentage": vorlage.schaetzung_personentage,
+        "gewerk_id": vorlage.gewerk_id, "raum_id": vorlage.raum_id, "schaetzung_personentage": vorlage.schaetzung_personentage,
         "wiederholung": vorlage.wiederholung, "sortierung": vorlage.sortierung,
         "beginn_am": vorlage.beginn_am + versatz if vorlage.beginn_am else None,
         "faellig_am": vorlage.faellig_am + versatz if vorlage.faellig_am else None,

@@ -7,7 +7,7 @@ from django.db.models.functions import Lower
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
-from kern.models import Gewerk, Person
+from kern.models import Gewerk, Person, Raum
 
 
 class Projektfarbe(models.TextChoices):
@@ -166,6 +166,10 @@ class Aufgabe(models.Model):
     gewerk = models.ForeignKey(
         Gewerk, on_delete=models.SET_NULL, null=True, blank=True,
         related_name="aufgaben", verbose_name=_("Gruppe"),
+    )
+    raum = models.ForeignKey(
+        Raum, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="aufgaben", verbose_name=_("Raum"),
     )
     beginn_am = models.DateField(_("Geplanter Beginn"), null=True, blank=True)  # Gantt
     faellig_am = models.DateField(_("Fällig am"), null=True, blank=True)

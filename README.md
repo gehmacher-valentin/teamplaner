@@ -23,9 +23,9 @@ Live-Aktualisierung für alle. Oberfläche auf Deutsch und Englisch, zum Selbsth
 - Änderungen erscheinen sofort bei allen, die die Ansicht offen haben
 
 **Projekte und Aufgaben**
-- Projekte mit Tags, Abschnitten, Status und Priorität 1–10; Aufgaben mit Verantwortlichen, Gruppe, Schätzung,
+- Projekte mit Tags, Abschnitten, Status und Priorität 1–10; Aufgaben mit Verantwortlichen, Gruppe, Raum, Schätzung,
   Fälligkeit, Unteraufgaben und Anhängen
-- Direkt in der Liste bearbeiten und per Drag-and-drop sortieren, Filter, Volltextsuche
+- Direkt in der Liste bearbeiten und per Drag-and-drop sortieren, Filter (auch nach Raum), Volltextsuche
 - Aufgabendetail als Seitenleiste neben der Liste
 - Arbeitstage-Widget: an welchen Tagen an einer Aufgabe gearbeitet wird
 - Kommentare mit @-Erwähnungen, Verlauf jeder Aufgabe, Posteingang als Glocke in der Kopfzeile

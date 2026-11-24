@@ -26,7 +26,7 @@ from gantt import rechte as gantt_rechte
 from kern import rechte, zwei_faktor
 from kern.freigaben import BEARBEITEN, SEHEN, zusammenfassung
 from kern.hilfen import einstellungsseite, erfordert
-from kern.models import Bereich, Farbschema, Gewerk, Rolle, Systemeinstellungen
+from kern.models import Bereich, Farbschema, Gewerk, Raum, Rolle, Systemeinstellungen
 from kern.protokoll import aenderungen, protokollieren
 from planung.kalender import gesetzliche_feiertage, neue_freie_tage, zeitraeume
 from planung.models import FreierTag, FreigabeStufe
@@ -42,7 +42,7 @@ from zusammenarbeit.mail import (
 from zusammenarbeit.models import MailStatus
 
 from . import freigaben
-from .forms import BereichForm, FreigabeStufeForm, GewerkForm, StatusForm
+from .forms import BereichForm, FreigabeStufeForm, GewerkForm, RaumForm, StatusForm
 
 
 def _darf_personen(konto):
@@ -350,23 +350,30 @@ def rollen(request):
     return seite(request, "kern/einst_rollen.html", "rollen", rechtematrix=RECHTEMATRIX, rollen=list(Rolle))
 
 
-# ---------- Listen: Status, Gewerke, Bereiche, Freigabestufen ----------
+# ---------- Listen: Status, Gewerke, Bereiche, Räume, Freigabestufen ----------
 
 def _listen():
-    def status_verwendung():
-        anzahl = dict(Aufgabe.objects.values_list("status").annotate(n=Count("id")).values_list("status", "n"))
-        return lambda obj: anzahl.get(obj.pk, 0)
+    def aufgaben_je(feld):
+        def verwendung():
+            anzahl = dict(Aufgabe.objects.filter(**{f"{feld}__isnull": False}).values_list(feld)
+                          .annotate(n=Count("id")).values_list(feld, "n"))
+            return lambda obj: anzahl.get(obj.pk, 0)
+        return verwendung
+
+    def aufgaben_text(n):
+        return ngettext("%(n)s Aufgabe", "%(n)s Aufgaben", n) % {"n": n}
 
     return {
         # Art: Modell, Formular, Titel, ziehbar, Verwendung (Zähler), Text zur Verwendung, Löschen gesperrt
-        "status": (Status, StatusForm, gettext_lazy("Status"), True, status_verwendung,
-                   lambda n: ngettext("%(n)s Aufgabe", "%(n)s Aufgaben", n) % {"n": n}, True),
+        "status": (Status, StatusForm, gettext_lazy("Status"), True, aufgaben_je("status"), aufgaben_text, True),
         "gewerk": (Gewerk, GewerkForm, gettext_lazy("Gruppe"), False,
                    lambda: (lambda obj: obj.personen.count()),
                    lambda n: ngettext("%(n)s Person", "%(n)s Personen", n) % {"n": n}, False),
         "bereich": (Bereich, BereichForm, gettext_lazy("Bereiche"), True,
                     lambda: (lambda obj: obj.personen.count()),
                     lambda n: ngettext("%(n)s Person", "%(n)s Personen", n) % {"n": n}, True),
+        # Verwendete Räume lassen sich löschen; die Aufgaben haben danach keinen Raum mehr (SET_NULL)
+        "raum": (Raum, RaumForm, gettext_lazy("Räume"), True, aufgaben_je("raum"), aufgaben_text, False),
         "freigabestufe": (FreigabeStufe, FreigabeStufeForm, gettext_lazy("Freigabestufen"), True,
                           lambda: (lambda obj: obj.tage.count()),
                           lambda n: ngettext("%(n)s Tag", "%(n)s Tage", n) % {"n": n}, True),
@@ -376,11 +383,14 @@ def _listen():
 def _frage(art, objekt, anzahl):
     """Rückfrage beim Löschen mit der Verwendung."""
     namen = {"status": _("Status „%(name)s“ löschen?"), "gewerk": _("Gruppe „%(name)s“ löschen?"),
-             "bereich": _("Bereich „%(name)s“ löschen?"),
+             "bereich": _("Bereich „%(name)s“ löschen?"), "raum": _("Raum „%(name)s“ löschen?"),
              "freigabestufe": _("Freigabestufe „%(name)s“ löschen?")}
     text = namen[art] % {"name": objekt}
     if anzahl and art == "gewerk":
         text += " " + ngettext("Es ist %(n)s Person zugeordnet.", "Es ist %(n)s Personen zugeordnet.", anzahl) % {"n": anzahl}
+    if anzahl and art == "raum":
+        text += " " + ngettext("%(n)s Aufgabe hat danach keinen Raum mehr.",
+                               "%(n)s Aufgaben haben danach keinen Raum mehr.", anzahl) % {"n": anzahl}
     return text
 
 
@@ -489,7 +499,7 @@ def liste_loeschen(request, art, pk):
 @require_POST
 @erfordert(rechte.darf_systemeinstellungen)
 def liste_sortieren(request, art):
-    """Neue Reihenfolge von Status oder Bereichen (gezogen bzw. per Pfeiltasten); wirkt überall."""
+    """Neue Reihenfolge von Status, Bereichen, Räumen oder Freigabestufen (gezogen bzw. per Pfeiltasten); wirkt überall."""
     modell, _formklasse, _titel, ziehbar, *_rest = _art_oder_404(art)
     try:
         ids = [int(i) for i in json.loads(request.body).get("ids", [])]

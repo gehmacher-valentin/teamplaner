@@ -27,6 +27,10 @@
       <dd class="zeile zeile--eng">{% include "projekte/_detail_feld.html" with feld="schaetzung_personentage" %}<span class="gedaempft">· {% blocktranslate count n=eingeteilt_pt %}{{ n }} Tag eingeteilt{% plural %}{{ n }} Tage eingeteilt{% endblocktranslate %}</span></dd>
       <dt>{% translate "Gruppe" %}</dt>
       {% include "projekte/_detail_feld.html" with feld="gewerk" %}
+      {% if raeume or aufgabe.raum_id %}
+        <dt>{% if darf_bearbeiten %}<label for="eingabe-raum">{% translate "Raum" %}</label>{% else %}{% translate "Raum" %}{% endif %}</dt>
+        {% include "projekte/_detail_feld.html" with feld="raum" %}
+      {% endif %}
     </dl>
     {% include "projekte/_detail_feld.html" with feld="beschreibung" %}
 

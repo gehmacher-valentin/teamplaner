@@ -4012,3 +4012,33 @@ msgstr "Quarterly"
 #: projekte/wiederholung.py
 msgid "Halbjährlich"
 msgstr "Every six months"
+
+#: kern/models.py projekte/models.py templates/projekte/_aufgabe_detail.html
+#: templates/projekte/projekt.html verwaltung/templatetags/verwaltung.py
+#: zusammenarbeit/verlauf.py
+msgid "Raum"
+msgstr "Room"
+
+#: kern/models.py verwaltung/einstellungen.py
+msgid "Räume"
+msgstr "Rooms"
+
+#: templates/projekte/_detail_feld.html
+msgid "– kein Raum –"
+msgstr "– no room –"
+
+#: templates/projekte/projekt.html
+msgid "Alle Räume"
+msgstr "All rooms"
+
+#: verwaltung/einstellungen.py
+#, python-format
+msgid "Raum „%(name)s“ löschen?"
+msgstr "Delete room “%(name)s”?"
+
+#: verwaltung/einstellungen.py
+#, python-format
+msgid "%(n)s Aufgabe hat danach keinen Raum mehr."
+msgid_plural "%(n)s Aufgaben haben danach keinen Raum mehr."
+msgstr[0] "%(n)s task will no longer have a room."
+msgstr[1] "%(n)s tasks will no longer have a room."

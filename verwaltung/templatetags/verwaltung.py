@@ -12,7 +12,7 @@ register = template.Library()
 OBJEKTE = {
     "konto": gettext_lazy("Konto"), "abwesenheit": gettext_lazy("Abwesenheit"), "freitext": gettext_lazy("Freitext"), "platzhalter": gettext_lazy("Platzhalter"),
     "ansicht": gettext_lazy("Teamplaner-Ansicht"), "gantt_ansicht": gettext_lazy("Gantt-Ansicht"), "projekt": gettext_lazy("Projekt"), "status": gettext_lazy("Status"),
-    "gewerk": gettext_lazy("Gruppe"), "bereich": gettext_lazy("Bereich"), "freiertag": gettext_lazy("Freier Tag"), "tag": gettext_lazy("Tag"),
+    "gewerk": gettext_lazy("Gruppe"), "bereich": gettext_lazy("Bereich"), "raum": gettext_lazy("Raum"), "freiertag": gettext_lazy("Freier Tag"), "tag": gettext_lazy("Tag"),
     "notizordner": gettext_lazy("Notizordner"), "tagesfreigabe": gettext_lazy("Tagesfreigabe"), "freigabestufe": gettext_lazy("Freigabestufe"),
     "einstellungen": gettext_lazy("Einstellungen"), "bestellung": gettext_lazy("Bestellung"),
     "benachrichtigung": gettext_lazy("Benachrichtigung"), "systemmail": gettext_lazy("System-Mail"),

@@ -34,6 +34,21 @@ class Bereich(models.Model):
         return self.name
 
 
+class Raum(models.Model):
+    """Ort einer Aufgabe (Auswahl im Aufgabendetail, Filter in der Projektliste); gepflegt unter Einstellungen → Listen."""
+
+    name = models.CharField(_("Name"), max_length=100, unique=True)
+    sortierung = models.PositiveIntegerField(_("Sortierung"), default=0)
+
+    class Meta:
+        ordering = ["sortierung", "name"]
+        verbose_name = _("Raum")
+        verbose_name_plural = _("Räume")
+
+    def __str__(self):
+        return self.name
+
+
 class Gewerk(models.Model):
     name = models.CharField(_("Name"), max_length=100, unique=True)
 
