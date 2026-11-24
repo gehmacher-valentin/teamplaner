@@ -4,19 +4,24 @@
 """
 
 from django.core.exceptions import PermissionDenied
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.utils import timezone
+from django.utils.crypto import constant_time_compare
 
 from kern import rechte
-from kern.models import Konto, Rolle
+from kern.models import EmailWechsel, Konto, Rolle
 from kern.protokoll import protokollieren
-from zusammenarbeit.mail import sicherheitshinweis
+from zusammenarbeit.mail import email_bestaetigung_senden, sicherheitshinweis
 
 from .freigaben import herabstufen
 
 
 class LetzterAdmin(Exception):
     """Ohne dieses Konto gäbe es keinen Admin mehr, der sich anmelden kann."""
+
+
+class EmailVergeben(Exception):
+    """Die Adresse gehört inzwischen zu einem anderen Konto."""
 
 
 def anderer_admin_vorhanden(ziel, konten=None):
@@ -106,3 +111,70 @@ def reaktivieren(akteur, ziel):
         konto.save(update_fields=["daten_entfernt_am"])
     protokollieren(akteur, "konto", konto.pk, "reaktiviert", {"person": konto.person})
     return True
+
+
+# ---------- Eigene E-Mail-Adresse (das Passwort prüft die View) ----------
+
+def offener_email_wechsel(konto):
+    wechsel = EmailWechsel.objects.filter(konto=konto).first()
+    return wechsel if wechsel is not None and wechsel.offen(konto) else None
+
+
+def passender_email_wechsel(konto, schluessel):
+    """Offener Wechsel dieses Kontos, zu dem der Link gehört, sonst None."""
+    wechsel = offener_email_wechsel(konto)
+    return wechsel if wechsel is not None and constant_time_compare(wechsel.schluessel, schluessel) else None
+
+
+@transaction.atomic
+def email_wechsel_beginnen(konto, email):
+    """Die neue Adresse gilt erst nach der Bestätigung. Ein früherer offener Wechsel wird ersetzt.
+    Gibt False zurück, wenn der E-Mail-Versand inzwischen abgeschaltet ist."""
+    wechsel = EmailWechsel.objects.update_or_create(konto=konto, defaults={
+        "email": email, "angefordert_am": timezone.now(), "stand": EmailWechsel.stand_von(konto)})[0]
+    if not email_bestaetigung_senden(konto, wechsel):
+        wechsel.delete()
+        return False
+    protokollieren(konto, "konto", konto.pk, "email_wechsel_angefordert", {"person": konto.person, "email": email})
+    return True
+
+
+@transaction.atomic
+def email_wechsel_abbrechen(konto):
+    konto = _eigenes_sperren(konto)  # nicht gleichzeitig mit dem Bestätigen
+    wechsel = offener_email_wechsel(konto)
+    if wechsel is None:
+        return False
+    wechsel.delete()
+    protokollieren(konto, "konto", konto.pk, "email_wechsel_abgebrochen", {"person": konto.person, "email": wechsel.email})
+    return True
+
+
+@transaction.atomic
+def email_wechsel_bestaetigen(konto, schluessel):
+    """Gibt False zurück, wenn der Link nicht (mehr) gilt."""
+    wechsel = passender_email_wechsel(_eigenes_sperren(konto), schluessel)
+    if wechsel is None:
+        return False
+    eigene_email_setzen(konto, wechsel.email)
+    return True
+
+
+@transaction.atomic
+def eigene_email_setzen(konto, email):
+    """Aktualisiert auch ``konto``. Der Hinweis geht an die bisherige Adresse."""
+    frisch = _eigenes_sperren(konto)
+    alt, frisch.email = frisch.email, email
+    try:
+        with transaction.atomic():
+            frisch.save(update_fields=["email"])
+    except IntegrityError:
+        raise EmailVergeben from None
+    EmailWechsel.objects.filter(konto=frisch).delete()
+    protokollieren(konto, "konto", frisch.pk, "geaendert", {"person": frisch.person, "email": [alt, email]})
+    sicherheitshinweis(frisch, "email_geaendert", an=alt, neu=email)
+    konto.email = email
+
+
+def _eigenes_sperren(konto):
+    return Konto.objects.select_for_update(of=("self",)).select_related("person").get(pk=konto.pk)

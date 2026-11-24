@@ -51,6 +51,9 @@ urlpatterns = [
     path("einstellungen/ueber/", einst.ueber, name="einst_ueber"),
 
     # Aktionen zum Konto und zu Personen (nur POST)
+    path("konto/email/", views.email_aendern, name="email_aendern"),
+    path("konto/email/abbrechen/", views.email_wechsel_abbrechen, name="email_wechsel_abbrechen"),
+    path("konto/email/bestaetigen/<str:schluessel>/", views.email_bestaetigen, name="email_bestaetigen"),
     path("konto/zwei-faktor/", views.zwei_faktor_einrichten, name="zwei_faktor_einrichten"),
     path("konto/zwei-faktor/<str:aktion>/", views.zwei_faktor_aendern, name="zwei_faktor_aendern"),
     path("personen/<int:pk>/<str:aktion>/", views.person_aktion, name="person_aktion"),

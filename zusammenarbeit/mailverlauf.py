@@ -18,6 +18,7 @@ from .models import Benachrichtigung, MailStatus, Postausgang
 STATUS = (MailStatus.OFFEN, MailStatus.GESENDET, MailStatus.FEHLER)
 # Offene Mails verschickt der Dienst alle paar Sekunden. Liegt eine länger, läuft er vermutlich nicht.
 HAENGT_NACH = timedelta(minutes=15)
+# Passwort-Links. Nicht EMAIL_WECHSEL: den Wechsel fordert die Person selbst neu an, mit ihrem Passwort
 MIT_LINK = (Postausgang.Art.EINLADUNG, Postausgang.Art.RESET)
 
 

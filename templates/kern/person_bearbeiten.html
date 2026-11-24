@@ -18,7 +18,7 @@
       {% if bearbeitbar %}
       <div class="formular__zeile">
         {% include "teile/feld.html" with feld=form.anzeigename %}
-        {% include "teile/feld.html" with feld=form.email %}
+        {% if ziel.pk != user.pk %}{% include "teile/feld.html" with feld=form.email %}{% endif %}
       </div>
       {% elif adresse_korrigierbar %}
       {% include "teile/feld.html" with feld=form.email %}
@@ -45,6 +45,18 @@
   <div class="karte__kopf"><h2 id="anm-titel">{% translate "Anmeldung" %}</h2></div>
   {% if ziel.email_entfernt %}<div class="karte--innen"><div class="meldung meldung--info klein">{% if ziel.daten_entfernt_am %}{% blocktranslate with datum=ziel.daten_entfernt_am|date:"d.m.Y" %}Persönliche Daten am {{ datum }} entfernt (Frist nach der Deaktivierung).{% endblocktranslate %}{% else %}{% translate "Persönliche Daten nach der Deaktivierung entfernt." %}{% endif %} {% if ziel.is_active %}{% translate "Bitte eine neue E-Mail-Adresse eintragen, die Rolle neu vergeben und danach einen Einladungslink erzeugen." %}{% else %}{% translate "Nach dem Reaktivieren eine neue E-Mail-Adresse eintragen, die Rolle neu vergeben und einen Einladungslink erzeugen." %}{% endif %}</div></div>{% endif %}
   {% if schutz_bis and ziel.pk != user.pk and bearbeitbar %}<div class="karte--innen"><div class="meldung meldung--info klein">{% blocktranslate with datum=schutz_bis|date:"d.m.Y H:i" %}Dieses Konto war bis vor Kurzem Admin. E-Mail, Passwort und Zwei-Faktor-Anmeldung lassen sich erst ab {{ datum }} verwalten.{% endblocktranslate %}</div></div>{% endif %}
+  {% if ziel.pk == user.pk %}
+  <div class="einstellungszeile">
+    <div class="luecke">
+      <div>{% translate "E-Mail" %}</div>
+      <div class="klein gedaempft umbruch">{{ ziel.email }}</div>
+      {% if email_wechsel %}<div class="klein umbruch">{% blocktranslate with email=email_wechsel.email bis=email_wechsel.gueltig_bis|date:"d.m.Y H:i" %}Wechsel auf {{ email }} offen: bitte bis {{ bis }} über den Link in der E-Mail bestätigen.{% endblocktranslate %}</div>{% endif %}
+    </div>
+    {% if email_wechsel %}
+      <form method="post" action="{% url 'email_wechsel_abbrechen' %}">{% csrf_token %}<button type="submit" class="knopf">{% translate "Wechsel abbrechen" %}</button></form>
+    {% else %}<a class="knopf" href="{% url 'email_aendern' %}">{% translate "E-Mail ändern" %}</a>{% endif %}
+  </div>
+  {% endif %}
   <div class="einstellungszeile">
     <div class="luecke">
       <div>{% if ziel.has_usable_password %}{% translate "Passwort gesetzt" %}{% else %}{% translate "Einladung noch nicht angenommen" %}{% endif %}</div>

@@ -18,7 +18,15 @@ from django.db import transaction
 from django.utils import timezone
 
 from kern import fotos, zwei_faktor
-from kern.models import ENTFERNT_DOMAIN, Konto, Person, Protokolleintrag, Resetanfrage, Rolle
+from kern.models import (
+    ENTFERNT_DOMAIN,
+    EmailWechsel,
+    Konto,
+    Person,
+    Protokolleintrag,
+    Resetanfrage,
+    Rolle,
+)
 from kern.protokoll import protokollieren
 from notizen.models import Notiz, NotizAnhang
 from zusammenarbeit.models import Benachrichtigung, Postausgang
@@ -34,6 +42,8 @@ def aufraeumen(jetzt=None):
     anmeldungen = sum(modell.objects.filter(attempt_time__lt=grenze).delete()[0]
                       for modell in (AccessLog, AccessFailureLog, AccessAttempt))
     Resetanfrage.objects.filter(zeitpunkt__lt=jetzt - timedelta(days=1)).delete()
+    EmailWechsel.objects.filter(
+        angefordert_am__lt=jetzt - timedelta(hours=settings.TEAMPLANER_RESET_GUELTIG_STUNDEN)).delete()
     return {
         "protokoll": Protokolleintrag.objects.filter(zeitpunkt__lt=protokoll_grenze).delete()[0],
         "anmeldeprotokoll": anmeldungen,

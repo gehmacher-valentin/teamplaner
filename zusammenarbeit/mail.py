@@ -312,6 +312,27 @@ def reset_senden(konto, link):
     return True
 
 
+def email_bestaetigung_senden(konto, wechsel):
+    """Link zum Bestätigen einer neuen eigenen Adresse – an genau diese. True, wenn er verschickt wird."""
+    if not mail_aktiv():
+        return False
+    link = absolute_url(reverse("email_bestaetigen", args=[wechsel.schluessel]))
+    with translation.override(konto.sprache):
+        gruss = _("Guten Tag %(name)s,") % {"name": konto.person.anzeigename}
+        bitte = _("diese Adresse wurde als neue E-Mail-Adresse Ihres Teamplaner-Kontos eingetragen. Bitte bestätigen "
+                  "Sie den Wechsel über diesen Link:")
+        bisher = _("Dazu melden Sie sich noch mit der bisherigen Adresse an. Sie gilt bis zur Bestätigung weiter.")
+        gilt = _("Der Link gilt %(n)s Stunden und nur einmal.") % {"n": settings.TEAMPLANER_RESET_GUELTIG_STUNDEN}
+        ignorieren = _("Wenn Sie das nicht angefordert haben, können Sie diese E-Mail ignorieren.")
+        text = "\n".join([gruss, "", bitte, link, "", bisher, gilt, ignorieren])
+        betreff = f"[{_('Teamplaner')}] " + _("E-Mail-Adresse bestätigen")
+        html = _html(betreff, [{"absatz": gruss}, {"absatz": bitte}, {"knopf": _("Adresse bestätigen"), "url": link},
+                               {"link": link}, {"absatz": bisher}, {"absatz": gilt}, {"absatz": ignorieren}],
+                     _("E-Mail-Adresse bestätigen"))
+        _einreihen(Postausgang.Art.EMAIL_WECHSEL, konto, betreff, text + _fusszeile(), html, an=wechsel.email)
+    return True
+
+
 SICHERHEITSHINWEISE = {
     "passwort_geaendert": gettext_lazy("das Passwort Ihres Teamplaner-Kontos wurde geändert."),
     "passwort_zurueckgesetzt": gettext_lazy("das Passwort Ihres Teamplaner-Kontos wurde über einen Link neu festgelegt."),

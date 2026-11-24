@@ -148,6 +148,7 @@ class Postausgang(models.Model):
         EINLADUNG = "einladung", _("Einladung")
         RESET = "reset", _("Passwort zurücksetzen")
         SICHERHEIT = "sicherheit", _("Sicherheitshinweis")
+        EMAIL_WECHSEL = "email_wechsel", _("E-Mail-Adresse bestätigen")
 
     art = models.CharField(max_length=20, choices=Art.choices)
     empfaenger = models.EmailField()

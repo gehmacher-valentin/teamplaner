@@ -1,0 +1,19 @@
+{% extends "kern/einstellungen_basis.html" %}
+{% load i18n %}
+{% block titel %}{% translate "E-Mail ändern" %}{% endblock %}
+{% block einstellungen %}
+<nav class="pfad" aria-label="{% translate 'Pfad' %}"><a href="{% url 'einst_personen' %}">{% translate "Personen" %}</a><span aria-hidden="true">/</span><a href="{% url 'einst_person' user.pk %}">{{ user.person.anzeigename }}</a></nav>
+<h1>{% translate "E-Mail ändern" %}</h1>
+<form method="post" class="karte karte--innen formular" novalidate>
+    {% csrf_token %}
+    <p class="ohne-rand umbruch">{% blocktranslate with email=user.email %}Bisher: {{ email }}{% endblocktranslate %}</p>
+    <p class="klein gedaempft ohne-rand">{% if mit_link %}{% blocktranslate count n=stunden %}An die neue Adresse geht ein Link, der {{ n }} Stunde gilt. Erst wenn Sie ihn öffnen und bestätigen, melden Sie sich mit der neuen Adresse an.{% plural %}An die neue Adresse geht ein Link, der {{ n }} Stunden gilt. Erst wenn Sie ihn öffnen und bestätigen, melden Sie sich mit der neuen Adresse an.{% endblocktranslate %}{% else %}{% translate "Die neue Adresse gilt sofort. Bitte genau prüfen: Sie melden sich danach damit an." %}{% endif %}</p>
+    {% include "teile/feld.html" with feld=form.email %}
+    {% if form.email2 %}{% include "teile/feld.html" with feld=form.email2 %}{% endif %}
+    {% include "teile/feld.html" with feld=form.passwort %}
+    <div class="formular__aktionen formular__aktionen--rechts">
+      <a class="knopf" href="{% url 'einst_person' user.pk %}">{% translate "Abbrechen" %}</a>
+      <button type="submit" class="knopf knopf--primaer">{% if mit_link %}{% translate "Link schicken" %}{% else %}{% translate "E-Mail ändern" %}{% endif %}</button>
+    </div>
+</form>
+{% endblock %}

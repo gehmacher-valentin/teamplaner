@@ -24,6 +24,8 @@ AKTIONEN = {
     "link_erzeugt": gettext_lazy("Passwort-Link erzeugt"), "passwort_gesetzt": gettext_lazy("Passwort festgelegt"),
     "link_per_mail": gettext_lazy("Passwort-Link per E-Mail an die Person geschickt"),
     "passwort_zurueckgesetzt": gettext_lazy("Passwort zurückgesetzt"),
+    "email_wechsel_angefordert": gettext_lazy("Wechsel der E-Mail-Adresse angefordert"),
+    "email_wechsel_abgebrochen": gettext_lazy("Wechsel der E-Mail-Adresse abgebrochen"),
     "passwort_geaendert": gettext_lazy("Passwort geändert"),
     "aus_platzhalter": gettext_lazy("aus Platzhalter angelegt"),
     "foto_entfernt": gettext_lazy("Foto entfernt"),

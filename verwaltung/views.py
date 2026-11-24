@@ -51,6 +51,7 @@ from .einstellungen import gespeichert, seite, zwei_faktor_kontext
 from .forms import (
     AnmeldeForm,
     EinladenForm,
+    EmailAendernForm,
     KontoBearbeitenForm,
     PasswortBestaetigenForm,
     PasswortVergessenForm,
@@ -488,8 +489,8 @@ def person_bearbeiten(request, pk):
         for feld in ("anzeigename", "email", "bereich", "gewerke", "systemkonto", "darf_tagesfreigabe"):
             if feld != "email" or not adresse_korrigierbar:
                 del form.fields[feld]
-    elif not anmeldung_verwaltbar:
-        form.fields["email"].disabled = True
+    elif ziel.pk == konto.pk or not anmeldung_verwaltbar:
+        form.fields["email"].disabled = True  # die eigene nur mit Passwort (email_aendern)
     if request.method == "POST" and form.is_valid():
         d = form.cleaned_data
         if not rechte.darf_rolle_vergeben(konto, ziel, d["rolle"]):
@@ -544,8 +545,73 @@ def person_bearbeiten(request, pk):
                  bearbeitbar=bearbeitbar, adresse_korrigierbar=adresse_korrigierbar, anmeldung_zuruecksetzbar=rechte.darf_anmeldung_zuruecksetzen(konto, ziel),
                  link_nur_per_mail=rechte.darf_link_mailen(konto, ziel),
                  eigene_rolle_aenderbar=eigene_rolle_aenderbar,
+                 email_wechsel=konten.offener_email_wechsel(ziel) if ziel.pk == konto.pk else None,
                  schutz_bis=ziel.admin_bis + rechte.ADMIN_SCHUTZFRIST if rechte.in_schutzfrist(ziel) else None,
                  freigaben=[g for g in _freigaben_der_person(ziel) if bearbeitbar and darf_freigaben[g["art"]]])
+
+
+EMAIL_VERGEBEN = gettext_lazy("Für diese E-Mail gibt es bereits ein Konto.")
+EMAIL_GEAENDERT = gettext_lazy("E-Mail-Adresse geändert. Sie melden sich ab jetzt mit %(email)s an.")
+
+
+@never_cache
+@erfordert(rechte.darf_konten_verwalten)
+def email_aendern(request):
+    """Eigene E-Mail-Adresse, immer mit dem Passwort. Mit E-Mail-Versand gilt sie erst nach der Bestätigung
+    über den Link an die neue Adresse, ohne wird sie zweimal eingegeben und gilt sofort."""
+    konto = request.user
+    mit_link = mail_aktiv()
+    form = EmailAendernForm(request.POST or None, konto=konto, wiederholen=not mit_link)
+    if request.method == "POST" and form.is_valid():
+        if _gesperrt(request, _zugang(konto)):
+            return render(request, "registration/gesperrt.html", status=429)
+        email = form.cleaned_data["email"]
+        if not konto.check_password(form.cleaned_data["passwort"]):
+            _fehlversuch(request, _zugang(konto))
+            form.add_error("passwort", _("Das Passwort stimmt nicht."))
+        elif mit_link:
+            if not konten.email_wechsel_beginnen(konto, email):
+                return redirect("email_aendern")  # Versand eben abgeschaltet: jetzt mit Wiederholung
+            messages.info(request, _("Ein Link zum Bestätigen geht per E-Mail an %(email)s. Bis dahin gilt die "
+                                     "bisherige Adresse.") % {"email": email})
+            return redirect("einst_person", pk=konto.pk)
+        else:
+            try:
+                konten.eigene_email_setzen(konto, email)
+            except konten.EmailVergeben:
+                form.add_error("email", EMAIL_VERGEBEN)
+            else:
+                messages.success(request, EMAIL_GEAENDERT % {"email": email})
+                return redirect("einst_person", pk=konto.pk)
+    return seite(request, "kern/email_aendern.html", "personen", form=form, mit_link=mit_link,
+                 stunden=settings.TEAMPLANER_RESET_GUELTIG_STUNDEN)
+
+
+@require_POST
+@erfordert(rechte.darf_konten_verwalten)
+def email_wechsel_abbrechen(request):
+    if konten.email_wechsel_abbrechen(request.user):
+        messages.success(request, _("Wechsel der E-Mail-Adresse abgebrochen. Der Link gilt nicht mehr."))
+    return redirect("einst_person", pk=request.user.pk)
+
+
+@never_cache
+@erfordert(rechte.darf_konten_verwalten)
+def email_bestaetigen(request, schluessel):
+    """Link aus der E-Mail an die neue Adresse. Nur angemeldet im eigenen Konto: Wer die E-Mail wegen eines
+    Tippfehlers bekommt, kann damit nichts anfangen. Geändert wird erst mit dem Knopf (POST), damit das
+    Vorabladen von Links nichts auslöst."""
+    konto = request.user
+    if request.method == "POST":
+        try:
+            if konten.email_wechsel_bestaetigen(konto, schluessel):
+                messages.success(request, EMAIL_GEAENDERT % {"email": konto.email})
+                return redirect("einst_person", pk=konto.pk)
+        except konten.EmailVergeben:
+            messages.error(request, EMAIL_VERGEBEN)
+            return redirect("einst_person", pk=konto.pk)
+    return seite(request, "kern/email_bestaetigen.html", "personen",
+                 wechsel=konten.passender_email_wechsel(konto, schluessel))
 
 
 @require_POST

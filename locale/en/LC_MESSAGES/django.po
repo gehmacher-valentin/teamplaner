@@ -3890,6 +3890,113 @@ msgstr "Personal data removed on %(datum)s (retention period after deactivation)
 msgid "Die Anmeldung von Konten mit gleicher oder höherer Rolle können Sie danach nicht verwalten. Einen neuen Link erzeugt eine höhere Rolle; Admins bekommen ihn von einem anderen Admin per E-Mail oder über die Kommandozeile."
 msgstr "You cannot manage sign-in for accounts with the same or a higher role afterwards. A higher role can create a new link; admins receive one by email from another admin or via the command line."
 
+#: kern/models.py verwaltung/forms.py
+msgid "Neue E-Mail-Adresse"
+msgstr "New email address"
+
+#: kern/models.py
+msgid "Offener Wechsel der E-Mail-Adresse"
+msgstr "Pending email address change"
+
+#: kern/models.py
+msgid "Offene Wechsel der E-Mail-Adresse"
+msgstr "Pending email address changes"
+
+#: verwaltung/forms.py
+msgid "Neue E-Mail-Adresse wiederholen"
+msgstr "Repeat new email address"
+
+#: verwaltung/forms.py
+msgid "Das ist bereits Ihre E-Mail-Adresse."
+msgstr "This is already your email address."
+
+#: verwaltung/forms.py
+msgid "Die beiden Adressen stimmen nicht überein."
+msgstr "The two addresses do not match."
+
+#: verwaltung/views.py
+#, python-format
+msgid "E-Mail-Adresse geändert. Sie melden sich ab jetzt mit %(email)s an."
+msgstr "Email address changed. From now on, sign in with %(email)s."
+
+#: verwaltung/views.py
+#, python-format
+msgid "Ein Link zum Bestätigen geht per E-Mail an %(email)s. Bis dahin gilt die bisherige Adresse."
+msgstr "A confirmation link is being sent by email to %(email)s. Until it is confirmed, the current address stays valid."
+
+#: verwaltung/views.py
+msgid "Wechsel der E-Mail-Adresse abgebrochen. Der Link gilt nicht mehr."
+msgstr "Email address change cancelled. The link is no longer valid."
+
+#: verwaltung/templatetags/verwaltung.py
+msgid "Wechsel der E-Mail-Adresse angefordert"
+msgstr "Email address change requested"
+
+#: verwaltung/templatetags/verwaltung.py
+msgid "Wechsel der E-Mail-Adresse abgebrochen"
+msgstr "Email address change cancelled"
+
+#: zusammenarbeit/mail.py
+msgid "diese Adresse wurde als neue E-Mail-Adresse Ihres Teamplaner-Kontos eingetragen. Bitte bestätigen Sie den Wechsel über diesen Link:"
+msgstr "this address was entered as the new email address of your Teamplaner account. Please confirm the change using this link:"
+
+#: zusammenarbeit/mail.py
+msgid "Dazu melden Sie sich noch mit der bisherigen Adresse an. Sie gilt bis zur Bestätigung weiter."
+msgstr "To do so, sign in with your current address. It stays valid until the change is confirmed."
+
+#: templates/kern/email_bestaetigen.html zusammenarbeit/mail.py zusammenarbeit/models.py
+msgid "E-Mail-Adresse bestätigen"
+msgstr "Confirm email address"
+
+#: templates/kern/email_bestaetigen.html zusammenarbeit/mail.py
+msgid "Adresse bestätigen"
+msgstr "Confirm address"
+
+#: templates/kern/person_bearbeiten.html
+#, python-format
+msgid "Wechsel auf %(email)s offen: bitte bis %(bis)s über den Link in der E-Mail bestätigen."
+msgstr "Change to %(email)s pending: please confirm it by %(bis)s using the link in the email."
+
+#: templates/kern/person_bearbeiten.html
+msgid "Wechsel abbrechen"
+msgstr "Cancel change"
+
+#: templates/kern/email_aendern.html templates/kern/person_bearbeiten.html
+msgid "E-Mail ändern"
+msgstr "Change email"
+
+#: templates/kern/email_aendern.html
+#, python-format
+msgid "Bisher: %(email)s"
+msgstr "Current: %(email)s"
+
+#: templates/kern/email_aendern.html
+#, python-format
+msgid "An die neue Adresse geht ein Link, der %(n)s Stunde gilt. Erst wenn Sie ihn öffnen und bestätigen, melden Sie sich mit der neuen Adresse an."
+msgid_plural "An die neue Adresse geht ein Link, der %(n)s Stunden gilt. Erst wenn Sie ihn öffnen und bestätigen, melden Sie sich mit der neuen Adresse an."
+msgstr[0] "A link valid for %(n)s hour is sent to the new address. You only sign in with the new address once you have opened the link and confirmed."
+msgstr[1] "A link valid for %(n)s hours is sent to the new address. You only sign in with the new address once you have opened the link and confirmed."
+
+#: templates/kern/email_aendern.html
+msgid "Die neue Adresse gilt sofort. Bitte genau prüfen: Sie melden sich danach damit an."
+msgstr "The new address takes effect immediately. Please check it carefully: you will sign in with it from then on."
+
+#: templates/kern/email_aendern.html
+msgid "Link schicken"
+msgstr "Send link"
+
+#: templates/kern/email_bestaetigen.html
+msgid "Bisher"
+msgstr "Current"
+
+#: templates/kern/email_bestaetigen.html
+msgid "Dieser Link ist abgelaufen, wurde bereits verwendet oder gehört zu einem anderen Konto. Die E-Mail-Adresse bleibt unverändert."
+msgstr "This link has expired, has already been used or belongs to another account. The email address remains unchanged."
+
+#: templates/kern/email_bestaetigen.html
+msgid "Zu meinem Konto"
+msgstr "Go to my account"
+
 #: templates/teile/anhang_feld.html
 msgid "Datei hierher ziehen oder auswählen"
 msgstr "Drop a file here or choose one"

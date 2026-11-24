@@ -7,6 +7,7 @@ Flag, damit kein widersprüchlicher Zustand entstehen kann. Alle fachlichen Verw
 """
 
 import re
+from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
@@ -288,6 +289,44 @@ class Konto(AbstractBaseUser):
 
     def has_module_perms(self, app_label):
         return False
+
+
+class EmailWechsel(models.Model):
+    """Offener Wechsel der eigenen E-Mail-Adresse: gilt erst nach der Bestätigung über den Link, der an die
+    neue Adresse geht. Höchstens einer je Konto; abgelaufene löscht ``verwaltung.aufraeumen``.
+
+    ``stand`` hält Passwort, bisherige Adresse und Zugang fest: Ändert sich davon etwas (auch durch
+    Zurücksetzen oder Deaktivieren), ist der Wechsel hinfällig."""
+
+    konto = models.OneToOneField(Konto, on_delete=models.CASCADE, primary_key=True, related_name="+")
+    email = models.EmailField(_("Neue E-Mail-Adresse"))
+    angefordert_am = models.DateTimeField(default=timezone.now)
+    stand = models.CharField(max_length=64)
+
+    class Meta:
+        verbose_name = _("Offener Wechsel der E-Mail-Adresse")
+        verbose_name_plural = _("Offene Wechsel der E-Mail-Adresse")
+
+    def __str__(self):
+        return f"{self.konto_id}: {self.email}"
+
+    @staticmethod
+    def stand_von(konto):
+        wert = f"{konto.password}|{konto.email}{konto.zugang_marke}"
+        return salted_hmac("kern.email_wechsel.stand", wert, algorithm="sha256").hexdigest()
+
+    @property
+    def gueltig_bis(self):
+        return self.angefordert_am + timedelta(hours=settings.TEAMPLANER_RESET_GUELTIG_STUNDEN)
+
+    @property
+    def schluessel(self):
+        """Für den Link. Nicht gespeichert, sondern aus dem Eintrag und SECRET_KEY berechnet."""
+        wert = f"{self.konto_id}|{self.email}|{self.angefordert_am.timestamp()}|{self.stand}"
+        return salted_hmac("kern.email_wechsel.link", wert, algorithm="sha256").hexdigest()
+
+    def offen(self, konto):
+        return timezone.now() < self.gueltig_bis and self.stand == self.stand_von(konto)
 
 
 class Protokolleintrag(models.Model):

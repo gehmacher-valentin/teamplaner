@@ -1,0 +1,25 @@
+{% extends "kern/einstellungen_basis.html" %}
+{% load i18n %}
+{% block titel %}{% translate "E-Mail-Adresse bestätigen" %}{% endblock %}
+{% block einstellungen %}
+{% if wechsel %}
+<h1>{% translate "E-Mail-Adresse bestätigen" %}</h1>
+<form method="post" class="karte">
+    {% csrf_token %}
+    <dl class="einst-daten">
+      <dt>{% translate "Bisher" %}</dt><dd class="umbruch">{{ user.email }}</dd>
+      <dt>{% translate "Neu" %}</dt><dd class="umbruch">{{ wechsel.email }}</dd>
+    </dl>
+    <div class="speicherleiste">
+      <a class="knopf" href="{% url 'einst_person' user.pk %}">{% translate "Zurück" %}</a>
+      <button type="submit" class="knopf knopf--primaer">{% translate "Adresse bestätigen" %}</button>
+    </div>
+</form>
+{% else %}
+<h1>{% translate "Link ungültig" %}</h1>
+<section class="karte karte--innen stapel">
+  <p class="ohne-rand">{% translate "Dieser Link ist abgelaufen, wurde bereits verwendet oder gehört zu einem anderen Konto. Die E-Mail-Adresse bleibt unverändert." %}</p>
+  <div><a class="knopf" href="{% url 'einst_person' user.pk %}">{% translate "Zu meinem Konto" %}</a></div>
+</section>
+{% endif %}
+{% endblock %}

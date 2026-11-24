@@ -124,7 +124,7 @@ haben Standardwerte:
 | `TEAMPLANER_SITZUNG_TAGE` | 30 | angemeldet bleiben bis so viele Tage nach der Anmeldung |
 | `TEAMPLANER_ADMIN_INAKTIV_MINUTEN` | 60 | Admins nach so vielen Minuten ohne Aktivität abmelden |
 | `TEAMPLANER_FEHLVERSUCHE` / `TEAMPLANER_FEHLVERSUCHE_JE_IP` | 5 / 20 | Sperre je Konto bzw. IP-Adresse für `TEAMPLANER_SPERRE_MINUTEN` (15) |
-| `TEAMPLANER_LINK_GUELTIG_TAGE` / `TEAMPLANER_RESET_GUELTIG_STUNDEN` | 7 / 2 | Gültigkeit von Einladungs- und Reset-Links |
+| `TEAMPLANER_LINK_GUELTIG_TAGE` / `TEAMPLANER_RESET_GUELTIG_STUNDEN` | 7 / 2 | Gültigkeit von Einladungs- und Reset-Links; die Stunden gelten auch für den Link zum Bestätigen einer neuen eigenen E-Mail-Adresse |
 | `TEAMPLANER_AUFBEWAHRUNG_TAGE` / `TEAMPLANER_DEAKTIVIERT_TAGE` | 365 / 90 | Löschfristen für Protokolle und deaktivierte Konten |
 | `TEAMPLANER_ANHANG_MAX_MB` | 25 | größter Anhang; die Grenze im Webserver (30 MB) mitziehen |
 | `BACKUP_TAGE` | 30 | Aufbewahrung der Sicherungen |
