@@ -9,6 +9,7 @@ import time
 from datetime import timedelta
 
 import pytest
+from axes.models import AccessAttempt
 from django.core import mail
 from django.test import Client
 from django.utils import timezone
@@ -101,6 +102,37 @@ def test_falsche_codes_beenden_die_anmeldung_und_sperren_das_konto(konten):
     c2, antwort = anmelden(konto.email)
     assert antwort.status_code in (403, 429)
     assert "_auth_user_id" not in c2.session
+
+
+def test_neues_passwort_hebt_die_sperre_nach_falschen_codes_nicht_auf(konten):
+    konto = konten[M]
+    geheimnis, _ = mit_zwei_faktor(konto)
+    c, _ = anmelden(konto.email)
+    for _ in range(5):
+        c.post("/anmelden/code/", {"code": "12345x"})
+    gast = Client()
+    formular = gast.get(passwort_link(konto), follow=True).redirect_chain[-1][0]
+    gast.post(formular, {"new_password1": "Neues-Passwort-2026", "new_password2": "Neues-Passwort-2026"})
+    _, antwort = anmelden(konto.email, "Neues-Passwort-2026")
+    assert antwort.status_code == 429
+    # Auch die eigene, noch offene Anmeldung kommt nicht weiter; nach Ablauf der Sperre geht es wieder
+    AccessAttempt.objects.update(attempt_time=timezone.now() - timedelta(hours=1))
+    c2, antwort = anmelden(konto.email, "Neues-Passwort-2026")
+    assert antwort.url == "/anmelden/code/"
+    assert c2.post("/anmelden/code/", {"code": zwei_faktor.code(geheimnis, schritt_jetzt())}).status_code == 302
+    assert "_auth_user_id" in c2.session
+
+
+def test_neues_passwort_verlangt_weiter_den_zweiten_faktor(konten):
+    konto = konten[M]
+    mit_zwei_faktor(konto)
+    for _ in range(5):
+        anmelden(konto.email, "falsch")
+    gast = Client()
+    formular = gast.get(passwort_link(konto), follow=True).redirect_chain[-1][0]
+    gast.post(formular, {"new_password1": "Neues-Passwort-2026", "new_password2": "Neues-Passwort-2026"})
+    c, antwort = anmelden(konto.email, "Neues-Passwort-2026")
+    assert antwort.url == "/anmelden/code/" and "_auth_user_id" not in c.session
 
 
 def test_ersatzcode_gilt_einmal(konten):

@@ -1,18 +1,24 @@
 """Admin-Konten: herabstufen, deaktivieren, letzter Admin, Schutzfrist, konto_aendern."""
 
 from datetime import timedelta
+from importlib import import_module
 from io import StringIO
 
 import pytest
+from django.apps import apps
+from django.core.exceptions import PermissionDenied
 from django.core.management import CommandError, call_command
 from django.test import Client
 from django.utils import timezone
 
-from kern import rechte
-from kern.models import Konto, Protokolleintrag, Rolle
+from kern import rechte, zwei_faktor
+from kern.hilfen import passwort_link
+from kern.models import Konto, Person, Protokolleintrag, Rolle
+from verwaltung import konten as kontenlogik
+from verwaltung.aufraeumen import aufraeumen
 from zusammenarbeit.models import Postausgang
 
-from .conftest import konto_anlegen
+from .conftest import TESTPASSWORT, konto_anlegen
 
 A, BL, P, M = Rolle.ADMIN, Rolle.BEREICHSLEITUNG, Rolle.PLANER, Rolle.MITARBEITER
 
@@ -21,7 +27,10 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture
 def zweiter(konten, bereich_a):
-    return konto_anlegen("Person 91", bereich_a, A)
+    """Zweiter Admin. Beide haben sich schon einmal angemeldet und schützen einander als letzter Admin."""
+    neu = konto_anlegen("Person 91", bereich_a, A)
+    Konto.objects.filter(pk__in=[neu.pk, konten[A].pk]).update(last_login=timezone.now())
+    return frisch(neu)
 
 
 def angemeldet(konto):
@@ -74,10 +83,160 @@ def test_anderen_admin_deaktivieren_und_reaktivieren(konten, zweiter):
     assert frisch(zweiter).is_active
 
 
+@pytest.mark.parametrize("weg", ["oberflaeche", "befehl"])
+def test_deaktivieren_beendet_sitzungen_und_links(konten, weg):
+    konto = konten[M]
+    c = angemeldet(konto)
+    assert c.get("/projekte/").status_code == 200
+    link = passwort_link(konto)
+    if weg == "befehl":
+        befehl(konto, "--deaktivieren")
+        befehl(konto, "--reaktivieren")
+    else:
+        aktion(konten[A], konto, "deaktivieren")
+        aktion(konten[A], konto, "reaktivieren")
+    assert c.get("/projekte/").status_code == 302
+    assert "ungültig" in Client().get(link, follow=True).content.decode()
+    # Das Passwort bleibt, neue Sitzungen und Links gelten
+    neu = Client()
+    neu.post("/anmelden/", {"username": konto.email, "password": TESTPASSWORT})
+    assert neu.get("/projekte/").status_code == 200
+    assert "ungültig" not in Client().get(passwort_link(frisch(konto)), follow=True).content.decode()
+
+
+def test_deaktivieren_beendet_die_offene_code_eingabe(konten):
+    konto = konten[M]
+    zwei_faktor.einrichten(konto, zwei_faktor.neues_geheimnis(), 1)
+    c = Client()
+    c.post("/anmelden/", {"username": konto.email, "password": TESTPASSWORT})
+    assert c.get("/anmelden/code/").status_code == 200
+    befehl(konto, "--deaktivieren")
+    befehl(konto, "--reaktivieren")
+    assert c.get("/anmelden/code/").status_code == 302
+
+
+def test_nie_deaktivierte_konten_behalten_ihre_sitzung(konten):
+    """Nach dem Update bleibt angemeldet, wer angemeldet war: ohne Deaktivierung derselbe Wert wie in Django."""
+    assert konten[M].zugang_marke == ""
+    assert konten[M].get_session_auth_hash() == super(Konto, konten[M])._get_session_auth_hash()
+
+
 @pytest.mark.parametrize("name", ["link", "zwei_faktor_zuruecksetzen", "foto_entfernen"])
 def test_anmeldung_anderer_admins_gesperrt(konten, zweiter, name):
     assert aktion(konten[A], zweiter, name).status_code == 403
     assert frisch(zweiter).has_usable_password()
+
+
+@pytest.mark.parametrize("rolle", [A, BL])
+@pytest.mark.parametrize("name", ["link", "zwei_faktor_zuruecksetzen"])
+def test_eigene_anmeldung_nicht_ueber_die_personenverwaltung(konten, rolle, name):
+    konto = konten[rolle]
+    zwei_faktor.einrichten(konto, zwei_faktor.neues_geheimnis(), 1)
+    c = angemeldet(konto)
+    sitzung = c.session
+    sitzung[zwei_faktor.SITZUNG] = zwei_faktor.marke(konto)
+    sitzung.save()
+    assert c.post(f"/personen/{konto.pk}/{name}/").status_code == 403
+    neu = frisch(konto)
+    assert neu.has_usable_password() and zwei_faktor.aktiv(neu)
+    assert c.get(seite(konto)).status_code == 200  # Sitzung läuft weiter
+
+
+@pytest.mark.parametrize("mit_passwort", [True, False])
+def test_anderem_admin_einen_link_mailen(konten, zweiter, settings, mit_passwort):
+    settings.EMAIL_HOST = "mail.example.test"
+    if not mit_passwort:
+        zweiter.set_unusable_password()
+        zweiter.save()
+    c = angemeldet(konten[A])
+    html = c.get(seite(zweiter)).content.decode()
+    assert ("Link zum Zurücksetzen schicken" if mit_passwort else "Neue Einladung schicken") in html
+    antwort = c.post(f"/personen/{zweiter.pk}/link/")
+    danach = c.get(antwort.url).content.decode()
+    mail = Postausgang.objects.get()
+    assert mail.empfaenger == zweiter.email and "/passwort/setzen/" in mail.text
+    assert mail.art == (Postausgang.Art.RESET if mit_passwort else Postausgang.Art.EINLADUNG)
+    # Der Link steht weder in der Antwort noch in der Sitzung
+    assert "/passwort/setzen/" not in danach and "passwort-link__qr" not in danach
+    assert "/passwort/setzen/" not in str(dict(c.session))
+    assert frisch(zweiter).has_usable_password() is mit_passwort
+    assert Protokolleintrag.objects.filter(objekt_id=zweiter.pk, aktion="link_per_mail").exists()
+
+
+def test_link_mailen_nur_mit_versand_und_nur_aktiven_admins(konten, zweiter, settings):
+    html = angemeldet(konten[A]).get(seite(zweiter)).content.decode()
+    assert f"konto-aendern {zweiter.email} --passwort-link" in html and "Zurücksetzen schicken" not in html
+    assert aktion(konten[A], zweiter, "link").status_code == 403
+    settings.EMAIL_HOST = "mail.example.test"
+    assert aktion(konten[BL], zweiter, "link").status_code == 403
+    # In der Schutzfrist nach dem Herabstufen wie bisher gesperrt
+    rolle_senden(konten[A], zweiter, P)
+    assert aktion(konten[A], zweiter, "link").status_code == 403
+    Konto.objects.filter(pk=zweiter.pk).update(rolle=A)
+    zweiter.person.archivieren()
+    assert aktion(konten[A], zweiter, "link").status_code == 403
+    assert not Postausgang.objects.filter(art=Postausgang.Art.RESET).exists()
+
+
+@pytest.fixture
+def eingeladen(konten, zweiter, bereich_a):
+    """Admin mit noch nicht angenommener Einladung."""
+    return Konto.objects.anlegen("falsch@example.test", anzeigename="Person 93", bereich=bereich_a, rolle=A)
+
+
+def test_adresse_eines_nie_benutzten_admins_korrigieren(konten, eingeladen, settings):
+    settings.EMAIL_HOST = "mail.example.test"
+    link = passwort_link(eingeladen)
+    c = angemeldet(konten[A])
+    assert 'name="email"' in c.get(seite(eingeladen)).content.decode()
+    antwort = c.post(seite(eingeladen), {"rolle": A, "email": "Richtig@example.test", "anzeigename": "Übernommen"})
+    danach = c.get(antwort.url).content.decode()
+    neu = frisch(eingeladen)
+    assert (neu.email, neu.rolle, neu.person.anzeigename) == ("richtig@example.test", A, "Person 93")
+    # Nur die neue Einladung, nichts an die falsche Adresse; der Link wird nicht angezeigt
+    mail = Postausgang.objects.get()
+    assert (mail.empfaenger, mail.art) == ("richtig@example.test", Postausgang.Art.EINLADUNG)
+    assert "/passwort/setzen/" not in danach and "/passwort/setzen/" not in str(dict(c.session))
+    assert "ungültig" in Client().get(link, follow=True).content.decode()
+    eintrag = Protokolleintrag.objects.get(objekt_id=neu.pk, aktion="geaendert")
+    assert eintrag.daten["email"] == ["falsch@example.test", "richtig@example.test"]
+
+
+def test_adresse_korrigieren_ohne_versand_nennt_den_befehl(konten, eingeladen):
+    c = angemeldet(konten[A])
+    antwort = c.post(seite(eingeladen), {"rolle": A, "email": "richtig@example.test"})
+    danach = c.get(antwort.url).content.decode()
+    assert "konto-aendern richtig@example.test --passwort-link" in danach and "/passwort/setzen/" not in danach
+
+
+def test_unveraenderte_oder_vergebene_adresse(konten, eingeladen, settings):
+    settings.EMAIL_HOST = "mail.example.test"
+    c = angemeldet(konten[A])
+    c.post(seite(eingeladen), {"rolle": A, "email": eingeladen.email})
+    assert c.post(seite(eingeladen), {"rolle": A, "email": konten[M].email}).status_code == 200
+    assert frisch(eingeladen).email == "falsch@example.test" and not Postausgang.objects.exists()
+
+
+@pytest.mark.parametrize("zustand", ["passwort", "angemeldet"])
+def test_adresse_benutzter_admins_bleibt_gesperrt(konten, eingeladen, zustand):
+    if zustand == "passwort":
+        eingeladen.set_password(TESTPASSWORT)
+    else:
+        eingeladen.last_login = timezone.now()
+    eingeladen.save()
+    c = angemeldet(konten[A])
+    assert 'name="email"' not in c.get(seite(eingeladen)).content.decode()
+    c.post(seite(eingeladen), {"rolle": A, "email": "boese@example.test"})
+    assert frisch(eingeladen).email == "falsch@example.test"
+    with pytest.raises(PermissionDenied):
+        kontenlogik.adresse_korrigieren(konten[A], eingeladen, "boese@example.test")
+
+
+def test_nie_benutzter_admin_ohne_schutzfrist(konten, eingeladen):
+    rolle_senden(konten[A], eingeladen, P)
+    neu = frisch(eingeladen)
+    assert neu.rolle == P and neu.admin_bis is None
+    assert aktion(konten[BL], neu, "link").status_code == 302
 
 
 def test_schutzfrist_nach_dem_herabstufen(konten, zweiter):
@@ -104,12 +263,14 @@ def test_weit_herabgestuft_fuehrt_zur_startseite(konten, zweiter):
     assert frisch(konten[A]).rolle == M
 
 
-@pytest.mark.parametrize("zustand", ["keiner", "deaktiviert", "ohne_passwort"])
+@pytest.mark.parametrize("zustand", ["keiner", "deaktiviert", "ohne_passwort", "nie_angemeldet"])
 def test_letzter_admin_bleibt(konten, zweiter, zustand):
     if zustand == "keiner":
         Konto.objects.filter(pk=zweiter.pk).update(rolle=BL)
     elif zustand == "deaktiviert":
         zweiter.person.archivieren()
+    elif zustand == "nie_angemeldet":
+        Konto.objects.filter(pk=zweiter.pk).update(last_login=None)
     else:
         zweiter.set_unusable_password()
         zweiter.save()
@@ -119,6 +280,33 @@ def test_letzter_admin_bleibt(konten, zweiter, zustand):
         with pytest.raises(CommandError, match="letzte Admin"):
             befehl(konten[A], *option)
     assert frisch(konten[A]).rolle == A and frisch(konten[A]).is_active
+
+
+def test_anmeldung_setzt_last_login(konten):
+    """Darauf baut der Schutz des letzten Admins, auch bei Konten von vor dieser Regel."""
+    assert konten[A].last_login is None
+    Client().post("/anmelden/", {"username": konten[A].email, "password": TESTPASSWORT})
+    assert frisch(konten[A]).last_login is not None
+
+
+def test_auf_die_eigene_rolle_anheben(konten):
+    """Bereichsleitung darf das Konto danach nicht mehr öffnen: zur Liste, mit Meldung, statt 403."""
+    html = angemeldet(konten[BL]).get(seite(konten[P])).content.decode()
+    assert "Danach kann nur ein Admin diese Rolle wieder ändern." in html
+    antwort = rolle_senden(konten[BL], konten[P], BL)
+    assert antwort.url == "/einstellungen/personen/"
+    assert "Gespeichert." in antwort.client.get(antwort.url).content.decode()
+    assert frisch(konten[P]).rolle == BL
+    # Admin: die Seite bleibt erreichbar
+    html = angemeldet(konten[A]).get(seite(konten[M])).content.decode()
+    assert "Zum Admin machen?" in html and "Danach kann nur ein Admin" not in html
+    assert rolle_senden(konten[A], konten[M], A).url == seite(konten[M])
+
+
+def test_keine_rueckfrage_ohne_anheben(konten, zweiter):
+    for wer, ziel in ((konten[A], zweiter), (konten[A], konten[A]), (konten[BL], konten[BL])):
+        assert "data-bestaetigen=\"Zum Admin" not in angemeldet(wer).get(seite(ziel)).content.decode()
+        assert "Auf Bereichsleitung anheben" not in angemeldet(wer).get(seite(ziel)).content.decode()
 
 
 def test_bereichsleitung_weder_sich_noch_admins(konten, zweiter):
@@ -148,3 +336,54 @@ def test_befehl_weist_falsche_eingaben_ab(konten, zweiter):
     zweiter.person.archivieren()
     with pytest.raises(CommandError, match="deaktiviert"):
         befehl(zweiter, "--passwort-link")
+
+
+# --- Nach der Frist bereinigte Admins ---
+
+def bereinigt(konto):
+    konto.person.archivieren()
+    Person.objects.filter(pk=konto.pk).update(archiviert_am=timezone.now() - timedelta(days=91))
+    aufraeumen()
+    return frisch(konto)
+
+
+def test_bereinigter_admin_verliert_die_rolle(konten, zweiter):
+    Konto.objects.filter(pk=zweiter.pk).update(admin_bis=timezone.now())
+    neu = bereinigt(zweiter)
+    assert (neu.rolle, neu.admin_bis, neu.email_entfernt) == (Rolle.LESEND, None, True)
+    eintrag = Protokolleintrag.objects.get(objekt_typ="konto", objekt_id=neu.pk, aktion="geaendert")
+    assert eintrag.daten["rolle"] == ["admin", "lesend"] and eintrag.akteur is None
+
+
+def test_bereinigte_rollen_unter_admin_bleiben(konten):
+    assert bereinigt(konten[P]).rolle == P
+
+
+def test_bereinigten_admin_wieder_in_betrieb_nehmen(konten, zweiter, settings):
+    settings.EMAIL_HOST = "mail.example.test"
+    bereinigt(zweiter)
+    c = angemeldet(konten[A])
+    assert "Nach dem Reaktivieren" in c.get(seite(zweiter)).content.decode()
+    aktion(konten[A], zweiter, "reaktivieren")
+    html = c.get(seite(zweiter)).content.decode()
+    assert "die Rolle neu vergeben" in html and "Neuen Einladungslink erzeugen" not in html
+    # Vor der neuen Adresse kein Link
+    aktion(konten[A], zweiter, "link")
+    assert not Postausgang.objects.exists()
+    rolle_senden(konten[A], frisch(zweiter), M, email="wieder@example.test")
+    neu = frisch(zweiter)
+    assert (neu.email, neu.rolle, neu.is_active) == ("wieder@example.test", M, True)
+    assert not Postausgang.objects.exists()  # kein Hinweis an die Ersatzadresse
+    aktion(konten[A], neu, "link")
+    assert Postausgang.objects.get().empfaenger == "wieder@example.test"
+
+
+def test_migration_fuer_bereits_bereinigte_admins(konten, zweiter, bereich_a):
+    migration = import_module("kern.migrations.0009_bereinigte_admins")
+    Konto.objects.filter(pk=zweiter.pk).update(email=f"entfernt-{zweiter.pk}@konto.invalid", password="!x")
+    benutzt = konto_anlegen("Person 92", bereich_a, A)
+    Konto.objects.filter(pk=benutzt.pk).update(email=f"entfernt-{benutzt.pk}@konto.invalid")
+    migration.herabsetzen(apps, None)
+    assert frisch(zweiter).rolle == Rolle.LESEND
+    assert frisch(benutzt).rolle == A and frisch(konten[A]).rolle == A
+    assert Protokolleintrag.objects.get(objekt_id=zweiter.pk).daten["rolle"] == ["admin", "lesend"]

@@ -1784,11 +1784,6 @@ msgstr "Details"
 msgid "Anmeldung"
 msgstr "Sign-in"
 
-#: templates/kern/person_bearbeiten.html:35
-#, python-format
-msgid "Persönliche Daten am %(datum)s entfernt (Frist nach der Deaktivierung). Zum Reaktivieren eine neue E-Mail-Adresse eintragen und eine Einladung schicken."
-msgstr "Personal data removed on %(datum)s (retention period after deactivation). To reactivate, enter a new email address and send an invitation."
-
 #: templates/kern/person_bearbeiten.html:38
 msgid "Passwort gesetzt"
 msgstr "Password set"
@@ -1880,10 +1875,6 @@ msgstr "The link is shown only this once. It is also sent to the person by email
 #: templates/kern/person_eingeladen.html:13
 msgid "Der Link wird nur jetzt angezeigt. Bitte jetzt kopieren und an die Person weitergeben."
 msgstr "The link is shown only this once. Please copy it now and pass it on to the person."
-
-#: templates/kern/person_eingeladen.html:14
-msgid "Die Anmeldung von Konten mit gleicher oder höherer Rolle können Sie danach nicht verwalten. Einen neuen Link erzeugt eine höhere Rolle, für Admin-Konten die Kommandozeile."
-msgstr "After this, you cannot manage sign-in for accounts with the same or a higher role than yours. A new link has to come from someone with a higher role, or from the command line for admin accounts."
 
 #: templates/kern/person_eingeladen.html:15
 msgid "Zur Personenliste"
@@ -2755,10 +2746,6 @@ msgstr "Holidays, statuses, system settings"
 #: verwaltung/einstellungen.py:285
 msgid "Benutzerkonten anlegen und deaktivieren"
 msgstr "Create and deactivate user accounts"
-
-#: verwaltung/einstellungen.py:286
-msgid "Bestehende Konten nur mit niedrigerer Rolle als der eigenen; Admin-Konten über die Kommandozeile"
-msgstr "Existing accounts only with a lower role than your own; admin accounts via the command line"
 
 #: verwaltung/einstellungen.py:287
 msgid "Rollen vergeben"
@@ -3791,17 +3778,9 @@ msgid "Wenn Sie Ihre eigene Rolle herabsetzen, kann nur ein anderer Admin sie wi
 msgstr "If you lower your own role, only another admin can raise it again."
 
 #: templates/kern/person_bearbeiten.html
-msgid "Bei anderen Admins lassen sich hier nur die Rolle ändern und das Konto deaktivieren. Alles Weitere geht über die Kommandozeile des Servers."
-msgstr "For other admins, you can only change the role and deactivate the account here. Anything else is done on the server’s command line."
-
-#: templates/kern/person_bearbeiten.html
 #, python-format
 msgid "Dieses Konto war bis vor Kurzem Admin. E-Mail, Passwort und Zwei-Faktor-Anmeldung lassen sich erst ab %(datum)s verwalten."
 msgstr "This account was an admin until recently. Its email, password and two-factor authentication cannot be managed until %(datum)s."
-
-#: verwaltung/views.py
-msgid "Nicht möglich: Es muss ein weiterer aktiver Admin mit gesetztem Passwort bleiben."
-msgstr "Not possible: another active admin with a password must remain."
 
 #: zusammenarbeit/mail.py
 msgid "Ihr Teamplaner-Konto hat die Rolle Admin nicht mehr."
@@ -3814,3 +3793,79 @@ msgstr "your Teamplaner account has been deactivated."
 #: zusammenarbeit/mail.py
 msgid "War das nicht beabsichtigt, wenden Sie sich bitte sofort an die Administration."
 msgstr "If this was not intended, please contact your administrators immediately."
+
+#: verwaltung/einstellungen.py
+msgid "Bestehende Konten nur mit niedrigerer Rolle als der eigenen; Admins können andere Admins herabstufen und deaktivieren"
+msgstr "Existing accounts only with a role lower than your own; admins can demote and deactivate other admins"
+
+#: verwaltung/forms.py
+msgid "Zum Admin machen? E-Mail-Adresse, Passwort-Link und Zwei-Faktor-Anmeldung dieses Kontos können Sie danach nicht mehr verwalten."
+msgstr "Make this person an admin? You will no longer be able to manage this account’s email address, password link and two-factor authentication."
+
+#: verwaltung/forms.py
+msgid "Auf Bereichsleitung anheben? Danach kann nur ein Admin diese Rolle wieder ändern."
+msgstr "Raise to unit lead? After that, only an admin can change this role."
+
+#: verwaltung/views.py
+msgid "Nicht möglich: Es muss ein weiterer aktiver Admin bleiben, der sich schon einmal angemeldet hat."
+msgstr "Not possible: another active admin who has signed in before must remain."
+
+#: verwaltung/views.py
+msgid "Bitte zuerst eine neue E-Mail-Adresse eintragen."
+msgstr "Please enter a new email address first."
+
+#: verwaltung/views.py
+#, python-format
+msgid "Eine neue Einladung geht per E-Mail an %(email)s. Der bisherige Link gilt nicht mehr."
+msgstr "A new invitation will be emailed to %(email)s. The previous link is no longer valid."
+
+#: verwaltung/views.py
+#, python-format
+msgid "Der bisherige Link gilt nicht mehr. Ein neuer lässt sich am Server erzeugen: %(befehl)s"
+msgstr "The previous link is no longer valid. A new one can be created on the server: %(befehl)s"
+
+#: verwaltung/views.py
+#, python-format
+msgid "Ein neuer Link geht per E-Mail an %(email)s."
+msgstr "A new link will be emailed to %(email)s."
+
+#: templates/kern/person_bearbeiten.html
+msgid "Mit diesem Konto hat sich noch niemand angemeldet, die Adresse lässt sich daher noch korrigieren. Der alte Einladungslink gilt danach nicht mehr."
+msgstr "Nobody has signed in with this account yet, so the address can still be corrected. The old invitation link will then no longer be valid."
+
+#: templates/kern/person_bearbeiten.html
+msgid "Eine neue Einladung geht an die neue Adresse."
+msgstr "A new invitation will be sent to the new address."
+
+#: templates/kern/person_bearbeiten.html
+msgid "Name, E-Mail-Adresse und Zwei-Faktor-Anmeldung anderer Admins lassen sich hier nicht ändern, nur über die Kommandozeile des Servers."
+msgstr "The name, email address and two-factor authentication of other admins cannot be changed here, only on the server’s command line."
+
+#: templates/kern/person_bearbeiten.html
+msgid "Persönliche Daten nach der Deaktivierung entfernt."
+msgstr "Personal data removed after deactivation."
+
+#: templates/kern/person_bearbeiten.html
+msgid "Bitte eine neue E-Mail-Adresse eintragen, die Rolle neu vergeben und danach einen Einladungslink erzeugen."
+msgstr "Please enter a new email address, assign the role again and then create an invitation link."
+
+#: templates/kern/person_bearbeiten.html
+msgid "Nach dem Reaktivieren eine neue E-Mail-Adresse eintragen, die Rolle neu vergeben und einen Einladungslink erzeugen."
+msgstr "After reactivating, enter a new email address, assign the role again and create an invitation link."
+
+#: templates/kern/person_bearbeiten.html
+msgid "Ohne E-Mail-Versand gibt es einen neuen Link nur am Server:"
+msgstr "Without email sending, a new link is only available on the server:"
+
+#: templates/kern/person_bearbeiten.html
+msgid "Neue Einladung schicken"
+msgstr "Send new invitation"
+
+#: templates/kern/person_bearbeiten.html
+#, python-format
+msgid "Persönliche Daten am %(datum)s entfernt (Frist nach der Deaktivierung)."
+msgstr "Personal data removed on %(datum)s (retention period after deactivation)."
+
+#: templates/kern/person_eingeladen.html
+msgid "Die Anmeldung von Konten mit gleicher oder höherer Rolle können Sie danach nicht verwalten. Einen neuen Link erzeugt eine höhere Rolle; Admins bekommen ihn von einem anderen Admin per E-Mail oder über die Kommandozeile."
+msgstr "You cannot manage sign-in for accounts with the same or a higher role afterwards. A higher role can create a new link; admins receive one by email from another admin or via the command line."

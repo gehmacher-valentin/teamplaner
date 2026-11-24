@@ -1,11 +1,14 @@
 """Abläufe: Einladung, Anmeldung, Sperre, Erwähnungen, Konfliktschutz, Platzhalter, Suche."""
 
 import re
+from datetime import timedelta
 
 import pytest
 from axes.models import AccessAttempt
 from django.test import Client
+from django.utils import timezone
 
+from kern.hilfen import passwort_link
 from kern.models import Konto, Person, Protokolleintrag, Rolle
 from planung.models import AnsichtFreigabe, Einteilung, Recht
 from projekte import dienste
@@ -44,9 +47,10 @@ def test_einladen_in_der_eigenen_rolle_zeigt_den_link(konten, bereich_a, rolle):
     antwort = c.get(f"/einstellungen/personen/{neu.pk}/")
     if rolle == BL:
         assert antwort.status_code == 403
-    else:  # Admins öffnen andere Admins, aber nur für Rolle und Deaktivieren
+    else:  # Admins öffnen andere Admins: Rolle, Deaktivieren und, solange nie benutzt, die Adresse
         inhalt = antwort.content.decode()
-        assert 'name="email"' not in inhalt and "/passwort/setzen/" not in inhalt
+        assert 'name="anzeigename"' not in inhalt and "/passwort/setzen/" not in inhalt
+        assert 'name="email"' in inhalt
 
 
 def test_link_erscheint_nur_beim_eingeladenen_konto(konten, bereich_a):
@@ -124,6 +128,39 @@ def test_anmeldung_setzt_fehlversuche_jeder_schreibweise_zurueck(konten, setting
     c.post("/anmelden/", {"username": email, "password": TESTPASSWORT})
     assert c.session["_auth_user_id"] == str(konten[M].pk)
     assert not AccessAttempt.objects.exists()
+
+
+def _sperren(konto, settings):
+    for _ in range(settings.AXES_FAILURE_LIMIT):
+        Client().post("/anmelden/", {"username": konto.email, "password": "falsch"})
+
+
+def _versuchen(konto, passwort=TESTPASSWORT):
+    c = Client()
+    c.post("/anmelden/", {"username": konto.email, "password": passwort})
+    return "_auth_user_id" in c.session
+
+
+def test_versuche_waehrend_der_sperre_verlaengern_sie_nicht(konten, settings):
+    _sperren(konten[M], settings)
+    frist = timedelta(hours=settings.AXES_COOLOFF_TIME)
+    AccessAttempt.objects.update(attempt_time=timezone.now() - frist + timedelta(minutes=1))
+    gemerkt = list(AccessAttempt.objects.values_list("attempt_time", "failures_since_start"))
+    assert not _versuchen(konten[M])
+    assert not _versuchen(konten[M], "falsch")
+    assert list(AccessAttempt.objects.values_list("attempt_time", "failures_since_start")) == gemerkt
+    AccessAttempt.objects.update(attempt_time=timezone.now() - frist - timedelta(minutes=1))
+    assert _versuchen(konten[M])
+
+
+def test_neues_passwort_ueber_den_link_hebt_die_sperre_auf(konten, settings):
+    _sperren(konten[M], settings)
+    _sperren(konten[L], settings)
+    gast = Client()
+    formular = gast.get(passwort_link(konten[M]), follow=True).redirect_chain[-1][0]
+    gast.post(formular, {"new_password1": "Neues-Passwort-2026", "new_password2": "Neues-Passwort-2026"})
+    assert _versuchen(konten[M], "Neues-Passwort-2026")
+    assert not _versuchen(konten[L])  # nur dieses Konto
 
 
 def test_sperre_je_ip_adresse_ueber_alle_konten(konten, settings):

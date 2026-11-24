@@ -352,7 +352,7 @@ Webserver werden unabhängig davon aktualisiert, Python-Bibliotheken kommen mit 
 | Änderungen anderer erscheinen erst nach dem Neuladen | Proxy puffert `/api/planung/stream` |
 | Datenbankfehler „ident authentication failed“ | Eintrag in `pg_hba.conf` fehlt, siehe [Datenbank](#2-datenbank) |
 | Mails kommen nicht an | Einstellungen → E-Mail-Versand oder `sudo teamplaner verwalten mail_protokoll`: offen (Dienst läuft nicht? `sudo teamplaner status`), aufgegeben (Grund in `sudo teamplaner logs mailer`) oder verschickt (Spam-Ordner, Mailserver des Empfängers). Schalter „E-Mail-Versand“ unter Einstellungen → Allgemein prüfen |
-| Konto gesperrt | `sudo teamplaner verwalten axes_reset_username <email>` (kleingeschrieben) |
+| Konto gesperrt | `sudo teamplaner verwalten axes_reset_username <email>` (kleingeschrieben); sonst endet die Sperre nach `TEAMPLANER_SPERRE_MINUTEN` oder mit einem neuen Passwort über „Passwort vergessen“. Nach falschen Codes beim zweiten Faktor hilft nur Abwarten |
 | IP-Adresse gesperrt | `sudo teamplaner verwalten axes_reset_ip <ip>` |
 | Admin soll herabgestuft oder deaktiviert werden, kein anderer Admin erreichbar | [Konten auf dem Server ändern](#konten-auf-dem-server-ändern) |
 | Admin hat das Telefon verloren | `sudo teamplaner verwalten zwei_faktor_zuruecksetzen <email>` |
@@ -380,9 +380,11 @@ Erhalten bleiben Datenbank, `/var/lib/teamplaner`, `/var/backups/teamplaner` und
 - Das Änderungsprotokoll ist in der Datenbank per Trigger gegen Ändern geschützt und erst nach einem Jahr
   löschbar. Die Löschfristen wendet `teamplaner-mailer` täglich an, sofort mit
   `sudo teamplaner verwalten aufraeumen`.
-- Admins können andere Admins herabstufen und deaktivieren, sich selbst herabstufen; ein Admin, der sich
-  anmelden kann, bleibt immer übrig. E-Mail, Passwort-Link und Zwei-Faktor-Anmeldung anderer Admins sind
-  in der Oberfläche gesperrt, nach dem Herabstufen noch 7 Tage. Auf dem Server geht das jederzeit:
+- Admins können andere Admins herabstufen und deaktivieren, sich selbst herabstufen; ein aktiver Admin, der
+  sich schon einmal angemeldet hat, bleibt immer übrig. E-Mail, Passwort-Link und Zwei-Faktor-Anmeldung anderer Admins sind
+  in der Oberfläche gesperrt, nach dem Herabstufen noch 7 Tage. Mit E-Mail-Versand können sie anderen Admins
+  einen Link an die hinterlegte Adresse schicken, ohne ihn zu sehen. Solange sich mit einem Admin-Konto noch nie
+  jemand angemeldet hat und kein Passwort gesetzt ist, lässt sich seine Adresse korrigieren. Auf dem Server geht das jederzeit:
   `sudo teamplaner konto-aendern <email>` (siehe unten „Konten auf dem Server ändern“).
 
 ### Konten auf dem Server ändern

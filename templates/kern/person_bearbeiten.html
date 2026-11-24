@@ -20,6 +20,9 @@
         {% include "teile/feld.html" with feld=form.anzeigename %}
         {% include "teile/feld.html" with feld=form.email %}
       </div>
+      {% elif adresse_korrigierbar %}
+      {% include "teile/feld.html" with feld=form.email %}
+      <p class="klein gedaempft ohne-rand">{% translate "Mit diesem Konto hat sich noch niemand angemeldet, die Adresse lässt sich daher noch korrigieren. Der alte Einladungslink gilt danach nicht mehr." %}{% if mail_aktiv %} {% translate "Eine neue Einladung geht an die neue Adresse." %}{% endif %}</p>
       {% else %}<p class="klein gedaempft ohne-rand">{{ ziel.email }}</p>{% endif %}
       <div class="formular__zeile">
         {% include "teile/feld.html" with feld=form.rolle %}
@@ -32,7 +35,7 @@
       {% include "teile/feld.html" with feld=form.darf_tagesfreigabe zeile=True %}
       {% if freigabe_zeile_aus %}<div class="meldung meldung--info klein">{% translate "Die Zeile ist unter Einstellungen → Allgemein ausgeschaltet; der Haken wirkt erst, wenn sie eingeschaltet ist." %}</div>{% endif %}
       {% if freigabe_ohne_teamplaner %}<div class="meldung meldung--warning klein">{% translate "Diese Person sieht den Teamplaner nicht und kann die Freigabe deshalb trotz Haken nicht setzen." %}</div>{% endif %}
-      {% else %}<p class="klein gedaempft ohne-rand">{% translate "Bei anderen Admins lassen sich hier nur die Rolle ändern und das Konto deaktivieren. Alles Weitere geht über die Kommandozeile des Servers." %}</p>{% endif %}
+      {% elif not adresse_korrigierbar %}<p class="klein gedaempft ohne-rand">{% translate "Name, E-Mail-Adresse und Zwei-Faktor-Anmeldung anderer Admins lassen sich hier nicht ändern, nur über die Kommandozeile des Servers." %}</p>{% endif %}
     </div>
     {% url 'einst_personen' as zurueck %}{% include "teile/speicherleiste.html" with abbrechen=zurueck %}
   </section>
@@ -40,16 +43,21 @@
 
 <section class="karte" aria-labelledby="anm-titel">
   <div class="karte__kopf"><h2 id="anm-titel">{% translate "Anmeldung" %}</h2></div>
-  {% if ziel.daten_entfernt_am %}<div class="karte--innen"><div class="meldung meldung--info klein">{% blocktranslate with datum=ziel.daten_entfernt_am|date:"d.m.Y" %}Persönliche Daten am {{ datum }} entfernt (Frist nach der Deaktivierung). Zum Reaktivieren eine neue E-Mail-Adresse eintragen und eine Einladung schicken.{% endblocktranslate %}</div></div>{% endif %}
+  {% if ziel.email_entfernt %}<div class="karte--innen"><div class="meldung meldung--info klein">{% if ziel.daten_entfernt_am %}{% blocktranslate with datum=ziel.daten_entfernt_am|date:"d.m.Y" %}Persönliche Daten am {{ datum }} entfernt (Frist nach der Deaktivierung).{% endblocktranslate %}{% else %}{% translate "Persönliche Daten nach der Deaktivierung entfernt." %}{% endif %} {% if ziel.is_active %}{% translate "Bitte eine neue E-Mail-Adresse eintragen, die Rolle neu vergeben und danach einen Einladungslink erzeugen." %}{% else %}{% translate "Nach dem Reaktivieren eine neue E-Mail-Adresse eintragen, die Rolle neu vergeben und einen Einladungslink erzeugen." %}{% endif %}</div></div>{% endif %}
   {% if schutz_bis and ziel.pk != user.pk and bearbeitbar %}<div class="karte--innen"><div class="meldung meldung--info klein">{% blocktranslate with datum=schutz_bis|date:"d.m.Y H:i" %}Dieses Konto war bis vor Kurzem Admin. E-Mail, Passwort und Zwei-Faktor-Anmeldung lassen sich erst ab {{ datum }} verwalten.{% endblocktranslate %}</div></div>{% endif %}
   <div class="einstellungszeile">
     <div class="luecke">
       <div>{% if ziel.has_usable_password %}{% translate "Passwort gesetzt" %}{% else %}{% translate "Einladung noch nicht angenommen" %}{% endif %}</div>
       {% if ziel.last_login %}<div class="klein gedaempft">{% translate "Letzte Anmeldung" %} <span class="mono">{{ ziel.last_login|date:"d.m.Y H:i" }}</span></div>{% endif %}
+      {% if link_nur_per_mail and not mail_aktiv %}<div class="klein gedaempft">{% translate "Ohne E-Mail-Versand gibt es einen neuen Link nur am Server:" %} <code class="umbruch">sudo teamplaner konto-aendern {{ ziel.email }} --passwort-link</code></div>{% endif %}
     </div>
-    {% if anmeldung_verwaltbar and ziel.pk != user.pk %}
+    {% if anmeldung_zuruecksetzbar and not ziel.email_entfernt %}
       <form method="post" action="{% url 'person_aktion' ziel.pk 'link' %}"{% if ziel.has_usable_password and not mail_aktiv %} data-bestaetigen="{% translate 'Das bisherige Passwort gilt danach nicht mehr, bis die Person über den Link ein neues festlegt. Fortfahren?' %}"{% endif %}>{% csrf_token %}
         <button type="submit" class="knopf">{% if not ziel.has_usable_password %}{% translate "Neuen Einladungslink erzeugen" %}{% elif mail_aktiv %}{% translate "Link zum Zurücksetzen schicken" %}{% else %}{% translate "Passwort zurücksetzen und Link erzeugen" %}{% endif %}</button>
+      </form>
+    {% elif link_nur_per_mail and mail_aktiv and not ziel.email_entfernt %}
+      <form method="post" action="{% url 'person_aktion' ziel.pk 'link' %}">{% csrf_token %}
+        <button type="submit" class="knopf">{% if ziel.has_usable_password %}{% translate "Link zum Zurücksetzen schicken" %}{% else %}{% translate "Neue Einladung schicken" %}{% endif %}</button>
       </form>
     {% endif %}
   </div>
@@ -57,7 +65,7 @@
     <div class="luecke">{% translate "Zwei-Faktor-Anmeldung" %}</div>
     {% if zwei_faktor_aktiv %}
       <span class="badge badge--ok">{% blocktranslate with seit=ziel.totp_seit|date:"d.m.Y" %}Eingerichtet seit {{ seit }}{% endblocktranslate %}</span>
-      {% if anmeldung_verwaltbar and ziel.pk != user.pk %}
+      {% if anmeldung_zuruecksetzbar %}
         <form method="post" action="{% url 'person_aktion' ziel.pk 'zwei_faktor_zuruecksetzen' %}" data-bestaetigen="{% if mail_aktiv %}{% translate 'Zwei-Faktor-Anmeldung zurücksetzen, z. B. weil das Telefon verloren ist? Die Person bekommt eine E-Mail.' %}{% else %}{% translate 'Zwei-Faktor-Anmeldung zurücksetzen, z. B. weil das Telefon verloren ist?' %}{% endif %}">{% csrf_token %}
           <button type="submit" class="knopf knopf--klein">{% translate "Zurücksetzen" %}</button>
         </form>

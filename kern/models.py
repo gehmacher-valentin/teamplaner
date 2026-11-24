@@ -14,6 +14,7 @@ from django.db import models
 from django.db.models.functions import Lower
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.crypto import salted_hmac
 from django.utils.translation import gettext_lazy as _
 
 
@@ -195,6 +196,10 @@ class Farbschema(models.TextChoices):
     DUNKEL = "dark", _("Dunkel")
 
 
+# Domain der Ersatzadresse nach dem Entfernen der persönlichen Daten (verwaltung.aufraeumen)
+ENTFERNT_DOMAIN = "@konto.invalid"
+
+
 class Konto(AbstractBaseUser):
     """Anmeldedaten und Rolle einer Person. Platzhalter haben strukturell kein Konto."""
 
@@ -225,6 +230,9 @@ class Konto(AbstractBaseUser):
     # Ende der Admin-Rolle; danach gilt die Schutzfrist (kern.rechte.ADMIN_SCHUTZFRIST)
     admin_bis = models.DateTimeField(null=True, blank=True, editable=False)
 
+    # Zählt beim Deaktivieren hoch: alle Sitzungen und offenen Passwort-Links werden dadurch ungültig
+    zugang_stand = models.PositiveIntegerField(default=0, editable=False)
+
     USERNAME_FIELD = "email"
     EMAIL_FIELD = "email"
     REQUIRED_FIELDS = []
@@ -245,6 +253,23 @@ class Konto(AbstractBaseUser):
     def is_active(self):
         # Deaktivierte Konten = archivierte Personen
         return self.person.archiviert_am is None
+
+    @property
+    def email_entfernt(self):
+        """Nach der Frist bereinigt: braucht vor dem Einladen eine neue Adresse."""
+        return self.email.endswith(ENTFERNT_DOMAIN)
+
+    @property
+    def zugang_marke(self):
+        """Geht in Sitzungen und Passwort-Links ein; leer, solange das Konto nie deaktiviert war
+        (bestehende Sitzungen und Links bleiben so beim Update gültig)."""
+        return f"|{self.zugang_stand}" if self.zugang_stand else ""
+
+    def _get_session_auth_hash(self, secret=None):
+        hash_ = super()._get_session_auth_hash(secret=secret)
+        if not self.zugang_marke:
+            return hash_
+        return salted_hmac("kern.konto.sitzung", hash_ + self.zugang_marke, secret=secret, algorithm="sha256").hexdigest()
 
     @property
     def rang(self):

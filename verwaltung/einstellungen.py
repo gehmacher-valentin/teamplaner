@@ -292,7 +292,7 @@ def ueber(request):
 RECHTEMATRIX = [
     (gettext_lazy("Feiertage, Status, Systemeinstellungen"), "ja nein nein nein nein", ""),
     (gettext_lazy("Benutzerkonten anlegen und deaktivieren"), "ja ja nein nein nein",
-     gettext_lazy("Bestehende Konten nur mit niedrigerer Rolle als der eigenen; Admin-Konten über die Kommandozeile")),
+     gettext_lazy("Bestehende Konten nur mit niedrigerer Rolle als der eigenen; Admins können andere Admins herabstufen und deaktivieren")),
     (gettext_lazy("Rollen vergeben"), "ja ja nein nein nein", gettext_lazy("Bereichsleitung bis maximal zur eigenen Rolle")),
     (gettext_lazy("Projekte anlegen, bearbeiten, archivieren"), "ja ja ja nein nein", ""),
     (gettext_lazy("Aufgaben anlegen und bearbeiten"), "ja ja ja eigene nein", gettext_lazy("Mitarbeiter:innen: in Projekten, in denen sie Mitglied sind")),
