@@ -106,6 +106,12 @@ test("Editor: Schriftfarbe, Marker und Überschrift bleiben nach dem Neuladen", 
   // Gespeichert wird laufend; im Textfeld der Seite steht das Markdown (HTML-maskiert)
   await expect.poll(async () => (await seite.request.get(seite.url())).text()).toMatch(/mark data-farbe=(&quot;|&#34;|")gelb/);
 
+  // Die Knöpfe zeigen ihre Wirkung; nur die Farbauswahl ist ein Menü
+  const leiste = seite.locator(".editor__leiste");
+  await expect(leiste.locator('button[title="Fett"]')).toHaveCSS("font-weight", "700");
+  await expect(leiste.locator('button[title="Kursiv"]')).toHaveCSS("font-style", "italic");
+  await expect(leiste.locator("button[aria-haspopup]")).toHaveCount(2);
+
   await seite.reload();
   const neu = seite.locator("[data-editor='notiz-text'] [contenteditable='true']");
   await expect(neu.locator('span[data-farbe="rot"]')).toHaveText("Achtung");

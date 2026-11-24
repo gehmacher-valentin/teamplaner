@@ -1242,6 +1242,8 @@ form.inline { display: inline; }
 .editor__leiste button[aria-pressed="true"] { background: var(--akzent-hell); color: var(--akzent); }
 /* Schriftfarbe und Marker: Knöpfe, Farbauswahl und die Farben im Text (auch in gespeicherten Texten) */
 .editor__leiste { position: relative; }
+.editor__leiste .editor__knopf--fett { font-weight: 700; }
+.editor__leiste .editor__knopf--kursiv { font-style: italic; }
 .editor__leiste .editor__knopf--schriftfarbe { font-weight: 700; text-decoration: underline 3px var(--tf-rot); text-underline-offset: 3px; }
 .editor__leiste .editor__knopf--marker { background-image: linear-gradient(transparent 58%, var(--mk-gelb) 58%); background-size: 60% 100%; background-position: center; background-repeat: no-repeat; }
 .editor__farbwahl { position: absolute; top: calc(100% + 4px); z-index: 20; display: flex; align-items: center; gap: 4px; padding: 6px; background: var(--flaeche); border: 1px solid var(--rand); border-radius: var(--radius); box-shadow: var(--schatten); }

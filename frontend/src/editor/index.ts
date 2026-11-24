@@ -25,6 +25,7 @@ interface Knopf {
   aktion: (e: Editor, knopf: HTMLButtonElement) => void;
   aktiv: (e: Editor) => boolean;
   klasse?: string;
+  menue?: boolean; // öffnet eine Auswahl unter dem Knopf
 }
 
 type FarbArt = "schriftfarbe" | "marker";
@@ -93,10 +94,10 @@ function farbwahl(e: Editor, knopf: HTMLButtonElement, art: FarbArt) {
 
 function knoepfe(): Knopf[] {
   return [
-    { label: "B", titel: t("fett"), aktion: (e) => e.chain().focus().toggleBold().run(), aktiv: (e) => e.isActive("bold") },
-    { label: "I", titel: t("kursiv"), aktion: (e) => e.chain().focus().toggleItalic().run(), aktiv: (e) => e.isActive("italic") },
-    { label: "A", titel: t("schriftfarbe"), klasse: "editor__knopf--schriftfarbe", aktion: (e, k) => farbwahl(e, k, "schriftfarbe"), aktiv: (e) => e.isActive("schriftfarbe") },
-    { label: "ab", titel: t("marker"), klasse: "editor__knopf--marker", aktion: (e, k) => farbwahl(e, k, "marker"), aktiv: (e) => e.isActive("marker") },
+    { label: "B", titel: t("fett"), klasse: "editor__knopf--fett", aktion: (e) => e.chain().focus().toggleBold().run(), aktiv: (e) => e.isActive("bold") },
+    { label: "I", titel: t("kursiv"), klasse: "editor__knopf--kursiv", aktion: (e) => e.chain().focus().toggleItalic().run(), aktiv: (e) => e.isActive("italic") },
+    { label: "A", titel: t("schriftfarbe"), klasse: "editor__knopf--schriftfarbe", menue: true, aktion: (e, k) => farbwahl(e, k, "schriftfarbe"), aktiv: (e) => e.isActive("schriftfarbe") },
+    { label: "ab", titel: t("marker"), klasse: "editor__knopf--marker", menue: true, aktion: (e, k) => farbwahl(e, k, "marker"), aktiv: (e) => e.isActive("marker") },
     ...([1, 2, 3] as const).map((level): Knopf => ({
       label: `H${level}`,
       titel: t("ueberschrift", { n: level }),
@@ -189,8 +190,8 @@ function einrichten(halter: HTMLElement) {
     b.type = "button";
     b.textContent = k.label;
     b.title = k.titel;
-    if (k.klasse) {
-      b.className = k.klasse;
+    if (k.klasse) b.className = k.klasse;
+    if (k.menue) {
       b.setAttribute("aria-label", k.titel);
       b.setAttribute("aria-haspopup", "true");
       b.setAttribute("aria-expanded", "false");
