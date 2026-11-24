@@ -20,13 +20,25 @@ import { hatFormatierung, siehtNachMarkdownAus } from "./markdown";
 const PAUSE_MS = 3000;
 
 interface Knopf {
-  label: string;
+  label?: string;
   titel: string;
   aktion: (e: Editor, knopf: HTMLButtonElement) => void;
   aktiv: (e: Editor) => boolean;
+  symbol?: string; // SVG statt der Beschriftung, vorgelesen wird dann der Titel
   klasse?: string;
   menue?: boolean; // öffnet eine Auswahl unter dem Knopf
 }
+
+const symbol = (inhalt: string) =>
+  `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inhalt}</svg>`;
+const ziffer = (n: number, y: number) =>
+  `<text x="4.5" y="${y}" font-size="9" font-weight="700" text-anchor="middle" fill="currentColor" stroke="none">${n}</text>`;
+const LINIEN = '<path d="M10 5h11M10 12h11M10 19h11"/>';
+const SYMBOLE = {
+  kette: symbol('<g transform="rotate(-45 12 12)"><path d="M10 8H7a4 4 0 0 0 0 8h3"/><path d="M14 8h3a4 4 0 0 1 0 8h-3"/><path d="M8 12h8"/></g>'),
+  punkte: symbol(`${LINIEN}<path d="M4.5 5h.01M4.5 12h.01M4.5 19h.01" stroke-width="3.6"/>`),
+  ziffern: symbol(`${LINIEN}${ziffer(1, 8)}${ziffer(2, 15.2)}${ziffer(3, 22.4)}`),
+};
 
 type FarbArt = "schriftfarbe" | "marker";
 
@@ -104,12 +116,11 @@ function knoepfe(): Knopf[] {
       aktion: (e) => e.chain().focus().toggleHeading({ level }).run(),
       aktiv: (e) => e.isActive("heading", { level }),
     })),
-    { label: t("liste"), titel: t("aufzaehlung"), aktion: (e) => e.chain().focus().toggleBulletList().run(), aktiv: (e) => e.isActive("bulletList") },
-    { label: t("nummern"), titel: t("nummerierte_liste"), aktion: (e) => e.chain().focus().toggleOrderedList().run(), aktiv: (e) => e.isActive("orderedList") },
+    { symbol: SYMBOLE.punkte, titel: t("aufzaehlung"), aktion: (e) => e.chain().focus().toggleBulletList().run(), aktiv: (e) => e.isActive("bulletList") },
+    { symbol: SYMBOLE.ziffern, titel: t("nummerierte_liste"), aktion: (e) => e.chain().focus().toggleOrderedList().run(), aktiv: (e) => e.isActive("orderedList") },
     {
-      label: t("link"),
       titel: t("link_einfuegen"),
-      klasse: "editor__knopf--link",
+      symbol: SYMBOLE.kette,
       aktion: async (e) => {
         const alt = e.getAttributes("link").href as string | undefined;
         const url = await eingeben(t("link_frage"), alt ?? "https://");
@@ -189,7 +200,12 @@ function einrichten(halter: HTMLElement) {
   const liste = knoepfe().map((k) => {
     const b = document.createElement("button");
     b.type = "button";
-    b.textContent = k.label;
+    if (k.symbol) {
+      b.innerHTML = k.symbol;
+      b.setAttribute("aria-label", k.titel);
+    } else {
+      b.textContent = k.label ?? "";
+    }
     b.title = k.titel;
     if (k.klasse) b.className = k.klasse;
     if (k.menue) {

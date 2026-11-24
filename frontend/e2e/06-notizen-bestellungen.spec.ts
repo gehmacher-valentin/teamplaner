@@ -54,7 +54,7 @@ test("Eigene Dialoge statt Browser-Dialog: Link im Editor, Notiz löschen", asyn
   await seite.keyboard.press("Shift+Home");
 
   // Link: Adresse im eigenen Dialog
-  await seite.getByRole("button", { name: "Link", exact: true }).click();
+  await seite.getByRole("button", { name: "Link einfügen" }).click();
   const link = seite.getByRole("dialog", { name: "Adresse des Links (leer = entfernen)" });
   await link.getByRole("textbox").fill("https://boku.ac.at");
   await link.getByRole("button", { name: "Übernehmen" }).click();
@@ -114,7 +114,9 @@ test("Editor: Schriftfarbe, Marker und Überschrift bleiben nach dem Neuladen", 
   const leiste = seite.locator(".editor__leiste");
   await expect(leiste.locator('button[title="Fett"]')).toHaveCSS("font-weight", "700");
   await expect(leiste.locator('button[title="Kursiv"]')).toHaveCSS("font-style", "italic");
-  await expect(leiste.getByRole("button", { name: "Link", exact: true })).toHaveCSS("text-decoration-line", "underline");
+  for (const name of ["Aufzählung", "Nummerierte Liste", "Link einfügen"]) {
+    await expect(leiste.getByRole("button", { name }).locator("svg")).toBeVisible();
+  }
   await expect(leiste.locator("button[aria-haspopup]")).toHaveCount(2);
 
   await seite.reload();
