@@ -1,4 +1,10 @@
-Grafiken in diesem Ordner: Fluent Emoji (Stil „Color“), https://github.com/microsoft/fluentui-emoji
+Grafiken in diesem Ordner:
+
+- *.svg: Fluent Emoji (Stil „Color“), https://github.com/microsoft/fluentui-emoji, MIT-Lizenz (Text unten)
+- einhorn.json: Lottie-Animation „Unicorn Rainbow“ von Praveen Singh (LottieFiles), Lottie Simple License;
+  für die Feieranimation auf das Einhorn zugeschnitten (Regenbogen-Ebenen entfernt, Zahlen gerundet)
+
+Fluent Emoji:
 
     MIT License
 
