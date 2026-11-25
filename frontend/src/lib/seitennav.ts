@@ -66,11 +66,15 @@ export function initSeitennav(): void {
   const liste = document.querySelector<HTMLElement>("[data-projektliste]");
   if (!liste) return;
 
+  // Zustand an der Liste (Tests, Verhalten) und am Rahmen darum (Fläche, Linien, Schatten)
+  const ziele = [liste, liste.closest<HTMLElement>("[data-projektrahmen]")].filter((e): e is HTMLElement => e !== null);
   const anzeigen = () => {
     const r = raender(liste.scrollTop, liste.scrollHeight, liste.clientHeight);
-    liste.toggleAttribute("data-ueberlauf", r.ueberlauf);
-    liste.toggleAttribute("data-mehr-oben", r.mehrOben);
-    liste.toggleAttribute("data-mehr-unten", r.mehrUnten);
+    for (const ziel of ziele) {
+      ziel.toggleAttribute("data-ueberlauf", r.ueberlauf);
+      ziel.toggleAttribute("data-mehr-oben", r.mehrOben);
+      ziel.toggleAttribute("data-mehr-unten", r.mehrUnten);
+    }
   };
 
   const vorher = lesen();
