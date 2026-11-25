@@ -1,10 +1,19 @@
 """Gemeinsame Testdaten – nur Platzhalternamen („Person 01“), keine echten Namen."""
 
+import asyncio
+import time
+from contextlib import contextmanager
 from datetime import date
+from importlib import import_module
 
 import pytest
+from asgiref.sync import sync_to_async
+from django.conf import settings
+from django.db import connections
+from django.test import Client, RequestFactory
 from rest_framework.test import APIClient
 
+from kern.middleware import LETZTE_AKTIVITAET
 from kern.models import Bereich, Konto, Person, Rolle
 from planung.models import AnsichtFreigabe, Recht, TeamplanerAnsicht
 from projekte.models import Abschnitt, Aufgabe, Projekt, Status
@@ -24,6 +33,16 @@ DI2 = date(2026, 10, 27)
 MI2 = date(2026, 10, 28)
 
 ROLLEN = [Rolle.ADMIN, Rolle.BEREICHSLEITUNG, Rolle.PLANER, Rolle.MITARBEITER, Rolle.LESEND]
+A, BL, P, M, L = ROLLEN
+
+
+def angemeldet(konto):
+    """Django-Client, angemeldet als ``konto`` (ohne Konto: nicht angemeldet). Für die API mit JSON gibt
+    es die Fixture ``client_fuer`` (APIClient)."""
+    client = Client()
+    if konto is not None:
+        client.force_login(konto)
+    return client
 
 
 def konto_anlegen(name, bereich, rolle):
@@ -34,7 +53,7 @@ def konto_anlegen(name, bereich, rolle):
 @pytest.fixture(autouse=True)
 def ohne_zwei_faktor_pflicht(settings):
     """Die meisten Tests melden Admin/Bereichsleitung per force_login an; die Pflicht zum zweiten
-    Faktor prüft tests/test_zwei_faktor.py gezielt."""
+    Faktor prüft tests/test_sicherheit.py gezielt."""
     settings.TEAMPLANER_ZWEI_FAKTOR_PFLICHT = False
 
 
@@ -146,3 +165,100 @@ def client_fuer():
         return client
 
     return erzeugen
+
+
+# --- Datenbankstand bei Rechte-Tests ---
+# Ein 403 beweist nicht, dass nichts geschrieben wurde (eine View könnte erst speichern und dann prüfen),
+# ein 2xx nicht, dass gespeichert wurde. Rechte-Tests für Schreibzugriffe prüfen deshalb beides.
+
+def _zeile(obj):
+    return type(obj).objects.filter(pk=obj.pk).values().first()
+
+
+@contextmanager
+def unveraendert(*objekte):
+    """Die Zeilen der Objekte stehen danach genau so in der Datenbank wie vorher (und existieren noch)."""
+    vorher = [_zeile(o) for o in objekte]
+    assert None not in vorher, "Objekt fehlt schon vorher in der Datenbank"
+    yield
+    for obj, zeile in zip(objekte, vorher, strict=True):
+        assert _zeile(obj) == zeile, f"{type(obj).__name__} {obj.pk} geändert"
+
+
+@contextmanager
+def anzahl_gleich(*modelle):
+    """Keine Zeile angelegt oder gelöscht."""
+    vorher = [m.objects.count() for m in modelle]
+    yield
+    assert [m.objects.count() for m in modelle] == vorher, [m.__name__ for m in modelle]
+
+
+@contextmanager
+def nichts_geaendert(*objekte_oder_modelle):
+    """``unveraendert`` für Objekte und ``anzahl_gleich`` für Modelle in einem."""
+    modelle = [o for o in objekte_oder_modelle if isinstance(o, type)]
+    objekte = [o for o in objekte_oder_modelle if not isinstance(o, type)]
+    with anzahl_gleich(*modelle), unveraendert(*objekte):
+        yield
+
+# --- Live-Verbindung (SSE) direkt aus der View lesen ---
+
+class SseLeser:
+    """Liest die Teile eines SSE-Streams, wie die View sie erzeugt."""
+
+    def __init__(self, antwort):
+        self.teile = antwort.streaming_content.__aiter__()
+
+    async def naechstes(self):
+        return (await asyncio.wait_for(self.teile.__anext__(), timeout=5)).decode()
+
+    async def endet(self):
+        try:
+            await asyncio.wait_for(self.teile.__anext__(), timeout=5)
+        except StopAsyncIteration:
+            return True
+        return False
+
+
+def stream_anfrage(konto, pfad):
+    """Anfrage wie nach der AuthenticationMiddleware: Konto und Sitzung eines angemeldeten Clients."""
+    client = Client()
+    client.force_login(konto)
+    sitzung = client.session
+    sitzung[LETZTE_AKTIVITAET] = time.time()
+    sitzung.save()
+    anfrage = RequestFactory().get(pfad)
+    anfrage.session = import_module(settings.SESSION_ENGINE).SessionStore(sitzung.session_key)
+
+    async def auser():
+        return konto
+
+    anfrage.auser = auser
+    return anfrage
+
+
+async def mit_eigener_verbindung(ablauf):
+    """sync_to_async öffnet im Hilfsthread eine eigene Datenbankverbindung; danach wieder schließen,
+    sonst lässt sich die Testdatenbank nicht löschen. Tests damit brauchen ``transaction=True``."""
+    try:
+        await ablauf()
+    finally:
+        await sync_to_async(connections.close_all)()
+
+
+@pytest.fixture
+def eigene_warteschlange(monkeypatch):
+    """Verteiler ohne LISTEN-Verbindung: der Test legt die Ereignisse selbst in die Warteschlange."""
+
+    def ersetzen(verteiler):
+        schlangen = []
+
+        def anmelden():
+            schlangen.append(asyncio.Queue())
+            return schlangen[-1]
+
+        monkeypatch.setattr(verteiler, "anmelden", anmelden)
+        monkeypatch.setattr(verteiler, "abmelden", lambda warteschlange: None)
+        return schlangen
+
+    return ersetzen

@@ -3,15 +3,14 @@ Detailseite, Abhaken mit „alle mit erledigen“, Abschnitt, Löschen und Liste
 
 import pytest
 
-from kern.models import Protokolleintrag, Rolle
+from kern.models import Protokolleintrag
 from projekte.models import Abschnitt, Aufgabe, Status
 from zusammenarbeit.models import Kommentar
 
-from .conftest import MI
+from .conftest import BL, MI, A, L, M, P
 
 pytestmark = pytest.mark.django_db
 
-A, BL, P, M, L = Rolle.ADMIN, Rolle.BEREICHSLEITUNG, Rolle.PLANER, Rolle.MITARBEITER, Rolle.LESEND
 
 
 def anlegen(client, haupt, titel="Platten zuschneiden", **extra):

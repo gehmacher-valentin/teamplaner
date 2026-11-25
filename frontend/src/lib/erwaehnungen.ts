@@ -16,7 +16,7 @@ interface Vorschlag {
 
 import { t } from "./texte";
 
-const MUSTER = /(^|\s)@([^\s@][^@\n]{0,30})?$/u;
+export const MUSTER = /(^|\s)@([^\s@][^@\n]{0,30})?$/u;
 
 export function initErwaehnungen(wurzel: ParentNode) {
   wurzel.querySelectorAll<HTMLTextAreaElement>("textarea[data-erwaehnung-url]").forEach((feld) => {

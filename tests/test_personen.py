@@ -5,25 +5,17 @@ from io import StringIO
 
 import pytest
 from django.core.management import call_command
-from django.test import Client
 
 from bestellungen.models import Bestellung
-from kern.models import Bereich, Konto, Person, Protokolleintrag, Rolle
+from kern.models import Bereich, Konto, Person, Protokolleintrag
 from planung.models import Einteilung
 from projekte.forms import ProjektForm
 from projekte.models import Projekt
 
-from .conftest import DI, FR, MI, MO
+from .conftest import BL, DI, FR, MI, MO, A, M, P, angemeldet
 
 pytestmark = pytest.mark.django_db
 
-A, BL, P, M, L = Rolle.ADMIN, Rolle.BEREICHSLEITUNG, Rolle.PLANER, Rolle.MITARBEITER, Rolle.LESEND
-
-
-def client_fuer(konto):
-    c = Client()
-    c.force_login(konto)
-    return c
 
 
 @pytest.fixture
@@ -42,7 +34,7 @@ def test_auswaehlbar_ohne_systemkonto_mit_platzhalter(konten, systemkonto, platz
     assert platzhalter in auswahl and konten[M].person in auswahl
     assert not systemkonto.person.auswaehlbar and platzhalter.auswaehlbar
     # Die Kontenverwaltung zeigt das Systemkonto weiterhin, mit Hinweis
-    seite = client_fuer(konten[BL]).get("/einstellungen/personen/").content.decode()
+    seite = angemeldet(konten[BL]).get("/einstellungen/personen/").content.decode()
     assert systemkonto.person.anzeigename in seite and "Systemkonto" in seite
 
 
@@ -53,11 +45,11 @@ def test_formulare_bieten_systemkonto_nicht_an(konten, systemkonto, projekt, auf
     # schon eingetragen: bleibt sichtbar und lässt sich umhängen
     aufgabe.verantwortlich = systemkonto.person
     aufgabe.save()
-    detail = client_fuer(konten[P]).get(f"/aufgaben/{aufgabe.pk}/").content.decode()
+    detail = angemeldet(konten[P]).get(f"/aufgaben/{aufgabe.pk}/").content.decode()
     assert f'<option value="{systemkonto.pk}" selected>' in detail
-    seite = client_fuer(konten[P]).get(f"/projekte/{projekt.pk}/").content.decode()
+    seite = angemeldet(konten[P]).get(f"/projekte/{projekt.pk}/").content.decode()
     assert seite.count(f'<option value="{systemkonto.pk}"') == 1  # nur in der Zeile mit dieser Aufgabe, nicht im Filter
-    vorschlaege = client_fuer(konten[M]).get("/personen/vorschlaege/?q=Person").json()["personen"]
+    vorschlaege = angemeldet(konten[M]).get("/personen/vorschlaege/?q=Person").json()["personen"]
     assert systemkonto.pk not in {p["id"] for p in vorschlaege}
 
 
@@ -93,17 +85,17 @@ def test_systemkonto_setzen_nur_fuer_niedrigere_rollen(konten):
     ziel = konten[P]
     daten = {"anzeigename": "Person 05", "email": ziel.email, "rolle": ziel.rolle, "bereich": ziel.person.bereich_id,
              "systemkonto": "on"}
-    assert client_fuer(konten[BL]).post(f"/einstellungen/personen/{ziel.pk}/", daten).status_code == 302
+    assert angemeldet(konten[BL]).post(f"/einstellungen/personen/{ziel.pk}/", daten).status_code == 302
     ziel.refresh_from_db()
     assert ziel.systemkonto
     assert Protokolleintrag.objects.filter(objekt_typ="konto", objekt_id=ziel.pk, daten__systemkonto=[False, True]).exists()
-    assert client_fuer(konten[BL]).post(f"/einstellungen/personen/{konten[A].pk}/", {**daten, "email": konten[A].email}).status_code == 403
+    assert angemeldet(konten[BL]).post(f"/einstellungen/personen/{konten[A].pk}/", {**daten, "email": konten[A].email}).status_code == 403
 
 
 # --- Bestellungen ---
 
 def test_bestellung_eingetragen_und_bestellt_von(konten, person_a, platzhalter):
-    c = client_fuer(konten[M])
+    c = angemeldet(konten[M])
     seite = c.get("/bestellungen/").content.decode()
     assert "Eingetragen von" in seite and "Bestellt von" in seite and "data-personenwahl" in seite
     c.post("/bestellungen/neu/", {"neu-bedarf": "Kleber", "neu-aufnahmedatum": "2026-10-23", "neu-status": "offen",
@@ -118,12 +110,12 @@ def test_bestellung_eingetragen_und_bestellt_von(konten, person_a, platzhalter):
     eintrag = Protokolleintrag.objects.get(objekt_typ="bestellung", aktion="geaendert")
     assert eintrag.daten["bestellt_von"][1]["name"] == platzhalter.anzeigename
     # Löschen hängt weiter an der Person, die die Zeile angelegt hat
-    assert client_fuer(konten[M]).post(f"/bestellungen/{b.pk}/loeschen/").status_code == 302
+    assert angemeldet(konten[M]).post(f"/bestellungen/{b.pk}/loeschen/").status_code == 302
 
 
 def test_bestellung_ohne_personen_aendern_laesst_sie_stehen(konten):
     b = Bestellung.objects.create(bedarf="Schrauben", eingetragen_von=konten[M].person, bestellt_von=konten[P].person)
-    client_fuer(konten[M]).post(f"/bestellungen/{b.pk}/", {"status": "bestellt"}, HTTP_HX_REQUEST="true")
+    angemeldet(konten[M]).post(f"/bestellungen/{b.pk}/", {"status": "bestellt"}, HTTP_HX_REQUEST="true")
     b.refresh_from_db()
     assert (b.status, b.eingetragen_von, b.bestellt_von) == ("bestellt", konten[M].person, konten[P].person)
 
@@ -132,7 +124,7 @@ def test_bestellung_ohne_personen_aendern_laesst_sie_stehen(konten):
 
 def test_projektliste_personen_in_zweiter_zeile_und_tippsuche(konten, projekt, aufgabe, person_a):
     Einteilung.objects.create(aufgabe=aufgabe, person=person_a, von=MO, bis=DI)
-    seite = client_fuer(konten[P]).get(f"/projekte/{projekt.pk}/").content.decode()
+    seite = angemeldet(konten[P]).get(f"/projekte/{projekt.pk}/").content.decode()
     assert "<span>2 / 4 Tage</span><span>1 Pers.</span>" in seite
     assert 'name="verantwortlich" data-auto-absenden data-personenwahl' in seite
     assert Projekt.objects.count() == 1

@@ -1,23 +1,16 @@
 """Notizen: persönliche Notizen nur für die eigene Person, Gruppenordner nur für Freigegebene."""
 
 import pytest
-from django.test import Client
 
 from kern.hilfen import TEXT_MAX_ZEICHEN
-from kern.models import Rolle
 from notizen import markdown
 from notizen.markdown import als_html, als_text
 from notizen.models import Notiz, Ordner
 
+from .conftest import BL, A, L, M, P, angemeldet
+
 pytestmark = pytest.mark.django_db
 
-A, BL, P, M, L = Rolle.ADMIN, Rolle.BEREICHSLEITUNG, Rolle.PLANER, Rolle.MITARBEITER, Rolle.LESEND
-
-
-def client_fuer(konto):
-    c = Client()
-    c.force_login(konto)
-    return c
 
 
 @pytest.fixture
@@ -32,7 +25,7 @@ def speichern(client, **daten):
 
 
 def test_persoenliche_notiz_sieht_nur_besitzer(konten):
-    c = client_fuer(konten[M])
+    c = angemeldet(konten[M])
     antwort = speichern(c, titel="Einkauf", text="- Schrauben\n- **Kleber**")
     notiz = Notiz.objects.get()
     assert antwort.status_code == 200 and notiz.besitzer == konten[M].person and notiz.ordner is None
@@ -40,36 +33,129 @@ def test_persoenliche_notiz_sieht_nur_besitzer(konten):
     seite = c.get(f"/notizen/{notiz.pk}/").content.decode()
     assert "- **Kleber**</textarea>" in seite and 'data-format="markdown"' in seite  # im Editor als Markdown
     for rolle in (A, BL, P, L):
-        assert client_fuer(konten[rolle]).get(f"/notizen/{notiz.pk}/").status_code == 403
-        assert "Einkauf" not in client_fuer(konten[rolle]).get("/notizen/").content.decode()
+        assert angemeldet(konten[rolle]).get(f"/notizen/{notiz.pk}/").status_code == 403
+        assert "Einkauf" not in angemeldet(konten[rolle]).get("/notizen/").content.decode()
 
 
 def test_gruppenordner_nur_fuer_freigegebene(konten, ordner):
     notiz = Notiz.objects.create(ordner=ordner, titel="Aufzugsprüfung", text="Termin offen")
     for rolle in (P, M, L):
-        assert client_fuer(konten[rolle]).get(f"/notizen/ordner/{ordner.pk}/").status_code == 200
-        assert client_fuer(konten[rolle]).get(f"/notizen/{notiz.pk}/").status_code == 200
+        assert angemeldet(konten[rolle]).get(f"/notizen/ordner/{ordner.pk}/").status_code == 200
+        assert angemeldet(konten[rolle]).get(f"/notizen/{notiz.pk}/").status_code == 200
     # nicht freigegeben – die Bereichsleitung sieht ihn nicht
-    assert client_fuer(konten[BL]).get(f"/notizen/ordner/{ordner.pk}/").status_code == 403
-    assert client_fuer(konten[BL]).get(f"/notizen/{notiz.pk}/").status_code == 403
+    assert angemeldet(konten[BL]).get(f"/notizen/ordner/{ordner.pk}/").status_code == 403
+    assert angemeldet(konten[BL]).get(f"/notizen/{notiz.pk}/").status_code == 403
     # Admins sehen alle Gruppenordner (als Systemkonto stehen sie in keiner Mitgliederauswahl)
-    assert client_fuer(konten[A]).get(f"/notizen/ordner/{ordner.pk}/").status_code == 200
-    assert "Bereich A intern" in client_fuer(konten[A]).get("/notizen/").content.decode()
+    assert angemeldet(konten[A]).get(f"/notizen/ordner/{ordner.pk}/").status_code == 200
+    assert "Bereich A intern" in angemeldet(konten[A]).get("/notizen/").content.decode()
 
 
 def test_schreiben_ab_mitarbeiter(konten, ordner):
-    assert speichern(client_fuer(konten[M]), ordner=ordner.pk, titel="A", text="").status_code == 200
-    assert speichern(client_fuer(konten[L]), ordner=ordner.pk, titel="B", text="").status_code == 403
+    assert speichern(angemeldet(konten[M]), ordner=ordner.pk, titel="A", text="").status_code == 200
+    assert speichern(angemeldet(konten[L]), ordner=ordner.pk, titel="B", text="").status_code == 403
     assert list(ordner.notizen.values_list("titel", flat=True)) == ["A"]
     notiz = ordner.notizen.get()
-    antwort = speichern(client_fuer(konten[L]), notiz=notiz.pk, version=notiz.version, titel="A", text="geändert")
+    antwort = speichern(angemeldet(konten[L]), notiz=notiz.pk, version=notiz.version, titel="A", text="geändert")
     assert antwort.status_code == 403
     # Lesend sieht nur die Anzeige, ohne Eingabefelder; der Editor dient nur der Live-Anzeige
-    seite = client_fuer(konten[L]).get(f"/notizen/{notiz.pk}/").content.decode()
+    seite = angemeldet(konten[L]).get(f"/notizen/{notiz.pk}/").content.decode()
     assert 'id="notiz-titel-eingabe"' not in seite and 'id="notiz-html"' in seite
     assert '<textarea id="notiz-text" hidden readonly' in seite
-    assert client_fuer(konten[L]).get(f"/notizen/neu/?ordner={ordner.pk}").status_code == 403
+    assert angemeldet(konten[L]).get(f"/notizen/neu/?ordner={ordner.pk}").status_code == 403
 
+
+
+# --- Rechte als Funktion (notizen.rechte) ---
+
+@pytest.mark.parametrize("rolle, lesen, schreiben, verwalten", [
+    (A, True, True, True),      # Admin: alle Gruppenordner, auch ohne Mitgliedschaft
+    (BL, False, False, False),  # nicht Mitglied: sieht den Ordner nicht, darf ihn also auch nicht ändern
+    (P, True, True, True),
+    (M, True, True, False),
+    (L, True, False, False),
+])
+def test_ordnerrechte_je_rolle(konten, ordner, rolle, lesen, schreiben, verwalten):
+    from notizen import rechte
+
+    konto = konten[rolle]
+    assert rechte.darf_ordner_lesen(konto, ordner) is lesen
+    assert rechte.darf_ordner_schreiben(konto, ordner) is schreiben
+    assert rechte.darf_ordner_verwalten(konto, ordner) is verwalten
+    assert (ordner in rechte.sichtbare_ordner(konto)) is lesen
+    notiz = Notiz.objects.create(ordner=ordner, titel="Gruppe", text="")
+    assert rechte.darf_notiz_lesen(konto, notiz) is lesen
+    assert rechte.darf_notiz_schreiben(konto, notiz) is schreiben
+
+
+def test_ordnerrechte_ohne_mitgliedschaft_und_inaktiv(konten, ordner):
+    from notizen import rechte
+
+    ordner.mitglieder.remove(konten[P])
+    assert not rechte.darf_ordner_verwalten(konten[P], ordner)
+    assert not rechte.darf_ordner_lesen(konten[P], ordner)
+    assert rechte.darf_ordner_anlegen(konten[P]) and not rechte.darf_ordner_anlegen(konten[M])
+    # Deaktiviert: nichts mehr, auch nicht im eigenen Ordner
+    konten[M].person.archivieren()
+    konten[M].refresh_from_db()
+    assert not rechte.darf_ordner_lesen(konten[M], ordner)
+    assert not rechte.sichtbare_ordner(konten[M]).exists()
+
+
+@pytest.mark.parametrize("rolle", [A, BL, P, M, L])
+def test_persoenliche_notiz_nur_fuer_besitzer_als_funktion(konten, rolle):
+    from notizen import rechte
+
+    notiz = Notiz.objects.create(besitzer=konten[M].person, titel="Meine", text="")
+    eigen = rolle == M
+    assert rechte.darf_notiz_lesen(konten[rolle], notiz) is eigen
+    assert rechte.darf_notiz_schreiben(konten[rolle], notiz) is eigen
+
+
+# --- Schreibzugriffe auf Fremdes über HTTP: 403 und nichts geändert ---
+
+@pytest.fixture
+def fremde_notiz(konten):
+    return Notiz.objects.create(besitzer=konten[M].person, titel="Einkauf", text="Schrauben")
+
+
+@pytest.mark.parametrize("rolle", [A, BL, P, L])
+def test_fremde_persoenliche_notiz_nicht_aenderbar(konten, fremde_notiz, rolle, settings, tmp_path):
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    from notizen.models import NotizAnhang
+
+    settings.MEDIA_ROOT = tmp_path
+    c = angemeldet(konten[rolle])
+    antwort = speichern(c, notiz=fremde_notiz.pk, version=fremde_notiz.version, titel="Übernommen", text="weg")
+    assert antwort.status_code == 403
+    assert c.post(f"/notizen/{fremde_notiz.pk}/loeschen/").status_code == 403
+    datei = SimpleUploadedFile("liste.txt", b"x", content_type="text/plain")
+    assert c.post(f"/notizen/{fremde_notiz.pk}/anhaenge/", {"datei": datei}).status_code == 403
+    fremde_notiz.refresh_from_db()
+    assert (fremde_notiz.titel, fremde_notiz.text, fremde_notiz.version) == ("Einkauf", "Schrauben", 1)
+    assert not NotizAnhang.objects.exists() and not list(tmp_path.rglob("*"))
+
+
+def test_neue_notiz_in_nicht_freigegebenem_ordner_abgewiesen(konten, ordner):
+    # Bereichsleitung ist nicht Mitglied, Lesend darf nicht schreiben
+    for rolle in (BL, L):
+        assert speichern(angemeldet(konten[rolle]), ordner=ordner.pk, titel="Hinein", text="").status_code == 403
+        assert angemeldet(konten[rolle]).get(f"/notizen/neu/?ordner={ordner.pk}").status_code == 403
+    assert not Notiz.objects.exists()
+
+
+@pytest.mark.parametrize("rolle", [BL, P])
+def test_ordner_verwalten_ohne_mitgliedschaft_abgewiesen(konten, ordner, rolle):
+    """Planer:in und Bereichsleitung dürfen Ordner anlegen, fremde aber weder ändern noch löschen."""
+    ordner.mitglieder.remove(konten[P])
+    c = angemeldet(konten[rolle])
+    assert c.get(f"/notizen/ordner/{ordner.pk}/bearbeiten/").status_code == 403
+    antwort = c.post(f"/notizen/ordner/{ordner.pk}/bearbeiten/", {"name": "Übernommen", "mitglieder": [konten[rolle].pk]})
+    assert antwort.status_code == 403
+    assert c.post(f"/notizen/ordner/{ordner.pk}/loeschen/").status_code == 403
+    ordner.refresh_from_db()
+    assert ordner.name == "Bereich A intern"
+    assert set(ordner.mitglieder.all()) == {konten[M], konten[L]}
 
 
 def ordnerspalte(client, adresse):
@@ -86,7 +172,7 @@ def test_ordnerspalte_als_baum_nur_mit_sichtbaren_notizen(konten, ordner):
     gesperrt.mitglieder.add(konten[BL])
     Notiz.objects.create(ordner=gesperrt, titel="Personalplanung")
 
-    spalte = ordnerspalte(client_fuer(konten[P]), f"/notizen/{gruppe_b.pk}/")
+    spalte = ordnerspalte(angemeldet(konten[P]), f"/notizen/{gruppe_b.pk}/")
     assert "Geheim Mitarbeiter" not in spalte and "Zettel Admin" not in spalte and "Personalplanung" not in spalte
     assert spalte.index("A Ablage") < spalte.index("b Bericht")  # alphabetisch, unabhängig von Groß/klein
     assert f'href="/notizen/{gruppe_b.pk}/" aria-current="page"' in spalte
@@ -96,17 +182,17 @@ def test_ordnerspalte_als_baum_nur_mit_sichtbaren_notizen(konten, ordner):
     assert 'aria-expanded="false" aria-controls="notizbaum-persoenlich"' in spalte
 
     # Admin sieht alle Gruppenordner, aber keine fremden persönlichen Notizen
-    spalte = ordnerspalte(client_fuer(konten[A]), "/notizen/")
+    spalte = ordnerspalte(angemeldet(konten[A]), "/notizen/")
     assert "Zettel Admin" in spalte and "Personalplanung" in spalte and "A Ablage" in spalte
     assert "Geheim Mitarbeiter" not in spalte
     # leerer Ordner
-    leer = ordnerspalte(client_fuer(konten[BL]), "/notizen/")
+    leer = ordnerspalte(angemeldet(konten[BL]), "/notizen/")
     assert "Noch keine Notizen." in leer.split('id="notizbaum-persoenlich"', 1)[1].split("</ul>", 1)[0]
 
 
 def test_ordnerspalte_nach_dem_speichern_aktuell(konten, ordner):
     """Neuer oder geänderter Titel erscheint nach dem Speichern in der Spalte (hx-swap-oob)."""
-    c = client_fuer(konten[M])
+    c = angemeldet(konten[M])
     antwort = speichern(c, ordner=ordner.pk, titel="Neue Notiz im Ordner", text="").content.decode()
     notiz = ordner.notizen.get()
     assert f'id="notizbaum-{ordner.pk}" class="notiz-ordner__notizen" hx-swap-oob="true"' in antwort
@@ -116,25 +202,25 @@ def test_ordnerspalte_nach_dem_speichern_aktuell(konten, ordner):
 
 
 def test_ordner_verwalten_ab_planer(konten, ordner):
-    assert client_fuer(konten[M]).get("/notizen/ordner/neu/").status_code == 403
-    assert client_fuer(konten[M]).get(f"/notizen/ordner/{ordner.pk}/bearbeiten/").status_code == 403
+    assert angemeldet(konten[M]).get("/notizen/ordner/neu/").status_code == 403
+    assert angemeldet(konten[M]).get(f"/notizen/ordner/{ordner.pk}/bearbeiten/").status_code == 403
     # Planer:in legt an; das eigene Konto ist vorausgewählt
-    antwort = client_fuer(konten[P]).post("/notizen/ordner/neu/", {"name": "Firma", "mitglieder": [konten[P].pk, konten[BL].pk]})
+    antwort = angemeldet(konten[P]).post("/notizen/ordner/neu/", {"name": "Firma", "mitglieder": [konten[P].pk, konten[BL].pk]})
     neu = Ordner.objects.get(name="Firma")
     assert antwort.status_code == 302 and set(neu.mitglieder.all()) == {konten[P], konten[BL]}
-    assert client_fuer(konten[P]).post(f"/notizen/ordner/{ordner.pk}/loeschen/").status_code == 302
+    assert angemeldet(konten[P]).post(f"/notizen/ordner/{ordner.pk}/loeschen/").status_code == 302
     assert not Ordner.objects.filter(pk=ordner.pk).exists()
 
 
 def test_gleichzeitig_bearbeitet(konten, ordner):
     notiz = Notiz.objects.create(ordner=ordner, titel="Liste", text="alt")
-    c = client_fuer(konten[M])
+    c = angemeldet(konten[M])
     # Mehrmals hintereinander mit der jeweils neuen Version: kein falscher Konflikt
     assert speichern(c, notiz=notiz.pk, version=1, titel="Liste", text="neu").status_code == 200
     antwort = speichern(c, notiz=notiz.pk, version=2, titel="Liste", text="neuer")
     assert 'name="version" value="3"' in antwort.content.decode()  # Version für das nächste Speichern
     # Die andere Person speichert mit veralteter Version: nichts wird überschrieben, Hinweis mit aktueller Fassung
-    antwort = speichern(client_fuer(konten[P]), notiz=notiz.pk, version=1, titel="Liste", text="veraltet")
+    antwort = speichern(angemeldet(konten[P]), notiz=notiz.pk, version=1, titel="Liste", text="veraltet")
     inhalt = antwort.content.decode()
     assert antwort.status_code == 200 and antwort["HX-Retarget"] == "#notiz-konflikt" and "inzwischen" in inhalt
     assert "neuer" in inhalt and 'hx-vals=\'{"version": "3"}\'' in inhalt  # „Meine Fassung speichern“
@@ -144,7 +230,7 @@ def test_gleichzeitig_bearbeitet(konten, ordner):
 
 def test_titel_ist_pflicht_und_alte_bearbeiten_seite_leitet_weiter(konten, ordner):
     notiz = Notiz.objects.create(ordner=ordner, titel="Liste", text="alt")
-    c = client_fuer(konten[M])
+    c = angemeldet(konten[M])
     antwort = speichern(c, notiz=notiz.pk, version=1, titel="  ", text="neu")
     assert antwort["HX-Retarget"] == "#notiz-titel" and "Titel" in antwort.content.decode()
     notiz.refresh_from_db()
@@ -189,18 +275,18 @@ def test_anhaenge_an_notizen(konten, ordner, settings, tmp_path, django_capture_
     puffer = BytesIO()
     Image.new("RGB", (4, 4)).save(puffer, "JPEG")  # echtes Bild: die Vorschau prüft die Dateibytes
     bild = SimpleUploadedFile("halle.jpg", puffer.getvalue(), content_type="image/jpeg")
-    assert client_fuer(konten[L]).post(f"/notizen/{notiz.pk}/anhaenge/", {"datei": bild}).status_code == 403  # nur lesen
+    assert angemeldet(konten[L]).post(f"/notizen/{notiz.pk}/anhaenge/", {"datei": bild}).status_code == 403  # nur lesen
     bild.seek(0)
-    assert client_fuer(konten[M]).post(f"/notizen/{notiz.pk}/anhaenge/", {"datei": bild}).status_code == 302
+    assert angemeldet(konten[M]).post(f"/notizen/{notiz.pk}/anhaenge/", {"datei": bild}).status_code == 302
     anhang = NotizAnhang.objects.get()
-    seite = client_fuer(konten[L]).get(f"/notizen/{notiz.pk}/").content.decode()
+    seite = angemeldet(konten[L]).get(f"/notizen/{notiz.pk}/").content.decode()
     assert f'<img src="/notizen/anhaenge/{anhang.pk}/"' in seite and 'target="_blank"' in seite
-    assert client_fuer(konten[L]).get(f"/notizen/anhaenge/{anhang.pk}/").status_code == 200
-    assert client_fuer(konten[BL]).get(f"/notizen/anhaenge/{anhang.pk}/").status_code == 403  # Ordner nicht freigegeben
-    assert client_fuer(konten[A]).get(f"/notizen/anhaenge/{anhang.pk}/").status_code == 200  # Admin sieht alle Gruppenordner
-    assert client_fuer(konten[L]).post(f"/notizen/anhaenge/{anhang.pk}/loeschen/").status_code == 403
+    assert angemeldet(konten[L]).get(f"/notizen/anhaenge/{anhang.pk}/").status_code == 200
+    assert angemeldet(konten[BL]).get(f"/notizen/anhaenge/{anhang.pk}/").status_code == 403  # Ordner nicht freigegeben
+    assert angemeldet(konten[A]).get(f"/notizen/anhaenge/{anhang.pk}/").status_code == 200  # Admin sieht alle Gruppenordner
+    assert angemeldet(konten[L]).post(f"/notizen/anhaenge/{anhang.pk}/loeschen/").status_code == 403
     with django_capture_on_commit_callbacks(execute=True):  # Dateien erst nach dem Löschen in der Datenbank
-        assert client_fuer(konten[M]).post(f"/notizen/{notiz.pk}/loeschen/").status_code == 302
+        assert angemeldet(konten[M]).post(f"/notizen/{notiz.pk}/loeschen/").status_code == 302
     assert not NotizAnhang.objects.exists() and not list(tmp_path.rglob("*.jpg"))
 
 
@@ -214,24 +300,37 @@ def test_beispiel_notizen(konten, settings):
 
 
 def test_zu_langer_text_wird_abgelehnt(konten):
-    c = client_fuer(konten[M])
+    c = angemeldet(konten[M])
     assert speichern(c, titel="Lang", text="a" * (TEXT_MAX_ZEICHEN + 1)).status_code == 400
     assert not Notiz.objects.exists()
     assert speichern(c, titel="Lang", text="a" * TEXT_MAX_ZEICHEN).status_code == 200
 
 
-@pytest.mark.parametrize("muster", ["[" * 30000, "`" * 30000, "<a " * 20000, "-\n" * 40000, "a\n: b\n" * 1000])
-def test_aufwendiges_markdown_bricht_nach_frist_ab(muster):
-    """Python-Markdown braucht für solche Texte viele Sekunden bis Minuten; dann erscheint der Text unformatiert."""
+AUFWENDIG = ["[" * 30000, "`" * 30000, "<a " * 20000, "-\n" * 40000, "a\n: b\n" * 1000]
+
+
+@pytest.mark.parametrize("muster", AUFWENDIG)
+def test_aufwendiges_markdown_bricht_nach_frist_ab(muster, monkeypatch):
+    """Python-Markdown braucht für solche Texte viele Sekunden bis Minuten; dann erscheint der Text unformatiert.
+    Mit kurzer Frist, damit der Test nicht an der Wanduhr eines ausgelasteten Rechners hängt."""
+    import time
+
+    monkeypatch.setattr(markdown, "FRIST_ANZEIGE", 0.05)
+    monkeypatch.setattr(markdown, "FRIST_AUSZUG", 0.05)
+    beginn = time.monotonic()
+    ausgabe = als_html(muster)
+    assert time.monotonic() - beginn < 2  # ohne Abbruch: viele Sekunden
+    assert ausgabe.startswith("<p>") and "<a " not in ausgabe
+    als_text(muster)  # Vorschau ebenfalls befristet
+
+
+def test_aufwendiges_markdown_mit_echter_frist():
+    """Einmal mit der Frist des Betriebs, großzügiger Puffer für langsame Runner."""
     import time
 
     beginn = time.monotonic()
-    ausgabe = als_html(muster)
-    assert time.monotonic() - beginn < markdown.FRIST_ANZEIGE + 1.5
-    assert ausgabe.startswith("<p>") and "<a " not in ausgabe
-    beginn = time.monotonic()
-    als_text(muster)  # Vorschau: nur der Anfang, also schnell
-    assert time.monotonic() - beginn < 1
+    assert als_html(AUFWENDIG[0]).startswith("<p>[[[")
+    assert time.monotonic() - beginn < markdown.FRIST_ANZEIGE + 5
 
 
 def test_frist_stoert_gewoehnliche_notizen_nicht():
@@ -242,7 +341,7 @@ def test_frist_stoert_gewoehnliche_notizen_nicht():
 
 def test_ordneransicht_freigabe_als_avatare_und_liste_mit_kopf(konten, ordner):
     Notiz.objects.create(ordner=ordner, titel="Prüfplan", text="Hydraulik", erstellt_von=konten[P].person)
-    seite = client_fuer(konten[P]).get(f"/notizen/ordner/{ordner.pk}/").content.decode()
+    seite = angemeldet(konten[P]).get(f"/notizen/ordner/{ordner.pk}/").content.decode()
     assert 'role="group" aria-label="Freigegeben für"' in seite
     for konto in (konten[P], konten[M], konten[L]):
         name = konto.person.anzeigename

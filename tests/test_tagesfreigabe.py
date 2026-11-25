@@ -1,16 +1,17 @@
 """Zeile „Tagesfreigabe“: Stufen und Name stellt der Admin ein, setzen nur mit eigenem Haken am Konto (und
 Zugang zum Teamplaner), global schaltbar."""
 
+from contextlib import nullcontext
+
 import pytest
 
-from kern.models import Protokolleintrag, Rolle, Systemeinstellungen
+from kern.models import Protokolleintrag, Systemeinstellungen
 from planung.models import FreigabeStufe, Tagesfreigabe
 
-from .conftest import DI, MO, SA
+from .conftest import BL, DI, MO, SA, A, L, M, P, anzahl_gleich, nichts_geaendert
 
 pytestmark = pytest.mark.django_db
 
-A, BL, P, M, L = Rolle.ADMIN, Rolle.BEREICHSLEITUNG, Rolle.PLANER, Rolle.MITARBEITER, Rolle.LESEND
 URL = "/einstellungen/allgemein/"
 
 
@@ -54,7 +55,10 @@ def test_eingeschaltet_zeigt_stufen_in_reihenfolge(client_fuer, konten, stufen):
 
 @pytest.mark.parametrize("rolle, status", [(A, 200), (BL, 200), (P, 403), (M, 403), (L, 403)])
 def test_rechte(client_fuer, konten, stufen, rolle, status):
-    assert setzen(client_fuer(konten[rolle]), MO, stufen[0]).status_code == status
+    with anzahl_gleich(Protokolleintrag) if status == 403 else nullcontext():
+        assert setzen(client_fuer(konten[rolle]), MO, stufen[0]).status_code == status
+    gesetzt = list(Tagesfreigabe.objects.values_list("datum", "stufe"))
+    assert gesetzt == ([(MO, stufen[0].pk)] if status == 200 else [])
 
 
 def test_setzen_leeren_protokoll_und_alle_sehen_es(client_fuer, konten, stufen):
@@ -134,7 +138,13 @@ def zeitraum(client, von, bis, stufe):
 
 @pytest.mark.parametrize("rolle, status", [(A, 200), (BL, 200), (P, 403), (M, 403), (L, 403)])
 def test_zeitraum_rechte(client_fuer, konten, stufen, rolle, status):
-    assert zeitraum(client_fuer(konten[rolle]), MO, DI, stufen[0]).status_code == status
+    vorhanden = Tagesfreigabe.objects.create(datum=MO, stufe=stufen[1], geaendert_von=konten[A].person)
+    if status == 403:
+        with nichts_geaendert(vorhanden, Tagesfreigabe, Protokolleintrag):
+            assert zeitraum(client_fuer(konten[rolle]), MO, DI, stufen[0]).status_code == 403
+    else:
+        assert zeitraum(client_fuer(konten[rolle]), MO, DI, stufen[0]).status_code == 200
+        assert dict(Tagesfreigabe.objects.values_list("datum", "stufe")) == {MO: stufen[0].pk, DI: stufen[0].pk}
 
 
 def test_zeitraum_setzen_mit_wochenende_und_wieder_entfernen(client_fuer, konten, stufen):

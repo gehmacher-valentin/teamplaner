@@ -20,21 +20,15 @@ from django.test import Client
 from django.utils import timezone
 from PIL import Image
 
-from kern.models import Rolle
 from notizen.models import Notiz, NotizAnhang, Ordner
 from projekte import dienste
 from verwaltung.aufraeumen import aufraeumen
 from zusammenarbeit import pdf_vorschau
 from zusammenarbeit.models import Anhang
 
+from .conftest import BL, A, L, M, P, angemeldet
+
 pytestmark = pytest.mark.django_db
-A, BL, P, M, L = Rolle.ADMIN, Rolle.BEREICHSLEITUNG, Rolle.PLANER, Rolle.MITARBEITER, Rolle.LESEND
-
-
-def client_fuer(konto):
-    c = Client()
-    c.force_login(konto)
-    return c
 
 
 def pdf_aus(objekte, trailer=b""):
@@ -146,7 +140,7 @@ def test_prozess_fehlt(monkeypatch):
 # --- Hochladen und Anzeigen ---
 
 def test_aufgabe_pdf_mit_vorschau(konten, aufgabe, medien):
-    c = client_fuer(konten[M])
+    c = angemeldet(konten[M])
     assert hochladen(c, f"/aufgaben/{aufgabe.pk}/anhaenge/", bild_pdf("red", "blue")).status_code == 302
     anhang = Anhang.objects.get()
     assert anhang.content_type == "application/pdf" and anhang.vorschau.name.endswith(".webp")
@@ -154,7 +148,7 @@ def test_aufgabe_pdf_mit_vorschau(konten, aufgabe, medien):
     seite = c.get(f"/aufgaben/{aufgabe.pk}/").content.decode()
     assert f'<img src="/anhaenge/{anhang.pk}/vorschau/"' in seite and "anhang-kachel--pdf" in seite
     assert f'href="/anhaenge/{anhang.pk}/" target="_blank"' in seite  # Klick öffnet das PDF
-    antwort = client_fuer(konten[L]).get(f"/anhaenge/{anhang.pk}/vorschau/")
+    antwort = angemeldet(konten[L]).get(f"/anhaenge/{anhang.pk}/vorschau/")
     assert antwort.status_code == 200 and antwort["Content-Type"] == "image/webp"
     assert antwort["X-Content-Type-Options"] == "nosniff" and antwort["Cache-Control"] == "private"
     assert antwort["Content-Security-Policy"].startswith("default-src 'none'")
@@ -164,7 +158,7 @@ def test_aufgabe_pdf_mit_vorschau(konten, aufgabe, medien):
 
 
 def test_aufgabe_in_der_seitenleiste(konten, aufgabe, medien):
-    c = client_fuer(konten[M])
+    c = angemeldet(konten[M])
     hochladen(c, f"/aufgaben/{aufgabe.pk}/anhaenge/", bild_pdf("red"))
     anhang = Anhang.objects.get()
     leiste = c.get(f"/projekte/{aufgabe.projekt_id}/?aufgabe={aufgabe.pk}").content.decode()
@@ -174,7 +168,7 @@ def test_aufgabe_in_der_seitenleiste(konten, aufgabe, medien):
 @pytest.mark.parametrize("daten, name", [(b"%PDF-1.4 test", "kaputt.pdf"), (verschluesselt(), "geheim.pdf"),
                                          (b"kein pdf", "falsch.pdf")])
 def test_ohne_vorschau_trotzdem_gespeichert(konten, aufgabe, medien, daten, name):
-    c = client_fuer(konten[M])
+    c = angemeldet(konten[M])
     assert hochladen(c, f"/aufgaben/{aufgabe.pk}/anhaenge/", daten, name).status_code == 302
     anhang = Anhang.objects.get()
     assert anhang.dateiname == name and not anhang.vorschau
@@ -185,52 +179,52 @@ def test_ohne_vorschau_trotzdem_gespeichert(konten, aufgabe, medien, daten, name
 
 def test_zeitgrenze_beim_hochladen(konten, aufgabe, medien, monkeypatch):
     monkeypatch.setattr(pdf_vorschau, "ZEIT_SEKUNDEN", 0.01)
-    assert hochladen(client_fuer(konten[M]), f"/aufgaben/{aufgabe.pk}/anhaenge/", bild_pdf("red")).status_code == 302
+    assert hochladen(angemeldet(konten[M]), f"/aufgaben/{aufgabe.pk}/anhaenge/", bild_pdf("red")).status_code == 302
     assert not Anhang.objects.get().vorschau
 
 
 def test_nur_was_der_server_als_pdf_erkennt(konten, aufgabe, medien):
     puffer = BytesIO()
     Image.new("RGB", (4, 4)).save(puffer, "PNG")
-    c = client_fuer(konten[M])
+    c = angemeldet(konten[M])
     hochladen(c, f"/aufgaben/{aufgabe.pk}/anhaenge/", puffer.getvalue(), "foto.pdf")  # Angabe des Browsers: PDF
     anhang = Anhang.objects.get()
     assert anhang.content_type == "image/png" and not anhang.vorschau
 
 
 def test_vorschau_rechte_aufgabe(konten, aufgabe, medien):
-    hochladen(client_fuer(konten[M]), f"/aufgaben/{aufgabe.pk}/anhaenge/", bild_pdf("red"))
+    hochladen(angemeldet(konten[M]), f"/aufgaben/{aufgabe.pk}/anhaenge/", bild_pdf("red"))
     pk = Anhang.objects.get().pk
     for rolle in (A, BL, P, M, L):
-        assert client_fuer(konten[rolle]).get(f"/anhaenge/{pk}/vorschau/").status_code == 200
+        assert angemeldet(konten[rolle]).get(f"/anhaenge/{pk}/vorschau/").status_code == 200
     assert Client().get(f"/anhaenge/{pk}/vorschau/").status_code == 302  # nicht angemeldet
-    assert client_fuer(konten[M]).get(f"/anhaenge/{pk + 1}/vorschau/").status_code == 404
+    assert angemeldet(konten[M]).get(f"/anhaenge/{pk + 1}/vorschau/").status_code == 404
 
 
 def test_notiz_pdf_mit_vorschau_und_rechten(konten, ordner, medien):
     notiz = Notiz.objects.create(ordner=ordner, titel="Pläne", text="")
-    assert hochladen(client_fuer(konten[L]), f"/notizen/{notiz.pk}/anhaenge/", bild_pdf("red")).status_code == 403
-    assert hochladen(client_fuer(konten[M]), f"/notizen/{notiz.pk}/anhaenge/", bild_pdf("red")).status_code == 302
+    assert hochladen(angemeldet(konten[L]), f"/notizen/{notiz.pk}/anhaenge/", bild_pdf("red")).status_code == 403
+    assert hochladen(angemeldet(konten[M]), f"/notizen/{notiz.pk}/anhaenge/", bild_pdf("red")).status_code == 302
     anhang = NotizAnhang.objects.get()
     assert anhang.vorschau.name.startswith("notizen/vorschau/")
-    seite = client_fuer(konten[L]).get(f"/notizen/{notiz.pk}/").content.decode()
+    seite = angemeldet(konten[L]).get(f"/notizen/{notiz.pk}/").content.decode()
     assert f'<img src="/notizen/anhaenge/{anhang.pk}/vorschau/"' in seite
     adresse = f"/notizen/anhaenge/{anhang.pk}/vorschau/"
-    antwort = client_fuer(konten[L]).get(adresse)
+    antwort = angemeldet(konten[L]).get(adresse)
     assert antwort.status_code == 200 and antwort["Content-Type"] == "image/webp"
     assert antwort["X-Content-Type-Options"] == "nosniff" and antwort["Cache-Control"] == "private"
-    assert client_fuer(konten[A]).get(adresse).status_code == 200  # Admin sieht alle Gruppenordner
-    assert client_fuer(konten[BL]).get(adresse).status_code == 403  # Ordner nicht freigegeben
+    assert angemeldet(konten[A]).get(adresse).status_code == 200  # Admin sieht alle Gruppenordner
+    assert angemeldet(konten[BL]).get(adresse).status_code == 403  # Ordner nicht freigegeben
     assert Client().get(adresse).status_code == 302
 
 
 def test_persoenliche_notiz_vorschau_nur_fuer_besitzer(konten, medien):
     notiz = Notiz.objects.create(besitzer=konten[M].person, titel="Privat", text="")
-    hochladen(client_fuer(konten[M]), f"/notizen/{notiz.pk}/anhaenge/", bild_pdf("red"))
+    hochladen(angemeldet(konten[M]), f"/notizen/{notiz.pk}/anhaenge/", bild_pdf("red"))
     adresse = f"/notizen/anhaenge/{NotizAnhang.objects.get().pk}/vorschau/"
-    assert client_fuer(konten[M]).get(adresse).status_code == 200
+    assert angemeldet(konten[M]).get(adresse).status_code == 200
     for rolle in (A, BL, P, L):
-        assert client_fuer(konten[rolle]).get(adresse).status_code == 403
+        assert angemeldet(konten[rolle]).get(adresse).status_code == 403
 
 
 # --- Löschen ---
@@ -240,7 +234,7 @@ def dateien(medien):
 
 
 def test_loeschen_mit_anhang(konten, aufgabe, medien, django_capture_on_commit_callbacks):
-    c = client_fuer(konten[M])
+    c = angemeldet(konten[M])
     hochladen(c, f"/aufgaben/{aufgabe.pk}/anhaenge/", bild_pdf("red"))
     assert dateien(medien) == [".pdf", ".webp"]
     with django_capture_on_commit_callbacks(execute=True):
@@ -249,14 +243,14 @@ def test_loeschen_mit_anhang(konten, aufgabe, medien, django_capture_on_commit_c
 
 
 def test_loeschen_in_der_speicherverwaltung(konten, aufgabe, medien, django_capture_on_commit_callbacks):
-    hochladen(client_fuer(konten[M]), f"/aufgaben/{aufgabe.pk}/anhaenge/", bild_pdf("red"))
+    hochladen(angemeldet(konten[M]), f"/aufgaben/{aufgabe.pk}/anhaenge/", bild_pdf("red"))
     with django_capture_on_commit_callbacks(execute=True):
-        antwort = client_fuer(konten[A]).post(f"/einstellungen/speicherplatz/{Anhang.objects.get().pk}/loeschen/")
+        antwort = angemeldet(konten[A]).post(f"/einstellungen/speicherplatz/{Anhang.objects.get().pk}/loeschen/")
     assert antwort.status_code == 302 and not Anhang.objects.exists() and dateien(medien) == []
 
 
 def test_loeschen_mit_aufgabe(konten, aufgabe, medien, django_capture_on_commit_callbacks):
-    hochladen(client_fuer(konten[M]), f"/aufgaben/{aufgabe.pk}/anhaenge/", bild_pdf("red"))
+    hochladen(angemeldet(konten[M]), f"/aufgaben/{aufgabe.pk}/anhaenge/", bild_pdf("red"))
     with django_capture_on_commit_callbacks(execute=True):
         dienste.aufgabe_loeschen(konten[P], aufgabe)
     assert not Anhang.objects.exists() and dateien(medien) == []
@@ -265,7 +259,7 @@ def test_loeschen_mit_aufgabe(konten, aufgabe, medien, django_capture_on_commit_
 def test_zurueckgerollt_bleiben_die_dateien(konten, aufgabe, medien, django_capture_on_commit_callbacks):
     from django.db import transaction
 
-    hochladen(client_fuer(konten[M]), f"/aufgaben/{aufgabe.pk}/anhaenge/", bild_pdf("red"))
+    hochladen(angemeldet(konten[M]), f"/aufgaben/{aufgabe.pk}/anhaenge/", bild_pdf("red"))
     with django_capture_on_commit_callbacks(execute=True) as rueckrufe:
         try:
             with transaction.atomic():
@@ -277,7 +271,7 @@ def test_zurueckgerollt_bleiben_die_dateien(konten, aufgabe, medien, django_capt
 
 
 def test_loeschen_mit_notiz_und_ordner(konten, ordner, medien, django_capture_on_commit_callbacks):
-    c = client_fuer(konten[P])
+    c = angemeldet(konten[P])
     erste = Notiz.objects.create(ordner=ordner, titel="Eins", text="")
     zweite = Notiz.objects.create(ordner=ordner, titel="Zwei", text="")
     for notiz in (erste, zweite):
@@ -294,7 +288,7 @@ def test_loeschen_mit_notiz_und_ordner(konten, ordner, medien, django_capture_on
 def test_loeschen_beim_aufraeumen(konten, medien, settings, django_capture_on_commit_callbacks):
     konto = konten[M]
     notiz = Notiz.objects.create(besitzer=konto.person, titel="Privat", text="")
-    hochladen(client_fuer(konto), f"/notizen/{notiz.pk}/anhaenge/", bild_pdf("red"))
+    hochladen(angemeldet(konto), f"/notizen/{notiz.pk}/anhaenge/", bild_pdf("red"))
     assert dateien(medien) == [".pdf", ".webp"]
     konto.person.archiviert_am = timezone.now() - timedelta(days=settings.TEAMPLANER_DEAKTIVIERT_TAGE + 1)
     konto.person.save()
@@ -323,7 +317,7 @@ def test_nachtragen(konten, aufgabe, ordner, medien):
     for anhang in (alt, kaputt, text, notiz_alt):
         anhang.refresh_from_db()
     assert alt.vorschau and notiz_alt.vorschau and not kaputt.vorschau and not text.vorschau
-    assert client_fuer(konten[L]).get(f"/anhaenge/{alt.pk}/vorschau/").status_code == 200
+    assert angemeldet(konten[L]).get(f"/anhaenge/{alt.pk}/vorschau/").status_code == 200
 
     # Ein zweiter Lauf lässt vorhandene Vorschauen stehen, --neu ersetzt sie (die alte Datei verschwindet)
     vorher = alt.vorschau.name

@@ -1,17 +1,34 @@
 """Teamplaner-API: Einteilungslogik und serverseitige Rechteprüfung."""
 
+from contextlib import nullcontext
+
 import pytest
 
-from kern.models import Protokolleintrag, Rolle
+from kern.models import Protokolleintrag
 from planung.models import Abwesenheit, Einteilung, FreierTag, Freitext, Recht
 from projekte.models import Aufgabe, Status
 from zusammenarbeit.models import Benachrichtigung
 
-from .conftest import DI, DO, FEIERTAG, FR, MI, MI2, MO, SA, freigeben
+from .conftest import (
+    BL,
+    DI,
+    DO,
+    FEIERTAG,
+    FR,
+    MI,
+    MI2,
+    MO,
+    SA,
+    A,
+    L,
+    M,
+    P,
+    anzahl_gleich,
+    freigeben,
+)
 
 pytestmark = pytest.mark.django_db
 
-A, BL, P, M, L = Rolle.ADMIN, Rolle.BEREICHSLEITUNG, Rolle.PLANER, Rolle.MITARBEITER, Rolle.LESEND
 URL = "/api/planung/einteilungen"
 
 
@@ -36,7 +53,10 @@ def test_einteilen_ohne_freigabe(client_fuer, konten, aufgabe, person_a, rolle, 
 @pytest.mark.parametrize("rolle, status", [(P, 201), (M, 403), (L, 403)])
 def test_einteilen_mit_bearbeiten_freigabe(client_fuer, konten, aufgabe, person_a, ansicht_a, rolle, status):
     freigeben(ansicht_a, konten[rolle], Recht.BEARBEITEN)
-    assert anlegen(client_fuer(konten[rolle]), aufgabe, person_a, MO, MI).status_code == status
+    with anzahl_gleich(Protokolleintrag) if status == 403 else nullcontext():
+        assert anlegen(client_fuer(konten[rolle]), aufgabe, person_a, MO, MI).status_code == status
+    angelegt = list(Einteilung.objects.values_list("aufgabe_id", "person_id", "von", "bis"))
+    assert angelegt == ([(aufgabe.pk, person_a.pk, MO, MI)] if status == 201 else [])
 
 
 def test_planer_darf_fremden_bereich_nicht_einteilen(client_fuer, konten, aufgabe, person_b, ansicht_a):
@@ -202,9 +222,12 @@ ABW = "/api/planung/abwesenheiten"
 
 @pytest.mark.parametrize("rolle, status", [(A, 201), (BL, 201), (P, 403), (M, 403), (L, 403)])
 def test_abwesenheit_rechte(client_fuer, konten, person_a, rolle, status):
-    antwort = client_fuer(konten[rolle]).post(
-        ABW, {"person_id": person_a.pk, "von": MO.isoformat(), "bis": FR.isoformat()}, format="json")
-    assert antwort.status_code == status
+    with anzahl_gleich(Protokolleintrag) if status == 403 else nullcontext():
+        antwort = client_fuer(konten[rolle]).post(
+            ABW, {"person_id": person_a.pk, "von": MO.isoformat(), "bis": FR.isoformat()}, format="json")
+        assert antwort.status_code == status
+    angelegt = list(Abwesenheit.objects.values_list("person_id", "von", "bis"))
+    assert angelegt == ([(person_a.pk, MO, FR)] if status == 201 else [])
 
 
 def test_abwesenheit_auf_feiertag_ohne_bestaetigung_und_protokoll_ohne_grund(client_fuer, konten, person_a):
@@ -232,7 +255,10 @@ def freitext(client, person, von, bis, text="Schulung"):
 
 @pytest.mark.parametrize("rolle, status", [(A, 201), (BL, 201), (P, 403), (M, 403), (L, 403)])
 def test_freitext_rechte(client_fuer, konten, person_a, rolle, status):
-    assert freitext(client_fuer(konten[rolle]), person_a, MO, FR).status_code == status
+    with anzahl_gleich(Protokolleintrag) if status == 403 else nullcontext():
+        assert freitext(client_fuer(konten[rolle]), person_a, MO, FR).status_code == status
+    angelegt = list(Freitext.objects.values_list("person_id", "von", "bis", "text"))
+    assert angelegt == ([(person_a.pk, MO, FR, "Schulung")] if status == 201 else [])
 
 
 def test_freitext_text_pflicht_und_hoechstlaenge(client_fuer, konten, person_a):
@@ -344,8 +370,14 @@ def test_palette_zeigt_nur_nicht_voll_eingeteilte(client_fuer, konten, aufgabe, 
 
 
 @pytest.mark.parametrize("rolle, status", [(BL, 200), (P, 200), (M, 403), (L, 403)])
-def test_palette_rechte(client_fuer, konten, rolle, status):
-    assert client_fuer(konten[rolle]).get("/api/planung/palette").status_code == status
+def test_palette_rechte(client_fuer, konten, aufgabe, rolle, status):
+    antwort = client_fuer(konten[rolle]).get("/api/planung/palette")
+    assert antwort.status_code == status
+    # Abgewiesen: keine Aufgaben in der Antwort, nur der Fehlercode
+    if status == 403:
+        assert antwort.json()["code"] == "keine_berechtigung" and aufgabe.titel not in antwort.content.decode()
+    else:
+        assert aufgabe.titel in antwort.content.decode()
 
 
 def test_ansichten_liste(client_fuer, konten, ansicht_a, ansicht_b):

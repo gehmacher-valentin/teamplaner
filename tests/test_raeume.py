@@ -5,15 +5,14 @@ import re
 
 import pytest
 
-from kern.models import Protokolleintrag, Raum, Rolle
+from kern.models import Protokolleintrag, Raum
 from projekte.models import Aufgabe, Status
 from projekte.wiederholung import regel_bauen
 from zusammenarbeit.verlauf import verlauf_eintraege
 
-from .conftest import MO
+from .conftest import BL, MO, A, L, M, P
 
 pytestmark = pytest.mark.django_db
-A, BL, P, M, L = Rolle.ADMIN, Rolle.BEREICHSLEITUNG, Rolle.PLANER, Rolle.MITARBEITER, Rolle.LESEND
 
 
 def htmx(client, url, daten=None):

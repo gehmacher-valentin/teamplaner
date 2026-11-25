@@ -3,6 +3,7 @@ Konten übernehmen, Passwort-Links und Postausgang, Live-Verbindung."""
 
 import asyncio
 import base64
+import io
 import json
 import re
 import time
@@ -17,14 +18,24 @@ from django.utils import timezone
 from kern import zwei_faktor
 from kern.hilfen import PasswortLinks, passwort_link, passwort_links
 from kern.middleware import LETZTE_AKTIVITAET
-from kern.models import Rolle
 from zusammenarbeit.mail import offene_versenden
 from zusammenarbeit.models import Postausgang
 
-from .conftest import TESTPASSWORT, konto_anlegen
+from .conftest import (
+    BL,
+    TESTPASSWORT,
+    A,
+    L,
+    M,
+    P,
+    SseLeser,
+    angemeldet,
+    konto_anlegen,
+    mit_eigener_verbindung,
+    stream_anfrage,
+)
 
 pytestmark = pytest.mark.django_db
-A, BL, P, M, L = Rolle.ADMIN, Rolle.BEREICHSLEITUNG, Rolle.PLANER, Rolle.MITARBEITER, Rolle.LESEND
 
 
 @pytest.fixture
@@ -37,12 +48,6 @@ def smtp(settings):
 @pytest.fixture
 def pflicht(settings):
     settings.TEAMPLANER_ZWEI_FAKTOR_PFLICHT = True
-
-
-def angemeldet(konto):
-    c = Client()
-    c.force_login(konto)
-    return c
 
 
 def anmelden(email, passwort=TESTPASSWORT):
@@ -199,6 +204,50 @@ def test_verwaltung_setzt_zwei_faktor_zurueck_und_die_person_erfaehrt_es(konten,
 
 
 # --- Sitzungen ---
+
+def test_notfallbefehl_setzt_zwei_faktor_zurueck(konten, pflicht):
+    """``zwei_faktor_zuruecksetzen``: verlorenes Telefon eines Admins. Offene Sitzungen müssen danach den
+    zweiten Faktor neu einrichten, bevor sie wieder etwas sehen; das Protokoll hält es fest."""
+    from django.core.management import call_command
+
+    from kern.models import Protokolleintrag
+
+    konto = konten[A]
+    mit_zwei_faktor(konto)
+    konto.refresh_from_db()
+    c = angemeldet(konto)
+    sitzung_setzen(c, **{zwei_faktor.SITZUNG: zwei_faktor.marke(konto), LETZTE_AKTIVITAET: time.time()})
+    assert c.get("/projekte/").status_code == 200
+    call_command("zwei_faktor_zuruecksetzen", "  PERSON.90@example.TEST ", stdout=io.StringIO())
+    konto.refresh_from_db()
+    assert not zwei_faktor.aktiv(konto) and not konto.totp_ersatzcodes
+    antwort = c.get("/projekte/")
+    assert antwort.status_code == 302 and antwort.url == "/konto/zwei-faktor/"
+    eintrag = Protokolleintrag.objects.get(aktion="zwei_faktor_zurueckgesetzt")
+    assert (eintrag.objekt_typ, eintrag.objekt_id, eintrag.akteur) == ("konto", konto.pk, None)
+
+
+def test_notfallbefehl_mit_unbekannter_email_aendert_nichts(konten):
+    from django.core.management import call_command
+    from django.core.management.base import CommandError
+
+    mit_zwei_faktor(konten[M])
+    with pytest.raises(CommandError, match="Kein Konto"):
+        call_command("zwei_faktor_zuruecksetzen", "niemand@example.test", stdout=io.StringIO())
+    konten[M].refresh_from_db()
+    assert zwei_faktor.aktiv(konten[M])
+
+
+def test_notfallbefehl_bei_deaktiviertem_konto(konten):
+    """Auch ein deaktiviertes Konto lässt sich zurücksetzen; es bleibt dabei deaktiviert."""
+    from django.core.management import call_command
+
+    mit_zwei_faktor(konten[M])
+    konten[M].person.archivieren()
+    call_command("zwei_faktor_zuruecksetzen", konten[M].email, stdout=io.StringIO())
+    konten[M].refresh_from_db()
+    assert not zwei_faktor.aktiv(konten[M]) and not konten[M].is_active
+
 
 def test_sitzung_gilt_dreissig_tage_ab_anmeldung(konten):
     c = angemeldet(konten[BL])
@@ -591,3 +640,75 @@ def test_verteiler_laesst_bei_rueckstand_neu_laden():
         return [warteschlange.get_nowait() for _ in range(warteschlange.qsize())]
 
     assert asyncio.run(ablauf()) == [NEU_LADEN]
+
+
+@pytest.mark.parametrize("fall", ["passwort", "zwei_faktor_ohne_marke", "pflicht_ohne_zwei_faktor", "admin_inaktiv"])
+def test_live_stream_endet_bei_ungueltiger_sitzung(konten, settings, fall):
+    """Die Gründe aus dem Docstring von _noch_gueltig, die über Deaktivieren und Abmelden hinausgehen."""
+    from planung.live import _noch_gueltig
+
+    konto = konten[A] if fall == "admin_inaktiv" else konten[BL]
+    c = angemeldet(konto)
+    sitzung_setzen(c, **{LETZTE_AKTIVITAET: time.time()})
+    schluessel = c.session.session_key
+    assert _noch_gueltig(konto.pk, schluessel) is not None
+    if fall == "passwort":
+        konto.set_password("Ein-anderes-Passwort-2026!")
+        konto.save()
+    elif fall == "zwei_faktor_ohne_marke":
+        mit_zwei_faktor(konto)
+        konto.refresh_from_db()
+        assert _noch_gueltig(konto.pk, schluessel) is None
+        # mit bestandenem zweitem Faktor gilt die Sitzung wieder
+        sitzung_setzen(c, **{zwei_faktor.SITZUNG: zwei_faktor.marke(konto)})
+        assert _noch_gueltig(konto.pk, schluessel) is not None
+        konto.totp_seit = konto.totp_seit + timedelta(seconds=1)  # neu eingerichtet: alte Marke gilt nicht
+        konto.save()
+    elif fall == "pflicht_ohne_zwei_faktor":
+        settings.TEAMPLANER_ZWEI_FAKTOR_PFLICHT = True
+    elif fall == "admin_inaktiv":
+        sitzung_setzen(c, **{LETZTE_AKTIVITAET: time.time() - settings.TEAMPLANER_ADMIN_INAKTIV_MINUTEN * 60 - 5})
+    assert _noch_gueltig(konto.pk, schluessel) is None
+
+
+@pytest.mark.django_db(transaction=True)
+def test_live_stream_filtert_personen_und_endet_mit_der_sitzung(konten, ansicht_a, person_a, person_b, monkeypatch,
+                                                                 eigene_warteschlange):
+    from asgiref.sync import sync_to_async
+
+    from planung import live
+    from planung.models import Recht
+
+    from .conftest import freigeben
+
+    monkeypatch.setattr(live, "RECHTE_NEU_LADEN_SEKUNDEN", 0)
+    schlangen = eigene_warteschlange(live.verteiler)
+    konto = konten[M]
+    freigabe = freigeben(ansicht_a, konto, Recht.SEHEN)
+    anfrage = stream_anfrage(konto, "/api/planung/stream")
+
+    def ereignis(*person_ids):
+        return json.dumps({"art": "einteilung", "person_ids": list(person_ids), "alle": False, "akteur_id": 1})
+
+    async def ablauf():
+        stream = SseLeser(await live.stream(anfrage))
+        assert (await stream.naechstes()).startswith("retry:")
+        warteschlange = schlangen[0]
+        # Person aus einem fremden Bereich wird herausgefiltert, gemischte Ereignisse gekürzt
+        warteschlange.put_nowait(ereignis(person_b.pk))
+        warteschlange.put_nowait(ereignis(person_a.pk, person_b.pk))
+        daten = json.loads((await stream.naechstes()).split("data: ", 1)[1])
+        assert daten["person_ids"] == [person_a.pk] and "akteur_id" not in daten
+        # Freigabe entzogen: beim nächsten Neuladen der Rechte ist auch Person A unsichtbar
+        await sync_to_async(freigabe.delete)()
+        warteschlange.put_nowait(ereignis(person_a.pk))
+        warteschlange.put_nowait(json.dumps({"art": "tagesinfo", "person_ids": [], "alle": True}))
+        assert '"tagesinfo"' in await stream.naechstes()
+        # Passwort geändert: der Stream endet beim nächsten Ereignis
+        konto.set_password("Ein-anderes-Passwort-2026!")
+        await sync_to_async(konto.save)()
+        warteschlange.put_nowait(ereignis(konto.person_id))
+        assert await stream.endet()
+
+    asyncio.run(mit_eigener_verbindung(ablauf))
+    assert live._offen[konto.pk] == 0

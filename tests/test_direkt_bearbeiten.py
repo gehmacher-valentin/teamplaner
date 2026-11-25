@@ -5,14 +5,13 @@ import json
 
 import pytest
 
-from kern.models import Protokolleintrag, Rolle
+from kern.models import Protokolleintrag
 from projekte.models import Abhaengigkeit, Aufgabe, Status
 from zusammenarbeit.models import Kommentar
 
-from .conftest import DI, MI, MO
+from .conftest import BL, DI, MI, MO, L, M, P
 
 pytestmark = pytest.mark.django_db
-A, BL, P, M, L = Rolle.ADMIN, Rolle.BEREICHSLEITUNG, Rolle.PLANER, Rolle.MITARBEITER, Rolle.LESEND
 
 
 def feld(client, aufgabe, name, wert, version=None, **extra):

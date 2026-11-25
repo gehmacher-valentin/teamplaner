@@ -7,7 +7,6 @@ import pytest
 from django.core import mail
 from django.utils import timezone
 
-from kern.models import Rolle
 from zusammenarbeit.mail import (
     MAX_VERSUCHE,
     einladung_senden,
@@ -17,8 +16,9 @@ from zusammenarbeit.mail import (
 )
 from zusammenarbeit.models import Benachrichtigung, Benachrichtigungsart, MailStatus, Postausgang
 
+from .conftest import M, P
+
 pytestmark = pytest.mark.django_db
-A, BL, P, M, L = Rolle.ADMIN, Rolle.BEREICHSLEITUNG, Rolle.PLANER, Rolle.MITARBEITER, Rolle.LESEND
 LINK = "https://teamplaner.example.test/passwort/setzen/MQ/geheim/"
 
 

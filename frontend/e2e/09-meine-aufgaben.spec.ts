@@ -2,12 +2,14 @@
 // Folgeaufgabe einer wiederkehrenden Aufgabe erscheint erst danach; dasselbe in der Projektliste.
 // Betreute Platzhalter: Auswahl bei „Eingeteilt“, „Platzhaltern zugewiesen“ breit als dritte Spalte,
 // schmaler im Wechsel per Umschalter. Mehrere Einteilungen eines Tages stehen nebeneinander.
+// Den Nachlauf überspringt die Uhr von Playwright (clock.runFor), statt ihn abzuwarten.
 import { expect, HANDY, ruhe, test } from "./hilfen";
 
 const NACHLAUF = 5000;
 
 test("Abhaken: bleibt 5 s sichtbar, Folgeaufgabe erst danach", async ({ seiteFuer }) => {
   const seite = await seiteFuer("mitarbeit");
+  await seite.clock.install();
   await seite.goto("/meine-aufgaben/");
   const zeilen = seite.locator("#karte-mir .zugewiesen__zeile", { hasText: "Wochencheck Hebebühne" });
   await expect(zeilen).toHaveCount(1);
@@ -23,7 +25,9 @@ test("Abhaken: bleibt 5 s sichtbar, Folgeaufgabe erst danach", async ({ seiteFue
   await expect(zeilen).toHaveCount(1);
   await expect(zaehler).toHaveText(String(vorher - 1));
 
-  await seite.waitForTimeout(NACHLAUF + 500);
+  await seite.clock.runFor(NACHLAUF - 500);
+  await expect(erledigt, "kurz vor Ablauf noch da").toHaveClass(/zugewiesen__zeile--erledigt/);
+  await seite.clock.runFor(1000);
   await expect(seite.locator("#karte-mir .zugewiesen__zeile--erledigt")).toHaveCount(0);
   await expect(zeilen, "Folgeaufgabe nach Ablauf").toHaveCount(1);
   await expect(zeilen.first().getByRole("button", { name: /Als erledigt markieren/ })).toBeVisible();
@@ -32,13 +36,15 @@ test("Abhaken: bleibt 5 s sichtbar, Folgeaufgabe erst danach", async ({ seiteFue
 
 test("Abhaken: innerhalb von 5 s rückgängig, Aufgabe bleibt offen", async ({ seiteFuer }) => {
   const seite = await seiteFuer("mitarbeit");
+  await seite.clock.install();
   await seite.goto("/meine-aufgaben/");
   const zeile = seite.locator("#karte-mir .zugewiesen__zeile", { hasText: "Regal Lager" });
   await zeile.getByRole("button", { name: /Als erledigt markieren/ }).click();
   await expect(zeile).toHaveClass(/zugewiesen__zeile--erledigt/);
   await zeile.getByRole("button", { name: /Als offen markieren/ }).click();
   await expect(zeile).not.toHaveClass(/zugewiesen__zeile--erledigt/);
-  await seite.waitForTimeout(NACHLAUF + 500);
+  await seite.clock.runFor(NACHLAUF + 500);
+  await ruhe(seite);
   await expect(zeile).toBeVisible();
   await seite.reload();
   await expect(seite.locator("#karte-mir .zugewiesen__zeile", { hasText: "Regal Lager" })).toBeVisible();
@@ -46,6 +52,7 @@ test("Abhaken: innerhalb von 5 s rückgängig, Aufgabe bleibt offen", async ({ s
 
 test("Projektliste: abgehakte Aufgabe bleibt 5 s, dann ausgeblendet (Filter „Offen“)", async ({ seiteFuer }) => {
   const seite = await seiteFuer("planer");
+  await seite.clock.install();
   await seite.goto("/projekte/");
   await seite.getByRole("link", { name: "Prototyp Förderband" }).first().click();
   await ruhe(seite);
@@ -53,9 +60,9 @@ test("Projektliste: abgehakte Aufgabe bleibt 5 s, dann ausgeblendet (Filter „O
   await expect(zeile).toBeVisible();
   await zeile.getByRole("button", { name: /Als erledigt markieren: Steuerung verdrahten/ }).click();
   await expect(zeile.getByRole("button", { name: /Als offen markieren/ })).toBeVisible();
-  await seite.waitForTimeout(2000);
-  await expect(zeile, "nach 2 s noch sichtbar").toBeVisible();
-  await seite.waitForTimeout(NACHLAUF - 2000 + 500);
+  await seite.clock.runFor(NACHLAUF - 500);
+  await expect(zeile, "kurz vor Ablauf noch sichtbar").toBeVisible();
+  await seite.clock.runFor(1000);
   await expect(zeile).toHaveCount(0);
 });
 
