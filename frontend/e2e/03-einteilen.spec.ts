@@ -118,3 +118,43 @@ test("Freitext: Chip ziehen, Text eingeben, ändern, entfernen und rückgängig,
   await expect(hinweis(seite, "Messe Wels")).toHaveCount(1);
   await expect(hinweis(zweite, "Messe Wels")).toHaveCount(1);
 });
+
+test("Im Teamplaner einteilen: Palette steht auf der Aufgabe, Filter zurückgesetzt", async ({ seiteFuer }) => {
+  const seite = await seiteFuer("planer");
+  // Filter setzen, die die Aufgabe ausblenden könnten: Gruppe, Bereich, Archivierte
+  await seite.goto("/teamplaner/");
+  await expect(seite.locator(".tp-raster")).toBeVisible();
+  const filter = seite.locator("#tp-filter-optionen");
+  await seite.getByRole("button", { name: "Filter" }).click();
+  const gruppe = filter.getByLabel("Gruppe");
+  const andere = await gruppe.locator("option").evaluateAll((o) =>
+    o.map((x) => [(x as HTMLOptionElement).value, x.textContent ?? ""]).find(([v, n]) => v && n !== "Fertigung")![0]);
+  await gruppe.selectOption(andere);
+  await filter.getByLabel("Bereich").selectOption({ index: 1 });
+  await filter.getByLabel("Archivierte anzeigen").check();
+
+  // Aufgabe öffnen und dem Link folgen
+  await seite.goto(`/suche/?q=${encodeURIComponent(AUFGABE)}`);
+  await seite.locator("main a[href^='/aufgaben/']", { hasText: AUFGABE }).first().click();
+  const link = seite.getByRole("link", { name: "Im Teamplaner einteilen" });
+  const projektId = /[?&]projekt=(\d+)/.exec((await link.getAttribute("href")) ?? "")?.[1];
+  expect(projektId).toBeTruthy();
+  await link.click();
+  await expect(seite).toHaveURL(/\/teamplaner\/$/); // Parameter wieder aus der Adresse genommen
+
+  const palette = seite.locator(".tp-palette");
+  await expect(palette.getByRole("button", { name: "Projektliste" })).toHaveAttribute("aria-pressed", "true");
+  await expect(palette.getByLabel("Projekt")).toHaveValue(projektId!);
+  await expect(palette.getByRole("searchbox")).toHaveValue(AUFGABE);
+  await expect(seite.getByRole("button", { name: `${AUFGABE} – auf Person und Tag ziehen` })).toBeVisible();
+  await expect(filter.getByLabel("Gruppe")).toHaveValue("");
+  await expect(filter.getByLabel("Bereich")).toHaveValue("");
+  await expect(filter.getByLabel("Projekt")).toHaveValue("");
+  await expect(filter.getByLabel("Archivierte anzeigen")).not.toBeChecked();
+
+  // Neu laden: die Auswahl bleibt, die Suche nicht (wie sonst auch)
+  await seite.reload();
+  await expect(palette.getByRole("button", { name: "Projektliste" })).toHaveAttribute("aria-pressed", "true");
+  await expect(palette.getByLabel("Projekt")).toHaveValue(projektId!);
+  await expect(palette.getByRole("searchbox")).toHaveValue("");
+});

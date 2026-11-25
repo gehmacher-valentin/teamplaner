@@ -145,7 +145,7 @@
         <span><i class="legende__feiertag"></i>{% translate "Feiertag" %}</span>
         <span><i class="legende__heute"></i>{% translate "heute" %}</span>
       </div>
-      {% if darf_planen %}<a class="klein" href="{% url 'teamplaner' %}">{% translate "Im Teamplaner einteilen" %}</a>{% endif %}
+      {% if darf_planen %}<a class="klein" href="{% url 'teamplaner' %}?projekt={{ aufgabe.projekt_id }}&amp;suche={{ aufgabe.titel|urlencode:'' }}">{% translate "Im Teamplaner einteilen" %}</a>{% endif %}
     </section>
   </aside>
 </div>
