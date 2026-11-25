@@ -7,6 +7,8 @@ from kern.models import Protokolleintrag, Rolle
 from planung.raster import palette
 from projekte.models import Abschnitt, Aufgabe, Projekt, Status
 
+from .conftest import nichts_geaendert
+
 pytestmark = pytest.mark.django_db
 
 A, BL, P, M, L = Rolle.ADMIN, Rolle.BEREICHSLEITUNG, Rolle.PLANER, Rolle.MITARBEITER, Rolle.LESEND
@@ -94,12 +96,20 @@ def test_nicht_zu_tief_und_nicht_in_sich_selbst(client_fuer, konten, projekt, ab
 
 @pytest.mark.parametrize("rolle, status", [(A, 204), (BL, 204), (P, 204), (M, 403), (L, 403)])
 def test_verschieben_rechte(client_fuer, konten, projekt, liste, rolle, status):
-    assert verschieben(client_fuer(konten[rolle]), projekt, liste["c"], eltern=liste["a"]).status_code == status
+    if status == 403:
+        with nichts_geaendert(*[liste[k] for k in "abcd"]):
+            assert verschieben(client_fuer(konten[rolle]), projekt, liste["c"], eltern=liste["a"]).status_code == 403
+    else:
+        assert verschieben(client_fuer(konten[rolle]), projekt, liste["c"], eltern=liste["a"]).status_code == 204
+        liste["c"].refresh_from_db()
+        assert liste["c"].eltern_id == liste["a"].pk
 
 
 def test_projektmitglied_darf_verschieben(client_fuer, konten, projekt, liste):
     projekt.mitglieder.add(konten[M].person)
     assert verschieben(client_fuer(konten[M]), projekt, liste["c"], eltern=liste["a"]).status_code == 204
+    assert reihe(projekt, eltern=liste["a"]) == ["c"]
+    assert reihe(projekt, abschnitt=liste["a"].abschnitt, eltern=None) == ["a", "b"]
 
 
 def test_liste_ist_auch_mit_filter_ziehbar(client_fuer, konten, projekt, liste):

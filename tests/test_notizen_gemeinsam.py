@@ -1,8 +1,10 @@
 """Notizen gemeinsam bearbeiten (notizen.live): Yjs-Änderungen speichern und verteilen, Titel und Markdown
 mitführen, Stand zusammenfassen, Anwesenheit – mit denselben Rechten wie beim Bearbeiten."""
 
+import asyncio
 import base64
 import json
+from contextlib import nullcontext
 
 import pytest
 from django.test import Client
@@ -11,6 +13,8 @@ from kern.hilfen import TEXT_MAX_ZEICHEN
 from kern.models import Rolle
 from notizen.live import _nachholen
 from notizen.models import Notiz, NotizAenderung, Ordner
+
+from .conftest import SseLeser, mit_eigener_verbindung, nichts_geaendert, stream_anfrage
 
 pytestmark = pytest.mark.django_db
 
@@ -64,7 +68,12 @@ def test_aenderung_speichern_mit_titel_und_text(konten, notiz):
 
 @pytest.mark.parametrize("rolle, status", [(M, 200), (P, 200), (L, 403), (BL, 403)])
 def test_aenderung_rechte(konten, notiz, rolle, status):
-    assert post(client_fuer(konten[rolle]), f"/notizen/{notiz.pk}/aenderung/", {"update": b64(b"x")}).status_code == status
+    with nichts_geaendert(notiz, NotizAenderung) if status == 403 else nullcontext():
+        antwort = post(client_fuer(konten[rolle]), f"/notizen/{notiz.pk}/aenderung/", {"update": b64(b"x"), "text": "neu"})
+        assert antwort.status_code == status
+    if status == 200:
+        notiz.refresh_from_db()
+        assert notiz.text == "neu" and NotizAenderung.objects.get().pk == antwort.json()["id"]
 
 
 @pytest.mark.parametrize("daten", [{"update": "kein base64!"}, {"text": "x" * (TEXT_MAX_ZEICHEN + 1)}, {"text": 5}])
@@ -121,3 +130,53 @@ def test_persoenliche_notiz_nur_fuer_besitzer(konten):
     assert post(client_fuer(konten[M]), f"/notizen/{notiz.pk}/aenderung/", {"update": b64(b"x")}).status_code == 200
     assert post(client_fuer(konten[A]), f"/notizen/{notiz.pk}/aenderung/", {"update": b64(b"x")}).status_code == 403
     assert client_fuer(konten[A]).get(f"/api/planung/stream/notiz/{notiz.pk}").status_code == 403
+
+
+@pytest.mark.django_db(transaction=True)
+def test_stream_liefert_aenderungen_und_endet_ohne_freigabe(konten, notiz, ordner, monkeypatch, eigene_warteschlange):
+    """Der Stream schickt Änderungen und Anwesenheit dieser Notiz und endet, sobald das Konto aus dem Ordner
+    entfernt ist (beim nächsten Neuladen der Rechte)."""
+    from asgiref.sync import sync_to_async
+
+    from notizen import live
+
+    monkeypatch.setattr(live, "RECHTE_NEU_LADEN_SEKUNDEN", 0)
+    schlangen = eigene_warteschlange(live.verteiler)
+    konto = konten[M]
+    anfrage = stream_anfrage(konto, f"/api/planung/stream/notiz/{notiz.pk}")
+    aenderung = NotizAenderung.objects.create(notiz=notiz, daten=b"\x07")
+
+    async def ablauf():
+        stream = SseLeser(await live.stream(anfrage, notiz.pk))
+        assert (await stream.naechstes()).startswith("retry:")
+        # Was vor dem Öffnen schon da war, kommt sofort
+        assert f"id: {aenderung.pk}" in await stream.naechstes()
+        warteschlange = schlangen[0]
+        # Ereignisse anderer Notizen erscheinen nicht, Anwesenheit dieser Notiz schon (ohne Notiz-ID)
+        warteschlange.put_nowait(json.dumps({"notiz": notiz.pk + 1, "typ": "da", "name": "fremd"}))
+        warteschlange.put_nowait(json.dumps({"notiz": notiz.pk, "typ": "da", "name": "Person 05"}))
+        teil = await stream.naechstes()
+        assert teil.startswith("event: da\n") and "Person 05" in teil and '"notiz"' not in teil
+        # Aus dem Ordner entfernt: der Stream endet
+        await sync_to_async(ordner.mitglieder.remove)(konto)
+        neu = await sync_to_async(NotizAenderung.objects.create)(notiz=notiz, daten=b"\x08")
+        warteschlange.put_nowait(json.dumps({"notiz": notiz.pk, "typ": "aenderung"}))
+        assert await stream.endet(), "nach dem Entzug darf nichts mehr kommen"
+        assert neu.pk
+
+    asyncio.run(mit_eigener_verbindung(ablauf))
+    assert live._offen[konto.pk] == 0
+
+
+@pytest.mark.parametrize("pfad, daten", [
+    ("start", {"zustand": b64(b"stand"), "text": "x", "titel": "Liste"}),
+    ("zusammenfassen", {"zustand": b64(b"gesamt"), "bis": 1}),
+])
+def test_start_und_zusammenfassen_nur_mit_schreibrecht(konten, notiz, pfad, daten):
+    """Lesend (im Ordner) und Fremde (Bereichsleitung ohne Freigabe) werden abgewiesen, ohne dass sich etwas ändert."""
+    vorher = NotizAenderung.objects.create(notiz=notiz, daten=b"\x01")
+    for rolle in (L, BL):
+        assert post(client_fuer(konten[rolle]), f"/notizen/{notiz.pk}/{pfad}/", daten).status_code == 403, rolle
+    assert list(NotizAenderung.objects.values_list("id", flat=True)) == [vorher.pk]
+    notiz.refresh_from_db()
+    assert (bytes(notiz.yjs), notiz.yjs_bis, notiz.text, notiz.version) == (b"", 0, "alt", 1)

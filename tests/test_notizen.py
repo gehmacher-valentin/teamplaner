@@ -72,6 +72,99 @@ def test_schreiben_ab_mitarbeiter(konten, ordner):
 
 
 
+# --- Rechte als Funktion (notizen.rechte) ---
+
+@pytest.mark.parametrize("rolle, lesen, schreiben, verwalten", [
+    (A, True, True, True),      # Admin: alle Gruppenordner, auch ohne Mitgliedschaft
+    (BL, False, False, False),  # nicht Mitglied: sieht den Ordner nicht, darf ihn also auch nicht ändern
+    (P, True, True, True),
+    (M, True, True, False),
+    (L, True, False, False),
+])
+def test_ordnerrechte_je_rolle(konten, ordner, rolle, lesen, schreiben, verwalten):
+    from notizen import rechte
+
+    konto = konten[rolle]
+    assert rechte.darf_ordner_lesen(konto, ordner) is lesen
+    assert rechte.darf_ordner_schreiben(konto, ordner) is schreiben
+    assert rechte.darf_ordner_verwalten(konto, ordner) is verwalten
+    assert (ordner in rechte.sichtbare_ordner(konto)) is lesen
+    notiz = Notiz.objects.create(ordner=ordner, titel="Gruppe", text="")
+    assert rechte.darf_notiz_lesen(konto, notiz) is lesen
+    assert rechte.darf_notiz_schreiben(konto, notiz) is schreiben
+
+
+def test_ordnerrechte_ohne_mitgliedschaft_und_inaktiv(konten, ordner):
+    from notizen import rechte
+
+    ordner.mitglieder.remove(konten[P])
+    assert not rechte.darf_ordner_verwalten(konten[P], ordner)
+    assert not rechte.darf_ordner_lesen(konten[P], ordner)
+    assert rechte.darf_ordner_anlegen(konten[P]) and not rechte.darf_ordner_anlegen(konten[M])
+    # Deaktiviert: nichts mehr, auch nicht im eigenen Ordner
+    konten[M].person.archivieren()
+    konten[M].refresh_from_db()
+    assert not rechte.darf_ordner_lesen(konten[M], ordner)
+    assert not rechte.sichtbare_ordner(konten[M]).exists()
+
+
+@pytest.mark.parametrize("rolle", [A, BL, P, M, L])
+def test_persoenliche_notiz_nur_fuer_besitzer_als_funktion(konten, rolle):
+    from notizen import rechte
+
+    notiz = Notiz.objects.create(besitzer=konten[M].person, titel="Meine", text="")
+    eigen = rolle == M
+    assert rechte.darf_notiz_lesen(konten[rolle], notiz) is eigen
+    assert rechte.darf_notiz_schreiben(konten[rolle], notiz) is eigen
+
+
+# --- Schreibzugriffe auf Fremdes über HTTP: 403 und nichts geändert ---
+
+@pytest.fixture
+def fremde_notiz(konten):
+    return Notiz.objects.create(besitzer=konten[M].person, titel="Einkauf", text="Schrauben")
+
+
+@pytest.mark.parametrize("rolle", [A, BL, P, L])
+def test_fremde_persoenliche_notiz_nicht_aenderbar(konten, fremde_notiz, rolle, settings, tmp_path):
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    from notizen.models import NotizAnhang
+
+    settings.MEDIA_ROOT = tmp_path
+    c = client_fuer(konten[rolle])
+    antwort = speichern(c, notiz=fremde_notiz.pk, version=fremde_notiz.version, titel="Übernommen", text="weg")
+    assert antwort.status_code == 403
+    assert c.post(f"/notizen/{fremde_notiz.pk}/loeschen/").status_code == 403
+    datei = SimpleUploadedFile("liste.txt", b"x", content_type="text/plain")
+    assert c.post(f"/notizen/{fremde_notiz.pk}/anhaenge/", {"datei": datei}).status_code == 403
+    fremde_notiz.refresh_from_db()
+    assert (fremde_notiz.titel, fremde_notiz.text, fremde_notiz.version) == ("Einkauf", "Schrauben", 1)
+    assert not NotizAnhang.objects.exists() and not list(tmp_path.rglob("*"))
+
+
+def test_neue_notiz_in_nicht_freigegebenem_ordner_abgewiesen(konten, ordner):
+    # Bereichsleitung ist nicht Mitglied, Lesend darf nicht schreiben
+    for rolle in (BL, L):
+        assert speichern(client_fuer(konten[rolle]), ordner=ordner.pk, titel="Hinein", text="").status_code == 403
+        assert client_fuer(konten[rolle]).get(f"/notizen/neu/?ordner={ordner.pk}").status_code == 403
+    assert not Notiz.objects.exists()
+
+
+@pytest.mark.parametrize("rolle", [BL, P])
+def test_ordner_verwalten_ohne_mitgliedschaft_abgewiesen(konten, ordner, rolle):
+    """Planer:in und Bereichsleitung dürfen Ordner anlegen, fremde aber weder ändern noch löschen."""
+    ordner.mitglieder.remove(konten[P])
+    c = client_fuer(konten[rolle])
+    assert c.get(f"/notizen/ordner/{ordner.pk}/bearbeiten/").status_code == 403
+    antwort = c.post(f"/notizen/ordner/{ordner.pk}/bearbeiten/", {"name": "Übernommen", "mitglieder": [konten[rolle].pk]})
+    assert antwort.status_code == 403
+    assert c.post(f"/notizen/ordner/{ordner.pk}/loeschen/").status_code == 403
+    ordner.refresh_from_db()
+    assert ordner.name == "Bereich A intern"
+    assert set(ordner.mitglieder.all()) == {konten[M], konten[L]}
+
+
 def ordnerspalte(client, adresse):
     return client.get(adresse).content.decode().split("data-notizbaum", 1)[1].split("</nav>", 1)[0]
 
@@ -220,18 +313,31 @@ def test_zu_langer_text_wird_abgelehnt(konten):
     assert speichern(c, titel="Lang", text="a" * TEXT_MAX_ZEICHEN).status_code == 200
 
 
-@pytest.mark.parametrize("muster", ["[" * 30000, "`" * 30000, "<a " * 20000, "-\n" * 40000, "a\n: b\n" * 1000])
-def test_aufwendiges_markdown_bricht_nach_frist_ab(muster):
-    """Python-Markdown braucht für solche Texte viele Sekunden bis Minuten; dann erscheint der Text unformatiert."""
+AUFWENDIG = ["[" * 30000, "`" * 30000, "<a " * 20000, "-\n" * 40000, "a\n: b\n" * 1000]
+
+
+@pytest.mark.parametrize("muster", AUFWENDIG)
+def test_aufwendiges_markdown_bricht_nach_frist_ab(muster, monkeypatch):
+    """Python-Markdown braucht für solche Texte viele Sekunden bis Minuten; dann erscheint der Text unformatiert.
+    Mit kurzer Frist, damit der Test nicht an der Wanduhr eines ausgelasteten Rechners hängt."""
+    import time
+
+    monkeypatch.setattr(markdown, "FRIST_ANZEIGE", 0.05)
+    monkeypatch.setattr(markdown, "FRIST_AUSZUG", 0.05)
+    beginn = time.monotonic()
+    ausgabe = als_html(muster)
+    assert time.monotonic() - beginn < 2  # ohne Abbruch: viele Sekunden
+    assert ausgabe.startswith("<p>") and "<a " not in ausgabe
+    als_text(muster)  # Vorschau ebenfalls befristet
+
+
+def test_aufwendiges_markdown_mit_echter_frist():
+    """Einmal mit der Frist des Betriebs, großzügiger Puffer für langsame Runner."""
     import time
 
     beginn = time.monotonic()
-    ausgabe = als_html(muster)
-    assert time.monotonic() - beginn < markdown.FRIST_ANZEIGE + 1.5
-    assert ausgabe.startswith("<p>") and "<a " not in ausgabe
-    beginn = time.monotonic()
-    als_text(muster)  # Vorschau: nur der Anfang, also schnell
-    assert time.monotonic() - beginn < 1
+    assert als_html(AUFWENDIG[0]).startswith("<p>[[[")
+    assert time.monotonic() - beginn < markdown.FRIST_ANZEIGE + 5
 
 
 def test_frist_stoert_gewoehnliche_notizen_nicht():

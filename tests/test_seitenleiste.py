@@ -10,6 +10,8 @@ from kern.models import Rolle
 from projekte.models import Aufgabe, Projekt, Status
 from zusammenarbeit.models import Anhang, Kommentar
 
+from .conftest import nichts_geaendert
+
 pytestmark = pytest.mark.django_db
 A, P, M, L = Rolle.ADMIN, Rolle.PLANER, Rolle.MITARBEITER, Rolle.LESEND
 HX = {"HTTP_HX_REQUEST": "true"}
@@ -112,9 +114,10 @@ def test_ohne_anmeldung_keine_seitenleiste(client, aufgabe):
     ("erledigt/", {"erledigt": "1"}),
 ])
 def test_lesend_darf_aus_der_seitenleiste_nichts_aendern(client_fuer, konten, aufgabe, pfad, daten):
-    antwort = senden(client_fuer(konten[L]), f"/aufgaben/{aufgabe.pk}/{pfad}", aufgabe, **daten)
-    assert antwort.status_code == 403
-    assert Aufgabe.objects.get(pk=aufgabe.pk).titel == aufgabe.titel
+    # Ganze Zeile vergleichen: beim Pfad erledigt/ zählen Status und Version, nicht der Titel
+    with nichts_geaendert(aufgabe, Aufgabe):
+        antwort = senden(client_fuer(konten[L]), f"/aufgaben/{aufgabe.pk}/{pfad}", aufgabe, **daten)
+        assert antwort.status_code == 403
 
 
 # --- Zeile und Seitenleiste synchron ---
@@ -191,7 +194,9 @@ def test_kommentar_antwortet_ohne_weiterleitung(client_fuer, konten, aufgabe):
 
 def test_kommentar_von_der_detailseite_leitet_weiter(client_fuer, konten, aufgabe):
     antwort = client_fuer(konten[M]).post(f"/aufgaben/{aufgabe.pk}/kommentare/", {"text": "Hallo"})
-    assert antwort.status_code == 302
+    kommentar = Kommentar.objects.get()
+    assert (kommentar.aufgabe_id, kommentar.text, kommentar.autor_id) == (aufgabe.pk, "Hallo", konten[M].person_id)
+    assert antwort.status_code == 302 and antwort.url == f"/aufgaben/{aufgabe.pk}/#kommentar-{kommentar.pk}"
 
 
 def test_anhang_antwortet_ohne_weiterleitung(client_fuer, konten, aufgabe, settings, tmp_path):

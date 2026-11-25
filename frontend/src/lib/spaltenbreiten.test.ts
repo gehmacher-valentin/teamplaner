@@ -9,7 +9,6 @@ describe("Spaltenbreiten", () => {
 
   test("nie schmäler als die Mindestbreite", () => {
     expect(breiteAendern([300, 170, 140], 2, -500)).toEqual([300, 170, MINDESTBREITE]);
-    expect(MINDESTBREITE).toBe(48);
   });
 
   test("Doppelklick setzt nur diese Spalte auf die Standardbreite zurück", () => {

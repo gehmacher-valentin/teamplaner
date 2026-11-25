@@ -101,3 +101,23 @@ def test_aufgaben_bearbeiten_mitarbeiter_nur_als_projektmitglied(konten, projekt
     projekt.mitglieder.add(konten[M].person, konten[L].person)
     assert rechte.darf_aufgaben_bearbeiten(konten[M], projekt)
     assert not rechte.darf_aufgaben_bearbeiten(konten[L], projekt)  # Lesend nie
+
+
+@pytest.mark.django_db
+def test_mitarbeiter_als_projektleitung_darf_aufgaben_bearbeiten(konten, projekt):
+    """Zweig ``projektleitung_id`` in ist_projektmitglied: Projektleitung ohne Mitgliedschaft."""
+    assert not rechte.darf_aufgaben_bearbeiten(konten[M], projekt)
+    projekt.projektleitung = konten[M].person
+    projekt.save()
+    assert not projekt.mitglieder.filter(pk=konten[M].person_id).exists()
+    assert rechte.ist_projektmitglied(konten[M], projekt)
+    assert rechte.darf_aufgaben_bearbeiten(konten[M], projekt)
+    # Lesend auch als Projektleitung nicht, Deaktivierte gar nicht
+    projekt.projektleitung = konten[L].person
+    projekt.save()
+    assert not rechte.darf_aufgaben_bearbeiten(konten[L], projekt)
+    projekt.projektleitung = konten[M].person
+    projekt.save()
+    konten[M].person.archivieren()
+    konten[M].refresh_from_db()
+    assert not rechte.ist_projektmitglied(konten[M], projekt)

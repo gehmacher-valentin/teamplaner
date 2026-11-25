@@ -1,11 +1,13 @@
 """Info-Zeile im Teamplaner: Freitext je Tag für alle, bearbeitbar nur mit Planungsansicht."""
 
+from contextlib import nullcontext
+
 import pytest
 
 from kern.models import Protokolleintrag, Rolle
 from planung.models import Recht, TagesInfo
 
-from .conftest import DI, MO, SA, freigeben
+from .conftest import DI, MO, SA, anzahl_gleich, freigeben
 
 pytestmark = pytest.mark.django_db
 
@@ -33,7 +35,9 @@ def test_rechte_ohne_freigabe(client_fuer, konten, rolle, status):
 ])
 def test_rechte_mit_freigabe(client_fuer, konten, ansicht_a, rolle, recht, status):
     freigeben(ansicht_a, konten[rolle], recht)
-    assert setzen(client_fuer(konten[rolle]), MO, "Betriebsausflug").status_code == status
+    with anzahl_gleich(Protokolleintrag) if status == 403 else nullcontext():
+        assert setzen(client_fuer(konten[rolle]), MO, "Betriebsausflug").status_code == status
+    assert list(TagesInfo.objects.values_list("datum", "text")) == ([(MO, "Betriebsausflug")] if status == 200 else [])
 
 
 def test_alle_sehen_die_info(client_fuer, konten):

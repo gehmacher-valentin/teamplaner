@@ -10,7 +10,7 @@ from kern.models import Protokolleintrag
 from planung.models import Einteilung, Recht
 from projekte.models import Abhaengigkeit, Abschnitt, Aufgabe, Projekt, Status
 
-from .conftest import DI, DO, FR, MI, MO, ROLLEN
+from .conftest import DI, DO, FR, MI, MO, ROLLEN, nichts_geaendert
 
 pytestmark = pytest.mark.django_db
 A, BL, P, M, L = ROLLEN
@@ -59,10 +59,19 @@ def test_ansicht_mit_freigabe_sehen(konten, ansicht, rolle):
 @pytest.mark.parametrize("rolle, erwartet", [(P, 200), (M, 403), (L, 403)])
 def test_bearbeiten_wirkt_erst_ab_planer(konten, ansicht, aufgabe, rolle, erwartet):
     freigeben(ansicht, konten[rolle], Recht.BEARBEITEN)
-    antwort = client_fuer(konten[rolle]).patch(f"/api/gantt/{ansicht.pk}/aufgaben/{aufgabe.pk}",
-                                               {"beginn": MO.isoformat(), "ende": MI.isoformat(), "version": aufgabe.version},
-                                               content_type="application/json")
-    assert antwort.status_code == erwartet
+
+    def aendern():
+        return client_fuer(konten[rolle]).patch(f"/api/gantt/{ansicht.pk}/aufgaben/{aufgabe.pk}",
+                                                {"beginn": MO.isoformat(), "ende": MI.isoformat(), "version": aufgabe.version},
+                                                content_type="application/json")
+
+    if erwartet == 403:
+        with nichts_geaendert(aufgabe, Protokolleintrag):
+            assert aendern().status_code == 403
+    else:
+        assert aendern().status_code == erwartet
+        aufgabe.refresh_from_db()
+        assert (aufgabe.beginn_am, aufgabe.faellig_am, aufgabe.version) == (MO, MI, 2)
 
 
 def test_gantt_seite_und_navigation(konten, ansicht):
@@ -122,9 +131,10 @@ def test_aufgabe_ausserhalb_der_ansicht_nicht_aenderbar(konten, ansicht):
     fremd = Projekt.objects.create(name="Anderes Projekt")
     a = Aufgabe.objects.create(projekt=fremd, abschnitt=Abschnitt.objects.create(projekt=fremd, name="x"),
                                titel="Fremd", status=Status.standard_offen())
-    antwort = client_fuer(konten[BL]).patch(f"/api/gantt/{ansicht.pk}/aufgaben/{a.pk}",
-                                            {"beginn": MO.isoformat(), "version": 1}, content_type="application/json")
-    assert antwort.status_code == 403
+    with nichts_geaendert(a, Protokolleintrag):
+        antwort = client_fuer(konten[BL]).patch(f"/api/gantt/{ansicht.pk}/aufgaben/{a.pk}",
+                                                {"beginn": MO.isoformat(), "version": 1}, content_type="application/json")
+        assert antwort.status_code == 403
 
 
 def test_projekt_termine(konten, ansicht, projekt):

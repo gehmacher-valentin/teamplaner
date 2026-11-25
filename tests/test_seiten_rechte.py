@@ -9,7 +9,7 @@ from planung.models import TeamplanerAnsicht
 from projekte.models import Aufgabe, Projekt, Status
 from zusammenarbeit.models import Anhang, Kommentar
 
-from .conftest import ROLLEN
+from .conftest import ROLLEN, nichts_geaendert
 
 pytestmark = pytest.mark.django_db
 
@@ -144,6 +144,8 @@ def test_rollenaenderung_wird_protokolliert(konten):
 def test_platzhalter_anlegen(konten, bereich_a, rolle, erwartet):
     antwort = client_fuer(konten[rolle]).post("/einstellungen/personen/platzhalter/", {"anzeigename": "Aushilfe 3", "bereich": bereich_a.pk})
     assert antwort.status_code == erwartet
+    angelegt = list(Person.objects.filter(anzeigename="Aushilfe 3").values_list("bereich_id", "erstellt_von_id"))
+    assert angelegt == ([(bereich_a.pk, konten[rolle].person_id)] if erwartet == 302 else [])
 
 
 @pytest.mark.parametrize("rolle, erwartet", [(A, 302), (BL, 302), (P, 403), (M, 403)])
@@ -173,7 +175,14 @@ def test_projekt_anlegen(konten, rolle, erwartet):
 
 
 def test_projekt_bearbeiten_nur_ab_planer(konten, projekt):
-    assert client_fuer(konten[M]).post(f"/projekte/{projekt.pk}/bearbeiten/", {"name": "x", "farbe": "rot"}).status_code == 403
+    for rolle in (M, L):
+        with nichts_geaendert(projekt):
+            antwort = client_fuer(konten[rolle]).post(f"/projekte/{projekt.pk}/bearbeiten/", {"name": "x", "farbe": "rot"})
+            assert antwort.status_code == 403
+            assert client_fuer(konten[rolle]).post(f"/projekte/{projekt.pk}/bearbeiten/", {"archivieren": "1"}).status_code == 403
+    assert client_fuer(konten[P]).post(f"/projekte/{projekt.pk}/bearbeiten/", {"name": "Neubau Halle 2", "farbe": "rot"}).status_code == 302
+    projekt.refresh_from_db()
+    assert (projekt.name, projekt.farbe) == ("Neubau Halle 2", "rot")
 
 
 def feld_aendern(konto, aufgabe, feld, wert):
@@ -190,6 +199,16 @@ def test_aufgabe_bearbeiten_mitarbeiter_nur_als_mitglied(konten, aufgabe, projek
     aufgabe.refresh_from_db()
     assert aufgabe.faellig_am.isoformat() == datum
 
+
+
+def test_mitarbeiter_als_projektleitung_bearbeitet_aufgaben(konten, aufgabe, projekt):
+    """Projektleitung ohne Mitgliedschaft genügt (in conftest ist die Projektleitung eine Bereichsleitung,
+    die schon über die Rolle darf)."""
+    projekt.projektleitung = konten[M].person
+    projekt.save()
+    assert feld_aendern(konten[M], aufgabe, "faellig_am", "2026-11-06").status_code == 200
+    aufgabe.refresh_from_db()
+    assert aufgabe.faellig_am.isoformat() == "2026-11-06"
 
 @pytest.mark.parametrize("rolle, erwartet", [(P, 302), (M, 302), (L, 403)])
 def test_abschliessen(konten, aufgabe, rolle, erwartet):
