@@ -134,7 +134,7 @@ Rollenkürzel `A, BL, P, M, L`, `angemeldet(konto)` (Django-Client) und die Fixt
 
 | `frontend/e2e/01-rundgang.spec.ts` | alle Seiten der Navigation am Desktop und am Handy, Einstellungen, keine Vorlagenreste |
 | `frontend/e2e/02-einladen.spec.ts` | Konto einladen, auch in der eigenen Rolle: Link erscheint einmal und funktioniert; auf die eigene Rolle anheben |
-| `frontend/e2e/03-einteilen.spec.ts` | Teamplaner: aus der Palette ziehen, verschieben, verlängern, rückgängig, live bei einer zweiten Person; Freitext-Chip ziehen, Text eingeben und ändern |
+| `frontend/e2e/03-einteilen.spec.ts` | Teamplaner: aus der Palette ziehen, verschieben, verlängern, rückgängig, live bei einer zweiten Person; Freitext-Chip ziehen, Text eingeben und ändern; „Im Teamplaner einteilen“ stellt die Palette auf die Aufgabe und setzt die Filter zurück |
 | `frontend/e2e/04-gantt.spec.ts` | Gantt: Warnzeichen bei Verletzung durch Einteilungen, Hinweis klappt am unteren Rand nach oben, Balken ziehen und Nachziehen, schnelle Änderungen, Abhängigkeit anlegen und entfernen |
 | `frontend/e2e/05-aufgabe.spec.ts` | Aufgabe anlegen (Enter und Knopf), Seitenleiste, direkt bearbeiten, Erwähnung, Anhang, Posteingang |
 | `frontend/e2e/06-notizen-bestellungen.spec.ts` | Notiz und Bestellung anlegen, bearbeiten, wiederfinden; Editor: Farben, Zitat, Link |

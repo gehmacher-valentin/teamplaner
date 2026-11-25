@@ -11,6 +11,7 @@ import {
 } from "@dnd-kit/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "../lib/toast";
+import { ohnePaletteVorgabe, paletteAusAdresse } from "./adresse";
 import { api, ApiFehler, CLIENT_ID } from "./api";
 import { BearbeitenDialog, FreigabeDialog, useBestaetigung } from "./Dialoge";
 import { useEntprellt, useGespeichert, useMediaQuery } from "./hooks";
@@ -97,6 +98,20 @@ export function Teamplaner({ planen }: { planen: boolean }) {
   useEffect(() => {
     api.optionen().then(setOptionen).catch((f) => setLadefehler(f.message));
   }, []);
+
+  // Vom Link „Im Teamplaner einteilen“: Palette auf die Aufgabe einstellen und alle Filter zurücksetzen,
+  // damit nichts sie ausblendet (gilt danach weiter, wie jede Auswahl hier). Am Handy gibt es keine Palette.
+  useEffect(() => {
+    const vorgabe = paletteAusAdresse(window.location.search);
+    if (!vorgabe) return;
+    window.history.replaceState(window.history.state, "", ohnePaletteVorgabe(window.location.href));
+    if (mobil) return;
+    setE({
+      paletteModus: "projekt", paletteProjekt: vorgabe.projekt,
+      bereich: null, gewerk: null, projekt: null, archivierte: false,
+    });
+    setSuche(vorgabe.suche);
+  }, []); // nur einmal beim Öffnen der Seite
 
   const rasterNr = useRef(0);
   const ladeRaster = useCallback(async (hintergrund = false) => {

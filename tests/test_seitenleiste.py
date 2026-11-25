@@ -6,14 +6,12 @@ import re
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 
-from kern.models import Rolle
 from projekte.models import Aufgabe, Projekt, Status
 from zusammenarbeit.models import Anhang, Kommentar
 
-from .conftest import nichts_geaendert
+from .conftest import BL, L, M, P, nichts_geaendert
 
 pytestmark = pytest.mark.django_db
-A, P, M, L = Rolle.ADMIN, Rolle.PLANER, Rolle.MITARBEITER, Rolle.LESEND
 HX = {"HTTP_HX_REQUEST": "true"}
 
 
@@ -285,3 +283,15 @@ def test_hauptaufgabe_steht_nur_im_pfad(client_fuer, konten, aufgabe):
     html = client_fuer(konten[P]).get(f"/aufgaben/{unter.pk}/").content.decode()
     assert html.count(f'href="/aufgaben/{aufgabe.pk}/"') == 1
     assert 'id="aufgabe-pfad"' in html and "Unteraufgabe von" not in html
+
+
+def test_link_in_den_teamplaner_stellt_die_palette_auf_die_aufgabe(client_fuer, konten, aufgabe):
+    """„Im Teamplaner einteilen“ übergibt Projekt und Titel (#99), auch in der Seitenleiste."""
+    aufgabe.titel = "Hallenboden Nord & Süd/2"
+    aufgabe.save()
+    link = (f'href="/teamplaner/?projekt={aufgabe.projekt_id}&amp;suche=Hallenboden%20Nord%20%26%20S%C3%BCd%2F2"'
+            '>Im Teamplaner einteilen</a>')
+    assert link in client_fuer(konten[BL]).get(f"/aufgaben/{aufgabe.pk}/").content.decode()
+    assert link in client_fuer(konten[BL]).get(f"/aufgaben/{aufgabe.pk}/?seitenleiste=1", **HX).content.decode()
+    # Ohne Teamplaner-Zugang kein Link
+    assert "Im Teamplaner einteilen" not in client_fuer(konten[M]).get(f"/aufgaben/{aufgabe.pk}/").content.decode()
