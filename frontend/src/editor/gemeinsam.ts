@@ -127,6 +127,12 @@ async function senden(url: string, daten: unknown, hintergrund = false): Promise
   return fetch(url, { method: "POST", headers: kopf, body: JSON.stringify(daten), credentials: "same-origin", keepalive: true });
 }
 
+/** Seitenwechsel bei Fehlern; im Test ersetzbar (jsdom kann nicht navigieren) */
+export const seitenwechsel = {
+  neuLaden: () => window.location.reload(),
+  zurAnmeldung: () => zurAnmeldung(),
+};
+
 export interface Gemeinsam {
   doc: Y.Doc;
   /** Nach dem Anlegen des Editors: Stand herstellen, verbinden */
@@ -160,15 +166,16 @@ export function gemeinsamVorbereiten(datenId: string, feld: HTMLTextAreaElement)
   const markdown = () => (editor.isEmpty ? "" : editor.getMarkdown());
   const titelFeld = () => document.getElementById("notiz-titel-eingabe") as HTMLInputElement | null;
   const titel = () => titelFeld()?.value ?? ytitel.toString();
-  const neuLaden = () => window.location.reload();
+  const neuLaden = () => seitenwechsel.neuLaden();
 
   const fehler = (antwort: Response) => {
-    if (antwort.status === 401) zurAnmeldung();
+    if (antwort.status === 401) seitenwechsel.zurAnmeldung();
     else if (antwort.status === 400 || antwort.status === 403 || antwort.status === 404 || antwort.status === 409) neuLaden();
   };
 
   const senden_ = async () => {
     window.clearTimeout(sendenTimer);
+    sendenTimer = 0; // sonst plant das Ende einer laufenden Anfrage Liegengebliebenes nicht mehr ein
     if (!bereit || sendetGerade || !warteschlange.length || notiz === null) return;
     sendetGerade = true;
     const anzahl = warteschlange.length;
@@ -183,6 +190,7 @@ export function gemeinsamVorbereiten(datenId: string, feld: HTMLTextAreaElement)
       } else if (antwort.status >= 500) {
         sendenTimer = window.setTimeout(senden_, 3000);
       } else {
+        bereit = false; // die Seite lädt neu bzw. geht zur Anmeldung: nichts mehr senden
         fehler(antwort);
       }
     } catch {
@@ -266,8 +274,16 @@ export function gemeinsamVorbereiten(datenId: string, feld: HTMLTextAreaElement)
     }
     ort.replaceChildren(...anwesendeElemente([...personen.values()]));
   };
+  // Notiz gelöscht: beim Verlassen nicht mehr „weg“ melden (die Notiz gibt es dann nicht mehr, 404)
+  let geloescht = false;
+  document.addEventListener("submit", (ev) => {
+    const formular = ev.target as HTMLFormElement;
+    // Die Rückfrage (lib/dialog.ts) bricht das erste Absenden ab und schickt nach „Löschen“ erneut ab
+    if (ev.defaultPrevented || notiz === null) return;
+    if (new URL(formular.action, window.location.href).pathname === `/notizen/${notiz}/loeschen/`) geloescht = true;
+  });
   const melden = (weg = false) => {
-    if (!schreiben || notiz === null) return;
+    if (!schreiben || notiz === null || geloescht) return;
     senden(`/notizen/${notiz}/anwesend/`, { client, weg }, true).catch(() => undefined);
   };
 

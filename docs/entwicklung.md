@@ -129,7 +129,7 @@ Rollenkürzel `A, BL, P, M, L`, `angemeldet(konto)` (Django-Client) und die Fixt
 | `tests/test_faelligkeit.py` | Fälligkeiten als „Gestern“, „Heute“, „Morgen“, überschrittene Termine rot, in Anzeige und Datumsfeldern |
 | `tests/test_mail_sammeln.py` | Benachrichtigungen innerhalb einer Minute als eine E-Mail, HTML-Teil der E-Mails |
 | `frontend/src/teamplaner/*.test.ts` | Rasterlogik und Übersetzung im Browser |
-| `frontend/src/editor/*.test.ts`, `frontend/src/lib/*.test.ts` | Markdown beim Einfügen, Editor-Rundlauf, Zitat, Spaltenbreiten, Personenauswahl, Vorschläge, Restzeit der Admin-Sitzung, nur die jüngste Ladeanfrage zählt (`neueste.ts`), Stand vom Server nach dem Neuladen (`sofort.ts`), Zähler nach dem Abhaken (`offenzaehler.ts`), Schatten und Scrollposition der Projektliste in der Navigation (`seitennav.ts`) |
+| `frontend/src/editor/*.test.ts`, `frontend/src/lib/*.test.ts` | Gemeinsam bearbeiten (`gemeinsam-senden.test.ts`: Warteschlange, erneuter Versuch bei 5xx und offline, Neuladen bei 4xx, Abgleich nach fremden Änderungen, Anwesenheit), @-Erwähnungen (Auslösemuster, verstecktes Feld), Nachlauf nach dem Abhaken mit Fake-Timern, Markdown beim Einfügen, Editor-Rundlauf, Zitat, Spaltenbreiten, Personenauswahl, Vorschläge, Restzeit der Admin-Sitzung, nur die jüngste Ladeanfrage zählt (`neueste.ts`), Stand vom Server nach dem Neuladen (`sofort.ts`), Zähler nach dem Abhaken (`offenzaehler.ts`), Schatten und Scrollposition der Projektliste in der Navigation (`seitennav.ts`) |
 | `frontend/src/gantt/logik.test.ts` | Zeitachse, Zeilen, Pfeile (rot nur bei verletzten geplanten Terminen), Warnzeichen je Zeile |
 
 | `frontend/e2e/01-rundgang.spec.ts` | alle Seiten der Navigation am Desktop und am Handy, Einstellungen, keine Vorlagenreste |
