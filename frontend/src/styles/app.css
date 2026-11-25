@@ -510,22 +510,27 @@ h3 { margin: 0; font-size: 15px; font-weight: 700; }
 .seitennav__oben, .seitennav__unten, .seitennav__projekte { display: flex; flex-direction: column; gap: 2px; }
 .seitennav__oben, .seitennav__unten { flex: none; }
 .seitennav__unten { margin-top: auto; }
-.seitennav__projekte {
+/* Rahmen um die Projektliste über die ganze Breite der Navigation (bis an die Linie rechts); er scrollt
+   nicht selbst, deshalb reichen Fläche, Trennlinien und Schatten auch über den Scrollbalken. */
+.seitennav__rahmen {
   /* Mindesthöhe: etwa vier Einträge */
-  flex: 1 1 auto; min-height: 9.5rem; overflow-y: auto; overscroll-behavior: contain;
-  scrollbar-width: thin; scrollbar-gutter: stable; margin: 0 -12px; padding: 0 2px 0 12px;
-  border-block: 1px solid transparent;
+  flex: 1 1 auto; min-height: 9.5rem; position: relative; display: flex; flex-direction: column;
+  margin: 0 -12px; border-block: 1px solid transparent;
+}
+.seitennav__projekte {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  scrollbar-width: thin; scrollbar-gutter: stable; padding: 0 2px 0 12px;
 }
 /* Nur wenn die Liste nicht hineinpasst: abgesetzte Fläche, Trennlinien und Schatten an dem Rand,
    hinter dem noch Einträge liegen (Attribute setzt main.ts) */
-.seitennav__projekte[data-ueberlauf] { background: var(--flaeche-2); border-color: var(--rand); }
-.seitennav__projekte::before, .seitennav__projekte::after {
-  content: ""; position: sticky; z-index: 1; display: block; flex: none; height: 10px;
-  margin-inline: -12px 0; pointer-events: none; opacity: 0; transition: opacity 0.15s;
+.seitennav__rahmen[data-ueberlauf] { background: var(--flaeche-2); border-color: var(--rand); }
+.seitennav__rahmen::before, .seitennav__rahmen::after {
+  content: ""; position: absolute; z-index: 1; left: 0; right: 0; height: 12px;
+  pointer-events: none; opacity: 0; transition: opacity 0.15s;
 }
-.seitennav__projekte::before { top: 0; margin-bottom: -10px; background: linear-gradient(var(--schatten-rollen), transparent); }
-.seitennav__projekte::after { bottom: 0; margin-top: -10px; background: linear-gradient(transparent, var(--schatten-rollen)); }
-.seitennav__projekte[data-mehr-oben]::before, .seitennav__projekte[data-mehr-unten]::after { opacity: 1; }
+.seitennav__rahmen::before { top: 0; background: linear-gradient(var(--schatten-rollen), transparent); }
+.seitennav__rahmen::after { bottom: 0; background: linear-gradient(transparent, var(--schatten-rollen)); }
+.seitennav__rahmen[data-mehr-oben]::before, .seitennav__rahmen[data-mehr-unten]::after { opacity: 1; }
 .seitennav__unten .seitennav__titel { padding-top: 12px; }
 /* Fokusrahmen innen, sonst schneidet der Scrollbereich ihn am ersten und letzten Eintrag ab */
 .seitennav__projekte a:focus-visible { outline-offset: -2px; }
@@ -577,10 +582,11 @@ h3 { margin: 0; font-size: 15px; font-weight: 700; }
     position: static; height: auto; overflow: visible; padding-bottom: 20px;
   }
   .seitennav.offen { display: flex; }
-  .seitennav__projekte, .seitennav__projekte[data-ueberlauf] {
-    flex: none; min-height: 0; overflow: visible; margin: 0; padding: 0; border: 0; background: none;
+  .seitennav__rahmen, .seitennav__rahmen[data-ueberlauf] {
+    flex: none; display: block; min-height: 0; margin: 0; border: 0; background: none;
   }
-  .seitennav__projekte::before, .seitennav__projekte::after { display: none; }
+  .seitennav__projekte { overflow: visible; padding: 0; }
+  .seitennav__rahmen::before, .seitennav__rahmen::after { display: none; }
   .seitennav__unten { margin-top: 0; }
   .seitennav__unten .seitennav__titel { padding-top: 18px; }
   .inhalt { padding: 16px; }

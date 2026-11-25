@@ -83,10 +83,13 @@
         {% if nav.projekte_verwalten %}<a class="seitennav__neu" href="{% url 'projekt_anlegen' %}" title="{% translate 'Neues Projekt' %}" aria-label="{% translate 'Neues Projekt' %}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></a>{% endif %}
       </div>
       </div>
+      {# Der Rahmen scrollt nicht selbst: Fläche, Linien und Schatten reichen so über den Scrollbalken bis zum Rand #}
+      <div class="seitennav__rahmen" data-projektrahmen>
       <div class="seitennav__projekte" data-projektliste>
       {% for p in nav.projekte %}
         <a href="{% url 'projekt' p.pk %}" class="pf-{{ p.farbe }}" {% if aktives_projekt == p.pk %}aria-current="page"{% endif %}><span><span class="farbpunkt"></span><span class="zelle-text">{{ p.name }}</span></span></a>
       {% endfor %}
+      </div>
       </div>
       {% if nav.verwaltung or nav.protokoll %}
       <div class="seitennav__unten">

@@ -65,6 +65,12 @@ test("Navigation: viele Projekte, nur die Liste scrollt, aktives Projekt sichtba
   await expect(liste).toHaveAttribute("data-mehr-oben", "");
   await expect(liste.locator("[aria-current='page']")).toHaveAttribute("href", ziel!);
   expect(await ganzSichtbarIn(seite, "[data-projektliste] [aria-current='page']", "[data-projektliste]")).toBe(true);
+  // Fläche, Linien und Schatten reichen über den Scrollbalken bis an die Linie der Navigation rechts
+  const rahmen = await box(seite, "[data-projektrahmen]");
+  const navigation = await box(seite, ".seitennav");
+  expect(rahmen.x).toBeCloseTo(navigation.x, 0);
+  expect(rahmen.x + rahmen.width).toBeCloseTo(navigation.x + navigation.width - 1, 0); // 1 px Linie rechts
+  await expect.poll(() => seite.locator("[data-projektrahmen]").evaluate((r) => getComputedStyle(r, "::before").opacity)).toBe("1");
 
   // Hauptpunkte und Verwaltung bleiben sichtbar, die Navigation scrollt nicht als Ganzes
   const hoehe = seite.viewportSize()!.height;
