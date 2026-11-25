@@ -69,6 +69,8 @@
   </header>
   <div class="layout">
     <nav id="seitennav" class="seitennav" aria-label="{% translate 'Hauptnavigation' %}">
+      {# Drei Teile: oben und unten fest, nur die Projektliste dazwischen scrollt (am Desktop) #}
+      <div class="seitennav__oben">
       <a href="{% url 'meine_aufgaben' %}" {% if aktiv == "meine" %}aria-current="page"{% endif %}><span>{% translate "Meine Aufgaben" %}</span></a>
       <a href="{% url 'kalender' %}" {% if aktiv == "kalender" %}aria-current="page"{% endif %}><span>{% translate "Kalender" %}</span></a>
       <a href="{% url 'notizen' %}" {% if aktiv == "notizen" %}aria-current="page"{% endif %}><span>{% translate "Notizen" %}</span></a>
@@ -80,13 +82,18 @@
         <a href="{% url 'projekte' %}" title="{% translate 'Alle Projekte' %}" {% if aktiv == "projekte" %}aria-current="page"{% endif %}>{% if nav.projekte_verwalten %}{% translate "Projekte" %}{% else %}{% translate "Meine Projekte" %}{% endif %}</a>
         {% if nav.projekte_verwalten %}<a class="seitennav__neu" href="{% url 'projekt_anlegen' %}" title="{% translate 'Neues Projekt' %}" aria-label="{% translate 'Neues Projekt' %}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></a>{% endif %}
       </div>
+      </div>
+      <div class="seitennav__projekte" data-projektliste>
       {% for p in nav.projekte %}
         <a href="{% url 'projekt' p.pk %}" class="pf-{{ p.farbe }}" {% if aktives_projekt == p.pk %}aria-current="page"{% endif %}><span><span class="farbpunkt"></span><span class="zelle-text">{{ p.name }}</span></span></a>
       {% endfor %}
+      </div>
       {% if nav.verwaltung or nav.protokoll %}
+      <div class="seitennav__unten">
         <div class="seitennav__titel">{% translate "Verwaltung" %}</div>
         {% if nav.verwaltung %}<a href="{{ nav.verwaltung }}" {% if aktiv == "einstellungen" %}aria-current="page"{% endif %}><span>{% translate "Einstellungen" %}</span></a>{% endif %}
         {% if nav.protokoll %}<a href="{% url 'protokoll' %}" {% if aktiv == "protokoll" %}aria-current="page"{% endif %}><span>{% translate "Protokoll" %}</span></a>{% endif %}
+      </div>
       {% endif %}
       <div class="nur-mobil">
         <div class="seitennav__titel">{% translate "Konto" %}</div>

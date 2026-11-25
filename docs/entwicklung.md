@@ -119,7 +119,7 @@ Für Rechteprüfung und Einteilungslogik sind automatische Tests Pflicht.
 | `tests/test_raeume.py` | Räume: Liste in den Einstellungen (anlegen, umbenennen, sortieren, löschen auch wenn verwendet), Auswahl im Aufgabendetail (Rechte, Verlauf, nicht in der Zeile), Übernahme in die Folgeaufgabe, Filter „Raum“ in der Projektliste allein und kombiniert |
 | `tests/test_vorlagen.py` | Vorlagen ohne mehrzeilige `{# #}`-Kommentare (erscheinen sonst als Text) |
 | `frontend/src/teamplaner/*.test.ts` | Rasterlogik und Übersetzung im Browser |
-| `frontend/src/editor/*.test.ts`, `frontend/src/lib/*.test.ts` | Markdown beim Einfügen, Editor-Rundlauf, Zitat, Spaltenbreiten, Personenauswahl, Vorschläge, Restzeit der Admin-Sitzung, nur die jüngste Ladeanfrage zählt (`neueste.ts`), Stand vom Server nach dem Neuladen (`sofort.ts`), Zähler nach dem Abhaken (`offenzaehler.ts`) |
+| `frontend/src/editor/*.test.ts`, `frontend/src/lib/*.test.ts` | Markdown beim Einfügen, Editor-Rundlauf, Zitat, Spaltenbreiten, Personenauswahl, Vorschläge, Restzeit der Admin-Sitzung, nur die jüngste Ladeanfrage zählt (`neueste.ts`), Stand vom Server nach dem Neuladen (`sofort.ts`), Zähler nach dem Abhaken (`offenzaehler.ts`), Schatten und Scrollposition der Projektliste in der Navigation (`seitennav.ts`) |
 | `frontend/src/gantt/logik.test.ts` | Zeitachse, Zeilen, Pfeile (rot nur bei verletzten geplanten Terminen), Warnzeichen je Zeile |
 
 | `frontend/e2e/01-rundgang.spec.ts` | alle Seiten der Navigation am Desktop und am Handy, Einstellungen, keine Vorlagenreste |
@@ -132,6 +132,7 @@ Für Rechteprüfung und Einteilungslogik sind automatische Tests Pflicht.
 | `frontend/e2e/08-darstellung.spec.ts` | Farbschema mehrfach umstellen: Auswahl und `data-theme` stimmen nach jedem Neuladen |
 | `frontend/e2e/09-meine-aufgaben.spec.ts` | Abgehakte Aufgaben 5 s sichtbar, rückgängig, Folgeaufgabe danach (Meine Aufgaben, Projektliste); betreute Platzhalter in drei Breiten; Einteilungen nebeneinander |
 | `frontend/e2e/10-anhaenge.spec.ts` | Anhänge über die Kachel: auswählen, ziehen, verwerfen, hochladen, zu große Datei, Auswahl in der Seitenleiste, Rückfrage beim Verlassen, Notizen; PDF mit Vorschau der ersten Seite (Aufgabe, Seitenleiste, Notiz) |
+| `frontend/e2e/11-navigation.spec.ts` | Seitennavigation am Desktop: bleibt beim Scrollen stehen, nur die Projektliste scrollt, Verwaltung unten, aktives Projekt sichtbar, Scrollposition beim Seitenwechsel, niedriges Fenster (legt viele Projekte an, läuft deshalb zuletzt) |
 
 Dazu prüft `shellcheck` die Betriebs- und Bauskripte.
 

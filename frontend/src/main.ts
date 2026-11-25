@@ -25,6 +25,7 @@ import { initNotizbaum } from "./lib/notizbaum";
 import { initPersonenauswahl } from "./lib/personenauswahl";
 import { initPersonenwahl } from "./lib/personenwahl";
 import { initReihenfolge } from "./lib/reihenfolge";
+import { initSeitennav } from "./lib/seitennav";
 import { initSeitenleiste, seitenleisteAbgleichen } from "./lib/seitenleiste";
 import { initSofort } from "./lib/sofort";
 import { initSitzungsfrist } from "./lib/sitzungsfrist";
@@ -107,6 +108,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initToasts();
   initUnteraufgaben();
   initNotizbaum();
+  initSeitennav();
   initSitzungsfrist();
   initSuchvorschlaege();
 });
