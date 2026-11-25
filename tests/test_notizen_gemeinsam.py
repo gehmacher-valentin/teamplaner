@@ -10,21 +10,24 @@ import pytest
 from django.test import Client
 
 from kern.hilfen import TEXT_MAX_ZEICHEN
-from kern.models import Rolle
 from notizen.live import _nachholen
 from notizen.models import Notiz, NotizAenderung, Ordner
 
-from .conftest import SseLeser, mit_eigener_verbindung, nichts_geaendert, stream_anfrage
+from .conftest import (
+    BL,
+    A,
+    L,
+    M,
+    P,
+    SseLeser,
+    angemeldet,
+    mit_eigener_verbindung,
+    nichts_geaendert,
+    stream_anfrage,
+)
 
 pytestmark = pytest.mark.django_db
 
-A, BL, P, M, L = Rolle.ADMIN, Rolle.BEREICHSLEITUNG, Rolle.PLANER, Rolle.MITARBEITER, Rolle.LESEND
-
-
-def client_fuer(konto):
-    c = Client()
-    c.force_login(konto)
-    return c
 
 
 def b64(daten):
@@ -48,7 +51,7 @@ def notiz(ordner):
 
 
 def test_aenderung_speichern_mit_titel_und_text(konten, notiz):
-    c = client_fuer(konten[M])
+    c = angemeldet(konten[M])
     antwort = post(c, f"/notizen/{notiz.pk}/aenderung/", {"update": b64(b"\x01\x02"), "text": "neu", "titel": " Liste  2 ",
                                                           "eigen": True})
     assert antwort.status_code == 200 and antwort.json()["id"]
@@ -56,7 +59,7 @@ def test_aenderung_speichern_mit_titel_und_text(konten, notiz):
     assert (notiz.text, notiz.titel, notiz.version, notiz.geaendert_von) == ("neu", "Liste 2", 2, konten[M].person)
     assert [bytes(d) for d in NotizAenderung.objects.values_list("daten", flat=True)] == [b"\x01\x02"]
     # Nur abgleichen (nach Änderungen anderer): kein neuer Eintrag, „zuletzt geändert von“ bleibt
-    assert post(client_fuer(konten[P]), f"/notizen/{notiz.pk}/aenderung/", {"text": "zusammen"}).json()["id"] is None
+    assert post(angemeldet(konten[P]), f"/notizen/{notiz.pk}/aenderung/", {"text": "zusammen"}).json()["id"] is None
     notiz.refresh_from_db()
     assert notiz.text == "zusammen" and notiz.geaendert_von == konten[M].person
     assert NotizAenderung.objects.count() == 1
@@ -69,7 +72,7 @@ def test_aenderung_speichern_mit_titel_und_text(konten, notiz):
 @pytest.mark.parametrize("rolle, status", [(M, 200), (P, 200), (L, 403), (BL, 403)])
 def test_aenderung_rechte(konten, notiz, rolle, status):
     with nichts_geaendert(notiz, NotizAenderung) if status == 403 else nullcontext():
-        antwort = post(client_fuer(konten[rolle]), f"/notizen/{notiz.pk}/aenderung/", {"update": b64(b"x"), "text": "neu"})
+        antwort = post(angemeldet(konten[rolle]), f"/notizen/{notiz.pk}/aenderung/", {"update": b64(b"x"), "text": "neu"})
         assert antwort.status_code == status
     if status == 200:
         notiz.refresh_from_db()
@@ -78,7 +81,7 @@ def test_aenderung_rechte(konten, notiz, rolle, status):
 
 @pytest.mark.parametrize("daten", [{"update": "kein base64!"}, {"text": "x" * (TEXT_MAX_ZEICHEN + 1)}, {"text": 5}])
 def test_aenderung_ungueltig(konten, notiz, daten):
-    antwort = post(client_fuer(konten[M]), f"/notizen/{notiz.pk}/aenderung/", daten)
+    antwort = post(angemeldet(konten[M]), f"/notizen/{notiz.pk}/aenderung/", daten)
     assert antwort.status_code == 400
     assert not NotizAenderung.objects.exists()
     notiz.refresh_from_db()
@@ -86,10 +89,10 @@ def test_aenderung_ungueltig(konten, notiz, daten):
 
 
 def test_start_nur_einmal_danach_kein_ueberschreiben_mehr(konten, notiz):
-    c = client_fuer(konten[M])
+    c = angemeldet(konten[M])
     assert post(c, f"/notizen/{notiz.pk}/start/", {"zustand": b64(b"stand"), "text": "alt", "titel": "Liste"}).status_code == 200
     # Wer zu spät kommt, lädt neu
-    assert post(client_fuer(konten[P]), f"/notizen/{notiz.pk}/start/", {"zustand": b64(b"anders")}).status_code == 409
+    assert post(angemeldet(konten[P]), f"/notizen/{notiz.pk}/start/", {"zustand": b64(b"anders")}).status_code == 409
     # Das alte Speichern ersetzt den Text nicht mehr, sondern lässt die Seite neu laden
     antwort = c.post("/notizen/speichern/", {"notiz": notiz.pk, "ordner": "", "version": notiz.version, "titel": "Liste",
                                              "text": "ganz anders"}, HTTP_HX_REQUEST="true")
@@ -99,7 +102,7 @@ def test_start_nur_einmal_danach_kein_ueberschreiben_mehr(konten, notiz):
 
 
 def test_nachholen_und_zusammenfassen(konten, notiz):
-    c = client_fuer(konten[M])
+    c = angemeldet(konten[M])
     ids = [post(c, f"/notizen/{notiz.pk}/aenderung/", {"update": b64(bytes([i]))}).json()["id"] for i in range(1, 5)]
     paket, gesendet = _nachholen(notiz.pk, ids[1])
     assert gesendet == ids[3] and json.loads(paket.split("data: ")[1])["daten"] == [b64(b"\x03"), b64(b"\x04")]
@@ -118,18 +121,18 @@ def test_nachholen_und_zusammenfassen(konten, notiz):
 
 
 def test_anwesend_und_stream_nur_mit_rechten(konten, notiz):
-    assert post(client_fuer(konten[M]), f"/notizen/{notiz.pk}/anwesend/", {"client": "abc"}).status_code == 204
-    assert post(client_fuer(konten[L]), f"/notizen/{notiz.pk}/anwesend/", {"client": "abc"}).status_code == 403
-    assert post(client_fuer(konten[M]), f"/notizen/{notiz.pk}/anwesend/", {"client": ""}).status_code == 400
-    assert client_fuer(konten[BL]).get(f"/api/planung/stream/notiz/{notiz.pk}").status_code == 403
+    assert post(angemeldet(konten[M]), f"/notizen/{notiz.pk}/anwesend/", {"client": "abc"}).status_code == 204
+    assert post(angemeldet(konten[L]), f"/notizen/{notiz.pk}/anwesend/", {"client": "abc"}).status_code == 403
+    assert post(angemeldet(konten[M]), f"/notizen/{notiz.pk}/anwesend/", {"client": ""}).status_code == 400
+    assert angemeldet(konten[BL]).get(f"/api/planung/stream/notiz/{notiz.pk}").status_code == 403
     assert Client().get(f"/api/planung/stream/notiz/{notiz.pk}").status_code == 401
 
 
 def test_persoenliche_notiz_nur_fuer_besitzer(konten):
     notiz = Notiz.objects.create(besitzer=konten[M].person, titel="Meine", text="")
-    assert post(client_fuer(konten[M]), f"/notizen/{notiz.pk}/aenderung/", {"update": b64(b"x")}).status_code == 200
-    assert post(client_fuer(konten[A]), f"/notizen/{notiz.pk}/aenderung/", {"update": b64(b"x")}).status_code == 403
-    assert client_fuer(konten[A]).get(f"/api/planung/stream/notiz/{notiz.pk}").status_code == 403
+    assert post(angemeldet(konten[M]), f"/notizen/{notiz.pk}/aenderung/", {"update": b64(b"x")}).status_code == 200
+    assert post(angemeldet(konten[A]), f"/notizen/{notiz.pk}/aenderung/", {"update": b64(b"x")}).status_code == 403
+    assert angemeldet(konten[A]).get(f"/api/planung/stream/notiz/{notiz.pk}").status_code == 403
 
 
 @pytest.mark.django_db(transaction=True)
@@ -176,7 +179,7 @@ def test_start_und_zusammenfassen_nur_mit_schreibrecht(konten, notiz, pfad, date
     """Lesend (im Ordner) und Fremde (Bereichsleitung ohne Freigabe) werden abgewiesen, ohne dass sich etwas ändert."""
     vorher = NotizAenderung.objects.create(notiz=notiz, daten=b"\x01")
     for rolle in (L, BL):
-        assert post(client_fuer(konten[rolle]), f"/notizen/{notiz.pk}/{pfad}/", daten).status_code == 403, rolle
+        assert post(angemeldet(konten[rolle]), f"/notizen/{notiz.pk}/{pfad}/", daten).status_code == 403, rolle
     assert list(NotizAenderung.objects.values_list("id", flat=True)) == [vorher.pk]
     notiz.refresh_from_db()
     assert (bytes(notiz.yjs), notiz.yjs_bis, notiz.text, notiz.version) == (b"", 0, "alt", 1)

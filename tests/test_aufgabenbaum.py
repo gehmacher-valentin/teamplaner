@@ -3,15 +3,14 @@ tiefer, Grenzen und Rechte; neue Projekte ohne Abschnitte; Pfad im Teamplaner; A
 
 import pytest
 
-from kern.models import Protokolleintrag, Rolle
+from kern.models import Protokolleintrag
 from planung.raster import palette
 from projekte.models import Abschnitt, Aufgabe, Projekt, Status
 
-from .conftest import nichts_geaendert
+from .conftest import BL, A, L, M, P, nichts_geaendert
 
 pytestmark = pytest.mark.django_db
 
-A, BL, P, M, L = Rolle.ADMIN, Rolle.BEREICHSLEITUNG, Rolle.PLANER, Rolle.MITARBEITER, Rolle.LESEND
 
 
 def neu(projekt, abschnitt, titel, eltern=None, sortierung=0, erledigt=False):

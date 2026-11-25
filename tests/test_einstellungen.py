@@ -12,10 +12,9 @@ from planung.kalender import neue_freie_tage, zeitraeume
 from planung.models import AnsichtFreigabe, FreierTag, Recht, TeamplanerAnsicht
 from projekte.models import Aufgabe, Status
 
-from .conftest import ROLLEN, freigeben
+from .conftest import BL, A, L, M, P, freigeben
 
 pytestmark = pytest.mark.django_db
-A, BL, P, M, L = ROLLEN
 
 
 def htmx(client, url, daten=None):

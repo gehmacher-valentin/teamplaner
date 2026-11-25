@@ -9,18 +9,10 @@ from planung.models import TeamplanerAnsicht
 from projekte.models import Aufgabe, Projekt, Status
 from zusammenarbeit.models import Anhang, Kommentar
 
-from .conftest import ROLLEN, nichts_geaendert
+from .conftest import BL, ROLLEN, A, L, M, P, angemeldet, nichts_geaendert
 
 pytestmark = pytest.mark.django_db
 
-A, BL, P, M, L = ROLLEN
-
-
-def client_fuer(konto):
-    c = Client()
-    if konto:
-        c.force_login(konto)
-    return c
 
 
 GET_SEITEN = [
@@ -59,7 +51,7 @@ GET_SEITEN = [
 @pytest.mark.parametrize("url, erlaubt", GET_SEITEN, ids=[s[0] for s in GET_SEITEN])
 @pytest.mark.parametrize("rolle", ROLLEN)
 def test_seitenzugriff(konten, url, erlaubt, rolle):
-    antwort = client_fuer(konten[rolle]).get(url)
+    antwort = angemeldet(konten[rolle]).get(url)
     assert antwort.status_code == (200 if rolle in erlaubt else 403)
 
 
@@ -70,7 +62,7 @@ def test_ohne_anmeldung_weiter_zur_anmeldung(db, url):
 
 
 def test_einstellungen_starten_beim_profil(konten):
-    antwort = client_fuer(konten[M]).get("/einstellungen/")
+    antwort = angemeldet(konten[M]).get("/einstellungen/")
     assert antwort.status_code == 302 and antwort.url == "/einstellungen/profil/"
 
 
@@ -89,7 +81,7 @@ SYSTEM = {"Allgemein", "E-Mail-Versand", "Listen", "Kalender", "Speicherplatz"}
 def test_unternavigation_je_rolle(konten, rolle, sichtbar):
     import re
 
-    seite = client_fuer(konten[rolle]).get("/einstellungen/profil/").content.decode()
+    seite = angemeldet(konten[rolle]).get("/einstellungen/profil/").content.decode()
     beginn = seite.index('<nav class="einst-nav"')
     nav = seite[beginn:seite.index("</nav>", beginn)]
     assert set(re.findall(r'<a href="[^"]+"(?: aria-current="page")?>([^<]+)</a>', nav)) == sichtbar
@@ -101,7 +93,7 @@ def test_unternavigation_je_rolle(konten, rolle, sichtbar):
 
 @pytest.mark.parametrize("rolle, erwartet", [(A, 302), (BL, 302), (P, 403), (M, 403), (L, 403)])
 def test_person_einladen(konten, bereich_a, rolle, erwartet):
-    antwort = client_fuer(konten[rolle]).post("/einstellungen/personen/einladen/", {
+    antwort = angemeldet(konten[rolle]).post("/einstellungen/personen/einladen/", {
         "anzeigename": "Person 40", "email": "person40@example.test", "bereich": bereich_a.pk, "rolle": Rolle.MITARBEITER,
     })
     assert antwort.status_code == erwartet
@@ -110,7 +102,7 @@ def test_person_einladen(konten, bereich_a, rolle, erwartet):
 
 def test_bereichsleitung_kann_niemanden_zum_admin_machen(konten):
     ziel = konten[M]
-    antwort = client_fuer(konten[BL]).post(f"/einstellungen/personen/{ziel.pk}/", {
+    antwort = angemeldet(konten[BL]).post(f"/einstellungen/personen/{ziel.pk}/", {
         "anzeigename": ziel.person.anzeigename, "email": ziel.email, "rolle": Rolle.ADMIN,
     })
     assert antwort.status_code == 200  # Formularfehler, keine Änderung
@@ -119,7 +111,7 @@ def test_bereichsleitung_kann_niemanden_zum_admin_machen(konten):
 
 
 def test_bereichsleitung_darf_admin_konto_nicht_bearbeiten(konten):
-    c = client_fuer(konten[BL])
+    c = angemeldet(konten[BL])
     assert c.get(f"/einstellungen/personen/{konten[A].pk}/").status_code == 403
     assert c.post(f"/personen/{konten[A].pk}/deaktivieren/").status_code == 403
     assert konten[A].is_active
@@ -129,7 +121,7 @@ def test_rollenaenderung_wird_protokolliert(konten):
     from kern.models import Protokolleintrag
 
     ziel = konten[M]
-    client_fuer(konten[BL]).post(f"/einstellungen/personen/{ziel.pk}/", {
+    angemeldet(konten[BL]).post(f"/einstellungen/personen/{ziel.pk}/", {
         "anzeigename": ziel.person.anzeigename, "email": ziel.email, "rolle": Rolle.PLANER,
         "bereich": ziel.person.bereich_id,
     })
@@ -142,7 +134,7 @@ def test_rollenaenderung_wird_protokolliert(konten):
 
 @pytest.mark.parametrize("rolle, erwartet", [(BL, 302), (P, 302), (M, 403), (L, 403)])
 def test_platzhalter_anlegen(konten, bereich_a, rolle, erwartet):
-    antwort = client_fuer(konten[rolle]).post("/einstellungen/personen/platzhalter/", {"anzeigename": "Aushilfe 3", "bereich": bereich_a.pk})
+    antwort = angemeldet(konten[rolle]).post("/einstellungen/personen/platzhalter/", {"anzeigename": "Aushilfe 3", "bereich": bereich_a.pk})
     assert antwort.status_code == erwartet
     angelegt = list(Person.objects.filter(anzeigename="Aushilfe 3").values_list("bereich_id", "erstellt_von_id"))
     assert angelegt == ([(bereich_a.pk, konten[rolle].person_id)] if erwartet == 302 else [])
@@ -150,7 +142,7 @@ def test_platzhalter_anlegen(konten, bereich_a, rolle, erwartet):
 
 @pytest.mark.parametrize("rolle, erwartet", [(A, 302), (BL, 302), (P, 403), (M, 403)])
 def test_ansicht_anlegen(konten, bereich_a, rolle, erwartet):
-    antwort = client_fuer(konten[rolle]).post("/einstellungen/ansichten/teamplaner/neu/", {
+    antwort = angemeldet(konten[rolle]).post("/einstellungen/ansichten/teamplaner/neu/", {
         "name": "Bereich A", "bereiche": [bereich_a.pk], "wochen": 2,
     })
     assert antwort.status_code == erwartet
@@ -159,7 +151,7 @@ def test_ansicht_anlegen(konten, bereich_a, rolle, erwartet):
 
 @pytest.mark.parametrize("rolle, erwartet", [(A, 200), (BL, 403), (P, 403)])
 def test_status_anlegen_nur_admin(konten, rolle, erwartet):
-    antwort = client_fuer(konten[rolle]).post("/einstellungen/listen/status/neu/", {"neu-name": "Abgenommen"},
+    antwort = angemeldet(konten[rolle]).post("/einstellungen/listen/status/neu/", {"neu-name": "Abgenommen"},
                                               HTTP_HX_REQUEST="true")
     assert antwort.status_code == erwartet
     assert Status.objects.filter(name="Abgenommen").exists() is (erwartet == 200)
@@ -169,7 +161,7 @@ def test_status_anlegen_nur_admin(konten, rolle, erwartet):
 
 @pytest.mark.parametrize("rolle, erwartet", [(BL, 302), (P, 302), (M, 403), (L, 403)])
 def test_projekt_anlegen(konten, rolle, erwartet):
-    antwort = client_fuer(konten[rolle]).post("/projekte/neu/", {"name": "Prototyp Förderband", "farbe": "blau"})
+    antwort = angemeldet(konten[rolle]).post("/projekte/neu/", {"name": "Prototyp Förderband", "farbe": "blau"})
     assert antwort.status_code == erwartet
     assert Projekt.objects.filter(name="Prototyp Förderband").exists() is (erwartet == 302)
 
@@ -177,16 +169,16 @@ def test_projekt_anlegen(konten, rolle, erwartet):
 def test_projekt_bearbeiten_nur_ab_planer(konten, projekt):
     for rolle in (M, L):
         with nichts_geaendert(projekt):
-            antwort = client_fuer(konten[rolle]).post(f"/projekte/{projekt.pk}/bearbeiten/", {"name": "x", "farbe": "rot"})
+            antwort = angemeldet(konten[rolle]).post(f"/projekte/{projekt.pk}/bearbeiten/", {"name": "x", "farbe": "rot"})
             assert antwort.status_code == 403
-            assert client_fuer(konten[rolle]).post(f"/projekte/{projekt.pk}/bearbeiten/", {"archivieren": "1"}).status_code == 403
-    assert client_fuer(konten[P]).post(f"/projekte/{projekt.pk}/bearbeiten/", {"name": "Neubau Halle 2", "farbe": "rot"}).status_code == 302
+            assert angemeldet(konten[rolle]).post(f"/projekte/{projekt.pk}/bearbeiten/", {"archivieren": "1"}).status_code == 403
+    assert angemeldet(konten[P]).post(f"/projekte/{projekt.pk}/bearbeiten/", {"name": "Neubau Halle 2", "farbe": "rot"}).status_code == 302
     projekt.refresh_from_db()
     assert (projekt.name, projekt.farbe) == ("Neubau Halle 2", "rot")
 
 
 def feld_aendern(konto, aufgabe, feld, wert):
-    return client_fuer(konto).post(f"/aufgaben/{aufgabe.pk}/feld/", {"feld": feld, "wert": wert, "version": aufgabe.version})
+    return angemeldet(konto).post(f"/aufgaben/{aufgabe.pk}/feld/", {"feld": feld, "wert": wert, "version": aufgabe.version})
 
 
 def test_aufgabe_bearbeiten_mitarbeiter_nur_als_mitglied(konten, aufgabe, projekt):
@@ -212,7 +204,7 @@ def test_mitarbeiter_als_projektleitung_bearbeitet_aufgaben(konten, aufgabe, pro
 
 @pytest.mark.parametrize("rolle, erwartet", [(P, 302), (M, 302), (L, 403)])
 def test_abschliessen(konten, aufgabe, rolle, erwartet):
-    antwort = client_fuer(konten[rolle]).post(f"/aufgaben/{aufgabe.pk}/erledigt/", {"erledigt": "1"})
+    antwort = angemeldet(konten[rolle]).post(f"/aufgaben/{aufgabe.pk}/erledigt/", {"erledigt": "1"})
     assert antwort.status_code == erwartet
     aufgabe.refresh_from_db()
     assert aufgabe.status.ist_erledigt is (erwartet == 302)
@@ -220,20 +212,20 @@ def test_abschliessen(konten, aufgabe, rolle, erwartet):
 
 @pytest.mark.parametrize("rolle, erwartet", [(P, 302), (M, 302), (L, 403)])
 def test_kommentieren(konten, aufgabe, rolle, erwartet):
-    antwort = client_fuer(konten[rolle]).post(f"/aufgaben/{aufgabe.pk}/kommentare/", {"text": "Erledigt bis Mittwoch"})
+    antwort = angemeldet(konten[rolle]).post(f"/aufgaben/{aufgabe.pk}/kommentare/", {"text": "Erledigt bis Mittwoch"})
     assert antwort.status_code == erwartet
     assert Kommentar.objects.exists() is (erwartet == 302)
 
 
 def test_aufgabe_loeschen_nur_mit_bearbeitungsrecht(konten, aufgabe):
-    assert client_fuer(konten[M]).post(f"/aufgaben/{aufgabe.pk}/loeschen/").status_code == 403
-    assert client_fuer(konten[P]).post(f"/aufgaben/{aufgabe.pk}/loeschen/").status_code == 302
+    assert angemeldet(konten[M]).post(f"/aufgaben/{aufgabe.pk}/loeschen/").status_code == 403
+    assert angemeldet(konten[P]).post(f"/aufgaben/{aufgabe.pk}/loeschen/").status_code == 302
     assert not Aufgabe.objects.filter(pk=aufgabe.pk).exists()
 
 
 def test_aufgabe_lesen_alle_rollen(konten, aufgabe):
     for rolle in ROLLEN:
-        assert client_fuer(konten[rolle]).get(f"/aufgaben/{aufgabe.pk}/").status_code == 200
+        assert angemeldet(konten[rolle]).get(f"/aufgaben/{aufgabe.pk}/").status_code == 200
 
 
 # --- Anhänge ---
@@ -241,12 +233,12 @@ def test_aufgabe_lesen_alle_rollen(konten, aufgabe):
 def test_anhang_hochladen_und_herunterladen(konten, aufgabe, settings, tmp_path):
     settings.MEDIA_ROOT = tmp_path
     datei = SimpleUploadedFile("Zeichnung_Halle.pdf", b"%PDF-1.4 test", content_type="application/pdf")
-    assert client_fuer(konten[L]).post(f"/aufgaben/{aufgabe.pk}/anhaenge/", {"datei": datei}).status_code == 403
+    assert angemeldet(konten[L]).post(f"/aufgaben/{aufgabe.pk}/anhaenge/", {"datei": datei}).status_code == 403
     datei.seek(0)
-    assert client_fuer(konten[M]).post(f"/aufgaben/{aufgabe.pk}/anhaenge/", {"datei": datei}).status_code == 302
+    assert angemeldet(konten[M]).post(f"/aufgaben/{aufgabe.pk}/anhaenge/", {"datei": datei}).status_code == 302
     anhang = Anhang.objects.get()
     assert anhang.dateiname == "Zeichnung_Halle.pdf" and "Zeichnung" not in anhang.datei.name
-    antwort = client_fuer(konten[L]).get(f"/anhaenge/{anhang.pk}/")
+    antwort = angemeldet(konten[L]).get(f"/anhaenge/{anhang.pk}/")
     assert antwort.status_code == 200 and antwort["Content-Type"] == "application/pdf"
     assert Client().get(f"/anhaenge/{anhang.pk}/").status_code == 302  # nicht angemeldet
 
@@ -254,34 +246,34 @@ def test_anhang_hochladen_und_herunterladen(konten, aufgabe, settings, tmp_path)
 def test_html_anhang_wird_nur_als_download_ausgeliefert(konten, aufgabe, settings, tmp_path):
     settings.MEDIA_ROOT = tmp_path
     datei = SimpleUploadedFile("x.html", b"<script>alert(1)</script>", content_type="text/html")
-    client_fuer(konten[M]).post(f"/aufgaben/{aufgabe.pk}/anhaenge/", {"datei": datei})
-    antwort = client_fuer(konten[M]).get(f"/anhaenge/{Anhang.objects.get().pk}/")
+    angemeldet(konten[M]).post(f"/aufgaben/{aufgabe.pk}/anhaenge/", {"datei": datei})
+    antwort = angemeldet(konten[M]).get(f"/anhaenge/{Anhang.objects.get().pk}/")
     assert antwort["Content-Type"] == "application/octet-stream"
     assert "attachment" in antwort["Content-Disposition"]
 
 
 def test_feld_zum_hochladen_nur_mit_recht(konten, aufgabe, settings):
     settings.TEAMPLANER_ANHANG_MAX_MB = 7
-    seite = client_fuer(konten[M]).get(f"/aufgaben/{aufgabe.pk}/").content.decode()
+    seite = angemeldet(konten[M]).get(f"/aufgaben/{aufgabe.pk}/").content.decode()
     assert "data-anhang-feld" in seite and 'data-max-mb="7"' in seite
-    assert "data-anhang-feld" not in client_fuer(konten[L]).get(f"/aufgaben/{aufgabe.pk}/").content.decode()
+    assert "data-anhang-feld" not in angemeldet(konten[L]).get(f"/aufgaben/{aufgabe.pk}/").content.decode()
 
 
 def test_anhang_groessenlimit(konten, aufgabe, settings, tmp_path):
     settings.MEDIA_ROOT = tmp_path
     settings.TEAMPLANER_ANHANG_MAX_MB = 1
     datei = SimpleUploadedFile("gross.bin", b"0" * (1024 * 1024 + 1))
-    client_fuer(konten[M]).post(f"/aufgaben/{aufgabe.pk}/anhaenge/", {"datei": datei})
+    angemeldet(konten[M]).post(f"/aufgaben/{aufgabe.pk}/anhaenge/", {"datei": datei})
     assert not Anhang.objects.exists()
 
 
 def test_anhang_loeschen_nur_eigene_oder_mit_bearbeitungsrecht(konten, aufgabe, settings, tmp_path):
     settings.MEDIA_ROOT = tmp_path
     datei = SimpleUploadedFile("foto.jpg", b"jpg", content_type="image/jpeg")
-    client_fuer(konten[P]).post(f"/aufgaben/{aufgabe.pk}/anhaenge/", {"datei": datei})
+    angemeldet(konten[P]).post(f"/aufgaben/{aufgabe.pk}/anhaenge/", {"datei": datei})
     anhang = Anhang.objects.get()
-    assert client_fuer(konten[M]).post(f"/anhaenge/{anhang.pk}/loeschen/").status_code == 403
-    assert client_fuer(konten[P]).post(f"/anhaenge/{anhang.pk}/loeschen/").status_code == 302
+    assert angemeldet(konten[M]).post(f"/anhaenge/{anhang.pk}/loeschen/").status_code == 403
+    assert angemeldet(konten[P]).post(f"/anhaenge/{anhang.pk}/loeschen/").status_code == 302
     assert not Anhang.objects.exists()
 
 
@@ -291,14 +283,14 @@ def test_einteilung_im_verlauf_nur_fuer_berechtigte_sichtbar(konten, aufgabe, pe
 
     dienste.einteilung_anlegen(konten[BL], aufgabe=aufgabe, person=person_b, von=MO, bis=MI)
     freigeben(ansicht_a, konten[P])
-    text_bl = client_fuer(konten[BL]).get(f"/aufgaben/{aufgabe.pk}/").content.decode()
-    text_p = client_fuer(konten[P]).get(f"/aufgaben/{aufgabe.pk}/").content.decode()
+    text_bl = angemeldet(konten[BL]).get(f"/aufgaben/{aufgabe.pk}/").content.decode()
+    text_p = angemeldet(konten[P]).get(f"/aufgaben/{aufgabe.pk}/").content.decode()
     assert "auf Person 11" in text_bl
     assert "auf Person 11" not in text_p
 
 
 def test_person_wird_nicht_geloescht_sondern_deaktiviert(konten):
-    client_fuer(konten[BL]).post(f"/personen/{konten[M].pk}/deaktivieren/")
+    angemeldet(konten[BL]).post(f"/personen/{konten[M].pk}/deaktivieren/")
     person = Person.objects.get(pk=konten[M].pk)
     assert person.archiviert and not Konto.objects.get(pk=person.pk).is_active
 
@@ -308,12 +300,12 @@ def test_person_wird_nicht_geloescht_sondern_deaktiviert(konten):
 @pytest.mark.parametrize("rolle", ROLLEN)
 @pytest.mark.parametrize("url", ["/", "/start/"])
 def test_startseite_ist_meine_aufgaben(konten, rolle, url):
-    antwort = client_fuer(konten[rolle]).get(url)
+    antwort = angemeldet(konten[rolle]).get(url)
     assert antwort.status_code == 302 and antwort.url == "/meine-aufgaben/"
 
 
 def test_teamplaner_unter_eigenem_pfad_und_logo_zur_startseite(konten):
-    c = client_fuer(konten[BL])
+    c = angemeldet(konten[BL])
     seite = c.get("/teamplaner/")
     assert seite.status_code == 200
     inhalt = seite.content.decode()

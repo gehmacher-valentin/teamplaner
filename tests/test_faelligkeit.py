@@ -10,10 +10,9 @@ from django.utils import timezone, translation
 
 from projekte.models import Status
 
-from .conftest import ROLLEN
+from .conftest import P
 
 pytestmark = pytest.mark.django_db
-A, BL, P, M, L = ROLLEN
 
 
 def heute_plus(tage):

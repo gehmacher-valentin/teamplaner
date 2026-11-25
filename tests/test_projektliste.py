@@ -4,30 +4,24 @@ Gantt-Gesamtansicht nimmt neue Projekte auf."""
 import re
 
 import pytest
-from django.test import Client
 from django.utils import timezone
 
 from gantt.models import GanttAnsicht
-from kern.models import Protokolleintrag, Rolle
+from kern.models import Protokolleintrag
 from projekte import dienste
 from projekte.forms import ProjektForm
 from projekte.models import Abschnitt, Aufgabe, Projekt, Projektfarbe, Tag
 from zusammenarbeit.models import Benachrichtigung
 
+from .conftest import BL, A, L, M, P, angemeldet
+
 pytestmark = pytest.mark.django_db
 
-A, BL, P, M, L = Rolle.ADMIN, Rolle.BEREICHSLEITUNG, Rolle.PLANER, Rolle.MITARBEITER, Rolle.LESEND
-
-
-def client_fuer(konto):
-    c = Client()
-    c.force_login(konto)
-    return c
 
 
 @pytest.mark.parametrize("rolle, erlaubt", [(A, True), (BL, True), (P, True), (M, False), (L, False)])
 def test_prioritaet_setzen(konten, projekt, rolle, erlaubt):
-    antwort = client_fuer(konten[rolle]).post(f"/projekte/{projekt.pk}/prioritaet/", {"prioritaet": "2", "weiter": "/projekte/?archiv=1"})
+    antwort = angemeldet(konten[rolle]).post(f"/projekte/{projekt.pk}/prioritaet/", {"prioritaet": "2", "weiter": "/projekte/?archiv=1"})
     projekt.refresh_from_db()
     assert antwort.status_code == (302 if erlaubt else 403)
     assert projekt.prioritaet == (2 if erlaubt else None)
@@ -39,10 +33,10 @@ def test_prioritaet_setzen(konten, projekt, rolle, erlaubt):
 def test_prioritaet_bis_10(konten, projekt, wert, erwartet):
     projekt.prioritaet = 3
     projekt.save()
-    client_fuer(konten[P]).post(f"/projekte/{projekt.pk}/prioritaet/", {"prioritaet": wert})
+    angemeldet(konten[P]).post(f"/projekte/{projekt.pk}/prioritaet/", {"prioritaet": wert})
     projekt.refresh_from_db()
     assert projekt.prioritaet == erwartet
-    seite = client_fuer(konten[P]).get("/projekte/").content.decode()
+    seite = angemeldet(konten[P]).get("/projekte/").content.decode()
     assert '<option value="10"' in seite and '<option value="11"' not in seite
 
 
@@ -55,20 +49,20 @@ def test_liste_nach_prioritaet_sortiert(konten):
     for name, prio in [("Ohne", None), ("Zehn", 10), ("Zwei", 2), ("Eins", 1), ("Auch ohne", None)]:
         Projekt.objects.create(name=name, prioritaet=prio)
     assert list(Projekt.objects.values_list("name", flat=True)) == ["Eins", "Zwei", "Zehn", "Auch ohne", "Ohne"]
-    seite = client_fuer(konten[M]).get("/projekte/").content.decode()
+    seite = angemeldet(konten[M]).get("/projekte/").content.decode()
     assert seite.index(">Eins<") < seite.index(">Zwei<") < seite.index(">Auch ohne<")
 
 
 def test_navigation_projekte_ueberschrift_und_neu_knopf(konten):
-    planer = client_fuer(konten[P]).get("/meine-aufgaben/").content.decode()
+    planer = angemeldet(konten[P]).get("/meine-aufgaben/").content.decode()
     assert 'href="/projekte/neu/"' in planer and "Alle Projekte</span>" not in planer
-    assert 'href="/projekte/neu/"' not in client_fuer(konten[M]).get("/meine-aufgaben/").content.decode()
+    assert 'href="/projekte/neu/"' not in angemeldet(konten[M]).get("/meine-aufgaben/").content.decode()
 
 
 def test_mitglieder_als_kaestchen_mit_suche(konten, person_a):
-    seite = client_fuer(konten[P]).get("/projekte/neu/").content.decode()
+    seite = angemeldet(konten[P]).get("/projekte/neu/").content.decode()
     assert "data-personenauswahl" in seite and 'type="checkbox" name="mitglieder"' in seite
-    antwort = client_fuer(konten[P]).post("/projekte/neu/", {
+    antwort = angemeldet(konten[P]).post("/projekte/neu/", {
         "name": "Neues Projekt", "farbe": "blau", "mitglieder": [person_a.pk, konten[M].pk],
     })
     assert antwort.status_code == 302
@@ -78,7 +72,7 @@ def test_mitglieder_als_kaestchen_mit_suche(konten, person_a):
 def test_neues_projekt_kommt_in_gesamtansicht(konten):
     gesamt = GanttAnsicht.objects.create(name="Gesamt", neue_projekte_automatisch=True)
     andere = GanttAnsicht.objects.create(name="Bereich A")
-    client_fuer(konten[P]).post("/projekte/neu/", {"name": "Halle 3", "farbe": "blau"})
+    angemeldet(konten[P]).post("/projekte/neu/", {"name": "Halle 3", "farbe": "blau"})
     neu = Projekt.objects.get(name="Halle 3")
     assert neu in gesamt.projekte.all() and neu not in andere.projekte.all()
 
@@ -86,21 +80,21 @@ def test_neues_projekt_kommt_in_gesamtansicht(konten):
 def test_protokoll_erledigte_aufgaben(konten, aufgabe):
     dienste.erledigt_setzen(konten[M], aufgabe, True)
     dienste.aufgabe_speichern(konten[M], aufgabe, {"titel": "Hallenboden Nord 2"}, None)
-    planer = client_fuer(konten[P]).get("/protokoll/").content.decode()
+    planer = angemeldet(konten[P]).get("/protokoll/").content.decode()
     assert "Erledigte Aufgaben" in planer and "Hallenboden Nord 2" in planer and "Person 01" in planer
     # Planer:innen sehen nur Erledigt-Einträge, auch wenn sie anderes anfordern
-    assert "hat geändert" not in client_fuer(konten[P]).get("/protokoll/?ansicht=").content.decode()
-    voll = client_fuer(konten[BL]).get("/protokoll/").content.decode()
+    assert "hat geändert" not in angemeldet(konten[P]).get("/protokoll/?ansicht=").content.decode()
+    voll = angemeldet(konten[BL]).get("/protokoll/").content.decode()
     assert "Änderungsprotokoll" in voll
     assert Protokolleintrag.objects.filter(objekt_typ="aufgabe", aktion="geaendert").count() == 2
-    nur_erledigt = client_fuer(konten[BL]).get("/protokoll/?ansicht=erledigt").content.decode()
+    nur_erledigt = angemeldet(konten[BL]).get("/protokoll/?ansicht=erledigt").content.decode()
     assert nur_erledigt.count('class="liste__zeile"') == 1
 
 
 def test_posteingang_im_kopf(konten, aufgabe):
     Benachrichtigung.objects.create(empfaenger=konten[M].person, ausloeser=konten[P].person, aufgabe=aufgabe,
                                     art="zuweisung", text="Ihnen wurde eine Aufgabe zugewiesen")
-    c = client_fuer(konten[M])
+    c = angemeldet(konten[M])
     seite = c.get("/meine-aufgaben/").content.decode()
     assert "mitteilungen__knopf" in seite and "1 ungelesen" in seite
     feld = c.get("/posteingang/feld/").content.decode()
@@ -114,7 +108,7 @@ def test_projekt_tags_ausgeblendet(konten, projekt, aufgabe):
     """Tags bleiben im Datenmodell, erscheinen aber nirgends mehr; Bearbeiten lässt sie unverändert."""
     tag = Tag.objects.create(name="Tagname-Unsichtbar")
     projekt.tags.add(tag)
-    c = client_fuer(konten[A])
+    c = angemeldet(konten[A])
     for url in ["/projekte/", f"/projekte/{projekt.pk}/", f"/projekte/{projekt.pk}/bearbeiten/", "/projekte/neu/",
                 f"/aufgaben/{aufgabe.pk}/", "/suche/?q=Lagerhalle", "/einstellungen/listen/"]:
         seite = c.get(url).content.decode()
@@ -128,7 +122,7 @@ def test_projekt_tags_ausgeblendet(konten, projekt, aufgabe):
 # --- Projektfarbe: Vorschau und Vorauswahl ---
 
 def test_farbe_als_farbpunkte_mit_namen(konten, projekt):
-    seite = client_fuer(konten[P]).get(f"/projekte/{projekt.pk}/bearbeiten/").content.decode()
+    seite = angemeldet(konten[P]).get(f"/projekte/{projekt.pk}/bearbeiten/").content.decode()
     assert 'role="radiogroup"' in seite and "<select name=\"farbe\"" not in seite
     for farbe in Projektfarbe:
         assert f'pf-{farbe.value}" title="{farbe.label}"' in seite
@@ -142,7 +136,7 @@ def test_neues_projekt_bekommt_seltenste_farbe(konten):
             Projekt.objects.create(name=f"P {farbe}", farbe=farbe)
     Projekt.objects.create(name="Archiviert", farbe=Projektfarbe.OLIV, archiviert_am=timezone.now())
     assert ProjektForm().initial["farbe"] == Projektfarbe.OLIV  # archivierte zählen nicht
-    seite = client_fuer(konten[P]).get("/projekte/neu/").content.decode()
+    seite = angemeldet(konten[P]).get("/projekte/neu/").content.decode()
     assert 'value="oliv" checked' in seite
 
 
@@ -161,7 +155,7 @@ def neue_aufgabe_formulare(seite):
 
 
 def test_aufgabe_anlegen_mit_knopf_ohne_und_mit_abschnitt(konten, projekt):
-    c = client_fuer(konten[P])
+    c = angemeldet(konten[P])
     # Ohne Abschnitte: ein Formular für Aufgaben ohne Abschnitt, mit Knopf
     seite = c.get(f"/projekte/{projekt.pk}/").content.decode()
     assert neue_aufgabe_formulare(seite) == [f"/projekte/{projekt.pk}/aufgaben/"]
@@ -182,5 +176,5 @@ def test_aufgabe_anlegen_mit_knopf_ohne_und_mit_abschnitt(konten, projekt):
 
 
 def test_ohne_bearbeitungsrecht_kein_formular(konten, projekt):
-    seite = client_fuer(konten[M]).get(f"/projekte/{projekt.pk}/").content.decode()
+    seite = angemeldet(konten[M]).get(f"/projekte/{projekt.pk}/").content.decode()
     assert "neue-aufgabe__knopf" not in seite

@@ -15,16 +15,25 @@ from projekte import dienste
 from projekte.models import Aufgabe, Status
 from zusammenarbeit.models import Benachrichtigung, Erwaehnung, Kommentar
 
-from .conftest import DI, DI2, DO, FEIERTAG, FR, MI, MI2, MO, ROLLEN, TESTPASSWORT
+from .conftest import (
+    BL,
+    DI,
+    DI2,
+    DO,
+    FEIERTAG,
+    FR,
+    MI,
+    MI2,
+    MO,
+    TESTPASSWORT,
+    A,
+    L,
+    M,
+    P,
+    angemeldet,
+)
 
 pytestmark = pytest.mark.django_db
-A, BL, P, M, L = ROLLEN
-
-
-def angemeldet(konto):
-    c = Client()
-    c.force_login(konto)
-    return c
 
 
 # --- Einladung und Anmeldung ---

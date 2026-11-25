@@ -5,7 +5,7 @@ from datetime import date
 
 import pytest
 
-from kern.models import Protokolleintrag, Rolle
+from kern.models import Protokolleintrag
 from planung.models import Einteilung
 from projekte import dienste
 from projekte.models import Abhaengigkeit, Aufgabe, Status
@@ -20,11 +20,10 @@ from projekte.wiederholung import (
 from zusammenarbeit.models import Kommentar
 from zusammenarbeit.verlauf import verlauf_eintraege
 
-from .conftest import DI, MI, MO
+from .conftest import DI, MI, MO, A, M, P
 
 pytestmark = pytest.mark.django_db
 
-A, BL, P, M, L = Rolle.ADMIN, Rolle.BEREICHSLEITUNG, Rolle.PLANER, Rolle.MITARBEITER, Rolle.LESEND
 
 
 def regel(frequenz, stichtag, **extra):

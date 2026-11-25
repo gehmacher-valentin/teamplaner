@@ -12,10 +12,9 @@ from projekte import dienste as projekte
 from zusammenarbeit.mail import offene_versenden
 from zusammenarbeit.models import Benachrichtigung, MailStatus
 
-from .conftest import MI, MO
+from .conftest import BL, MI, MO, M, P
 
 pytestmark = pytest.mark.django_db
-A, BL, P, M, L = Rolle.ADMIN, Rolle.BEREICHSLEITUNG, Rolle.PLANER, Rolle.MITARBEITER, Rolle.LESEND
 
 
 @pytest.fixture(autouse=True)

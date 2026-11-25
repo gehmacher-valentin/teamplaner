@@ -9,9 +9,7 @@ import pytest
 from kern import rechte
 from kern.models import Rolle
 
-from .conftest import ROLLEN
-
-A, BL, P, M, L = ROLLEN
+from .conftest import BL, ROLLEN, A, L, M, P
 
 # (Prüffunktion, Rollen mit Recht)
 MATRIX = [

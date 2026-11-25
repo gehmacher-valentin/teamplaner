@@ -17,7 +17,7 @@ from zusammenarbeit.mail import (
 )
 from zusammenarbeit.models import Benachrichtigung, MailStatus, Postausgang
 
-from .conftest import TESTPASSWORT
+from .conftest import TESTPASSWORT, angemeldet
 
 pytestmark = pytest.mark.django_db
 A, BL, P, M = Rolle.ADMIN, Rolle.BEREICHSLEITUNG, Rolle.PLANER, Rolle.MITARBEITER
@@ -30,12 +30,6 @@ def smtp(settings):
     settings.EMAIL_HOST = "smtp.example.test"
     settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
     settings.TEAMPLANER_ADRESSE = "https://teamplaner.example.test"
-
-
-def angemeldet(konto):
-    c = Client()
-    c.force_login(konto)
-    return c
 
 
 def versand_aus():

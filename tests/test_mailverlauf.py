@@ -10,7 +10,6 @@ import pytest
 from django.conf import settings as django_settings
 from django.core import mail
 from django.core.management import call_command
-from django.test import Client
 from django.utils import timezone
 
 from kern.models import ENTFERNT_DOMAIN, Konto, Protokolleintrag, Rolle, Systemeinstellungen
@@ -26,7 +25,7 @@ from zusammenarbeit.mail import (
 )
 from zusammenarbeit.models import Benachrichtigung, Benachrichtigungsart, MailStatus, Postausgang
 
-from .conftest import konto_anlegen
+from .conftest import angemeldet, konto_anlegen
 
 pytestmark = pytest.mark.django_db
 A, BL, P, M = Rolle.ADMIN, Rolle.BEREICHSLEITUNG, Rolle.PLANER, Rolle.MITARBEITER
@@ -48,12 +47,6 @@ def _verbindung_abgelehnt(*args, **kwargs):
 @pytest.fixture
 def smtp_kaputt(monkeypatch):
     monkeypatch.setattr("zusammenarbeit.mail._senden", _verbindung_abgelehnt)
-
-
-def angemeldet(konto):
-    c = Client()
-    c.force_login(konto)
-    return c
 
 
 def hinweis(konto, status=MailStatus.OFFEN, versuche=0, text="Sie wurden eingeteilt: Hallenboden Nord"):

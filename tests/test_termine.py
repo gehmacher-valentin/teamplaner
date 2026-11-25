@@ -4,17 +4,15 @@ nach hinten, Sammelaufgaben verschieben sich als Ganzes; Gantt-Daten mit zwei Eb
 from datetime import date
 
 import pytest
-from django.test import Client
 
 from gantt.models import GanttAnsicht
 from planung.models import Einteilung
 from projekte import dienste, termine
 from projekte.models import Abhaengigkeit, Aufgabe, Status
 
-from .conftest import DI, DI2, DO, FR, MI, MI2, MO, ROLLEN
+from .conftest import BL, DI, DI2, DO, FR, MI, MI2, MO, P, angemeldet
 
 pytestmark = pytest.mark.django_db
-A, BL, P, M, L = ROLLEN
 MO2 = date(2026, 11, 2)
 DI3 = date(2026, 11, 3)
 
@@ -28,12 +26,6 @@ def neu(projekt, titel, beginn=None, ende=None, eltern=None, erledigt=False):
 def frisch(*aufgaben):
     for a in aufgaben:
         a.refresh_from_db()
-
-
-def client_fuer(konto):
-    c = Client()
-    c.force_login(konto)
-    return c
 
 
 # --- Hauptaufgaben umfassen ihre Unteraufgaben ---
@@ -63,11 +55,11 @@ def test_termine_der_sammelaufgabe_nicht_von_hand(konten, projekt):
     frisch(haupt)
     for ansicht in ("", "detail"):
         for feld in ("faellig_am", "beginn_am"):
-            antwort = client_fuer(konten[P]).post(f"/aufgaben/{haupt.pk}/feld/", {
+            antwort = angemeldet(konten[P]).post(f"/aufgaben/{haupt.pk}/feld/", {
                 "feld": feld, "wert": "2026-12-01", "version": haupt.version, "ansicht": ansicht})
             assert antwort.status_code == 400
     # Auf der Detailseite nur als Anzeige, ohne Datumsfeld
-    seite = client_fuer(konten[P]).get(f"/aufgaben/{haupt.pk}/").content.decode()
+    seite = angemeldet(konten[P]).get(f"/aufgaben/{haupt.pk}/").content.decode()
     assert 'id="eingabe-faellig_am"' not in seite and 'id="eingabe-beginn_am"' not in seite
 
 
@@ -122,7 +114,7 @@ def test_neue_abhaengigkeit_schiebt_sofort(konten, projekt):
     ansicht = GanttAnsicht.objects.create(name="Gesamt")
     ansicht.projekte.add(projekt)
     a, b = neu(projekt, "A", MO, DO), neu(projekt, "B", MI, FR)
-    antwort = client_fuer(konten[BL]).post(f"/api/gantt/{ansicht.pk}/abhaengigkeiten", {"vorher": a.pk, "nachher": b.pk},
+    antwort = angemeldet(konten[BL]).post(f"/api/gantt/{ansicht.pk}/abhaengigkeiten", {"vorher": a.pk, "nachher": b.pk},
                                            content_type="application/json")
     assert antwort.status_code == 201
     frisch(b)
@@ -135,7 +127,7 @@ def test_keine_abhaengigkeit_zwischen_haupt_und_unteraufgabe(konten, projekt):
     haupt = neu(projekt, "Halle")
     kind = neu(projekt, "Boden", eltern=haupt)
     enkel = neu(projekt, "Platten", eltern=kind)
-    c = client_fuer(konten[BL])
+    c = angemeldet(konten[BL])
     for vorher, nachher in [(haupt, enkel), (enkel, haupt)]:
         antwort = c.post(f"/api/gantt/{ansicht.pk}/abhaengigkeiten", {"vorher": vorher.pk, "nachher": nachher.pk},
                          content_type="application/json")
@@ -154,7 +146,7 @@ def test_sammelaufgabe_im_gantt_verschieben(konten, projekt):
     tiefer = dienste.aufgabe_anlegen(konten[P], projekt, None, "Platten", eltern=eins, beginn_am=MO, faellig_am=DI)
     frisch(haupt)
     assert (haupt.beginn_am, haupt.faellig_am) == (MO, DO)
-    antwort = client_fuer(konten[BL]).patch(f"/api/gantt/{ansicht.pk}/aufgaben/{haupt.pk}",
+    antwort = angemeldet(konten[BL]).patch(f"/api/gantt/{ansicht.pk}/aufgaben/{haupt.pk}",
                                             {"beginn": DI.isoformat(), "ende": FR.isoformat(), "version": haupt.version},
                                             content_type="application/json")
     assert antwort.status_code == 200
@@ -174,7 +166,7 @@ def test_gantt_zeigt_zwei_ebenen_und_ueberzug(konten, projekt, person_a):
     eins = dienste.aufgabe_anlegen(konten[P], projekt, None, "Boden", eltern=haupt, beginn_am=MI, faellig_am=FR)
     tiefer = dienste.aufgabe_anlegen(konten[P], projekt, None, "Platten", eltern=eins, beginn_am=MI, faellig_am=FR)
     Einteilung.objects.create(aufgabe=tiefer, person=person_a, von=DO, bis=FR)
-    daten = client_fuer(konten[BL]).get(f"/api/gantt/{ansicht.pk}").json()
+    daten = angemeldet(konten[BL]).get(f"/api/gantt/{ansicht.pk}").json()
     assert set(daten["aufgaben"]) == {str(haupt.pk), str(eins.pk)}  # dritte Ebene nicht im Gantt
     assert daten["aufgaben"][str(haupt.pk)]["kinder"] == [eins.pk]
     assert daten["aufgaben"][str(haupt.pk)]["sammel"] is True
@@ -193,7 +185,7 @@ def test_abhaengigkeit_tieferer_ebene_zeigt_auf_erste_ebene(konten, projekt):
     tiefer = neu(projekt, "Platten", MO, DI, eltern=eins)
     andere = neu(projekt, "Dichtheit", MI, DO)
     Abhaengigkeit.objects.create(vorher=tiefer, nachher=andere)
-    daten = client_fuer(konten[BL]).get(f"/api/gantt/{ansicht.pk}").json()
+    daten = angemeldet(konten[BL]).get(f"/api/gantt/{ansicht.pk}").json()
     assert [(d["vorher"], d["nachher"]) for d in daten["abhaengigkeiten"]] == [(eins.pk, andere.pk)]
 
 
@@ -212,7 +204,7 @@ def test_verletzung_nach_tatsaechlichen_einteilungen(konten, projekt, person_a):
 def gantt_fuer(konten, *projekte):
     ansicht = GanttAnsicht.objects.create(name="Gesamt")
     ansicht.projekte.add(*projekte)
-    return client_fuer(konten[BL]).get(f"/api/gantt/{ansicht.pk}").json()
+    return angemeldet(konten[BL]).get(f"/api/gantt/{ansicht.pk}").json()
 
 
 def test_verletzung_nur_nach_plan(konten, projekt):

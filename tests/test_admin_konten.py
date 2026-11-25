@@ -18,7 +18,7 @@ from verwaltung import konten as kontenlogik
 from verwaltung.aufraeumen import aufraeumen
 from zusammenarbeit.models import Postausgang
 
-from .conftest import TESTPASSWORT, konto_anlegen
+from .conftest import TESTPASSWORT, angemeldet, konto_anlegen
 
 A, BL, P, M = Rolle.ADMIN, Rolle.BEREICHSLEITUNG, Rolle.PLANER, Rolle.MITARBEITER
 
@@ -31,12 +31,6 @@ def zweiter(konten, bereich_a):
     neu = konto_anlegen("Person 91", bereich_a, A)
     Konto.objects.filter(pk__in=[neu.pk, konten[A].pk]).update(last_login=timezone.now())
     return frisch(neu)
-
-
-def angemeldet(konto):
-    c = Client()
-    c.force_login(konto)
-    return c
 
 
 def seite(ziel):

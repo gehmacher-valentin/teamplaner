@@ -2,7 +2,7 @@
 // Warnzeichen in der Namensspalte und der Pfeil bleibt grau; behoben wird im Teamplaner. Geplante
 // Termine ändert man durch Ziehen, Nachfolger rücken nach. Abhängigkeiten anlegen und entfernen.
 import type { Page } from "@playwright/test";
-import { expect, mitte, test, ziehen } from "./hilfen";
+import { expect, mitte, ruhe, test, ziehen } from "./hilfen";
 
 type Daten = {
   aufgaben: Record<string, { id: number; titel: string; beginn: string | null; ende: string | null }>;
@@ -131,6 +131,8 @@ test("Gantt: zwei schnelle Änderungen zeigen den jüngsten Stand", async ({ sei
   await oeffnen(seite);
   // Die Antwort auf das erste Neuladen kommt erst nach der auf das zweite an
   let nr = 0;
+  let ersteZugestellt!: () => void;
+  const ersteDa = new Promise<void>((fertig) => (ersteZugestellt = fertig));
   await seite.route(/\/api\/gantt\/\d+$/, async (route) => {
     if (route.request().method() !== "GET") return route.continue();
     const meine = ++nr;
@@ -138,6 +140,7 @@ test("Gantt: zwei schnelle Änderungen zeigen den jüngsten Stand", async ({ sei
     if (!antwort) return route.abort().catch(() => {});
     if (meine === 1) await new Promise((fertig) => setTimeout(fertig, 1500));
     await route.fulfill({ response: antwort }).catch(() => {}); // die überholte Anfrage ist bereits abgebrochen
+    if (meine === 1) ersteZugestellt();
   });
   const eins = zeile(seite, "Regal Lager").locator(".gt-balken");
   const zwei = zeile(seite, "Geländer Galerie").locator(".gt-balken");
@@ -147,7 +150,8 @@ test("Gantt: zwei schnelle Änderungen zeigen den jüngsten Stand", async ({ sei
   await ziehen(seite, ort, { x: ort.x + 12 * 7, y: ort.y });
   ort = await mitte(zwei);
   await ziehen(seite, ort, { x: ort.x + 12 * 7, y: ort.y });
-  await seite.waitForTimeout(2500); // länger als die verzögerte erste Antwort
+  await ersteDa; // erst wenn die verzögerte erste Antwort angekommen (oder verworfen) ist
+  await ruhe(seite);
   await expect(eins).not.toHaveAttribute("title", titelEins!);
   await expect(zwei, "die zweite Änderung bleibt sichtbar").not.toHaveAttribute("title", titelZwei!);
   const stand = await serverdaten(seite);

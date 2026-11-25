@@ -4,14 +4,13 @@ from contextlib import nullcontext
 
 import pytest
 
-from kern.models import Protokolleintrag, Rolle
+from kern.models import Protokolleintrag
 from planung.models import Recht, TagesInfo
 
-from .conftest import DI, MO, SA, anzahl_gleich, freigeben
+from .conftest import BL, DI, MO, SA, A, L, M, P, anzahl_gleich, freigeben
 
 pytestmark = pytest.mark.django_db
 
-A, BL, P, M, L = Rolle.ADMIN, Rolle.BEREICHSLEITUNG, Rolle.PLANER, Rolle.MITARBEITER, Rolle.LESEND
 
 
 def setzen(client, datum, text):

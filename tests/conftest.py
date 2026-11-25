@@ -33,6 +33,16 @@ DI2 = date(2026, 10, 27)
 MI2 = date(2026, 10, 28)
 
 ROLLEN = [Rolle.ADMIN, Rolle.BEREICHSLEITUNG, Rolle.PLANER, Rolle.MITARBEITER, Rolle.LESEND]
+A, BL, P, M, L = ROLLEN
+
+
+def angemeldet(konto):
+    """Django-Client, angemeldet als ``konto`` (ohne Konto: nicht angemeldet). Für die API mit JSON gibt
+    es die Fixture ``client_fuer`` (APIClient)."""
+    client = Client()
+    if konto is not None:
+        client.force_login(konto)
+    return client
 
 
 def konto_anlegen(name, bereich, rolle):
@@ -43,7 +53,7 @@ def konto_anlegen(name, bereich, rolle):
 @pytest.fixture(autouse=True)
 def ohne_zwei_faktor_pflicht(settings):
     """Die meisten Tests melden Admin/Bereichsleitung per force_login an; die Pflicht zum zweiten
-    Faktor prüft tests/test_zwei_faktor.py gezielt."""
+    Faktor prüft tests/test_sicherheit.py gezielt."""
     settings.TEAMPLANER_ZWEI_FAKTOR_PFLICHT = False
 
 

@@ -4,15 +4,14 @@ import re
 
 import pytest
 
-from kern.models import Person, Rolle
+from kern.models import Person
 from planung import rechte
 from planung.models import Recht, TeamplanerAnsicht
 
-from .conftest import freigeben
+from .conftest import BL, A, L, M, P, freigeben
 
 pytestmark = pytest.mark.django_db
 
-A, BL, P, M, L = Rolle.ADMIN, Rolle.BEREICHSLEITUNG, Rolle.PLANER, Rolle.MITARBEITER, Rolle.LESEND
 
 
 @pytest.mark.parametrize("rolle", [A, BL])

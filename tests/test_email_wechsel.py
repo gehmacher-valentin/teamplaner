@@ -10,7 +10,7 @@ from django.test import Client
 from django.utils import timezone
 
 from kern import zwei_faktor
-from kern.models import EmailWechsel, Konto, Protokolleintrag, Rolle
+from kern.models import EmailWechsel, Konto, Protokolleintrag
 from verwaltung import konten as kontenlogik
 from verwaltung.aufraeumen import aufraeumen
 from verwaltung.templatetags.verwaltung import protokoll_text
@@ -18,10 +18,9 @@ from zusammenarbeit.mail import MAX_VERSUCHE, offene_versenden
 from zusammenarbeit.mailverlauf import verlauf
 from zusammenarbeit.models import MailStatus, Postausgang
 
-from .conftest import TESTPASSWORT, konto_anlegen
+from .conftest import BL, TESTPASSWORT, A, L, M, P, angemeldet, konto_anlegen
 
 pytestmark = pytest.mark.django_db
-A, BL, P, M, L = Rolle.ADMIN, Rolle.BEREICHSLEITUNG, Rolle.PLANER, Rolle.MITARBEITER, Rolle.LESEND
 NEU = "neu@example.test"
 
 
@@ -35,12 +34,6 @@ def smtp(settings):
 @pytest.fixture
 def ohne_smtp(settings):
     settings.EMAIL_HOST = ""
-
-
-def angemeldet(konto):
-    c = Client()
-    c.force_login(konto)
-    return c
 
 
 def frisch(konto):

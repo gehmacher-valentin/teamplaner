@@ -18,14 +18,24 @@ from django.utils import timezone
 from kern import zwei_faktor
 from kern.hilfen import PasswortLinks, passwort_link, passwort_links
 from kern.middleware import LETZTE_AKTIVITAET
-from kern.models import Rolle
 from zusammenarbeit.mail import offene_versenden
 from zusammenarbeit.models import Postausgang
 
-from .conftest import TESTPASSWORT, SseLeser, konto_anlegen, mit_eigener_verbindung, stream_anfrage
+from .conftest import (
+    BL,
+    TESTPASSWORT,
+    A,
+    L,
+    M,
+    P,
+    SseLeser,
+    angemeldet,
+    konto_anlegen,
+    mit_eigener_verbindung,
+    stream_anfrage,
+)
 
 pytestmark = pytest.mark.django_db
-A, BL, P, M, L = Rolle.ADMIN, Rolle.BEREICHSLEITUNG, Rolle.PLANER, Rolle.MITARBEITER, Rolle.LESEND
 
 
 @pytest.fixture
@@ -38,12 +48,6 @@ def smtp(settings):
 @pytest.fixture
 def pflicht(settings):
     settings.TEAMPLANER_ZWEI_FAKTOR_PFLICHT = True
-
-
-def angemeldet(konto):
-    c = Client()
-    c.force_login(konto)
-    return c
 
 
 def anmelden(email, passwort=TESTPASSWORT):

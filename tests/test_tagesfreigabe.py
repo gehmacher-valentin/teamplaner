@@ -5,14 +5,13 @@ from contextlib import nullcontext
 
 import pytest
 
-from kern.models import Protokolleintrag, Rolle, Systemeinstellungen
+from kern.models import Protokolleintrag, Systemeinstellungen
 from planung.models import FreigabeStufe, Tagesfreigabe
 
-from .conftest import DI, MO, SA, anzahl_gleich, nichts_geaendert
+from .conftest import BL, DI, MO, SA, A, L, M, P, anzahl_gleich, nichts_geaendert
 
 pytestmark = pytest.mark.django_db
 
-A, BL, P, M, L = Rolle.ADMIN, Rolle.BEREICHSLEITUNG, Rolle.PLANER, Rolle.MITARBEITER, Rolle.LESEND
 URL = "/einstellungen/allgemein/"
 
 

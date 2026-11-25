@@ -8,6 +8,8 @@ from kern import zwei_faktor
 from kern.models import Protokolleintrag, Rolle, Systemeinstellungen
 from zusammenarbeit.mail import _fusszeile
 
+from .conftest import angemeldet
+
 pytestmark = pytest.mark.django_db
 A, BL = Rolle.ADMIN, Rolle.BEREICHSLEITUNG
 URL = "/einstellungen/allgemein/"
@@ -15,12 +17,6 @@ URL = "/einstellungen/allgemein/"
 
 def setzen(name):
     Systemeinstellungen.objects.update_or_create(pk=1, defaults={"organisation": name})
-
-
-def angemeldet(konto):
-    c = Client()
-    c.force_login(konto)
-    return c
 
 
 def test_nur_admin_darf_den_namen_aendern(konten):

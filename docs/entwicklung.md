@@ -86,11 +86,17 @@ Zielserver: Ubuntu 24.04 LTS mit Python 3.12 und PostgreSQL 16.
 
 Für Rechteprüfung und Einteilungslogik sind automatische Tests Pflicht.
 
+Rechte-Tests für Schreibzugriffe prüfen Status **und** Datenbankstand: ein 403 beweist nicht, dass nichts
+geschrieben wurde, ein 2xx nicht, dass gespeichert wurde. Dafür gibt es in `tests/conftest.py`
+`nichts_geaendert(objekt, Modell, ...)` (bzw. `unveraendert` und `anzahl_gleich`). Ebenfalls dort: die
+Rollenkürzel `A, BL, P, M, L`, `angemeldet(konto)` (Django-Client) und die Fixture `client_fuer` (APIClient).
+
 | Datei | Inhalt |
 | --- | --- |
 | `tests/test_rechte.py` | Rechtematrix je Rolle |
 | `tests/test_planung_rechte.py` | Teamplaner-Ansichten und Freigaben |
 | `tests/test_seiten_rechte.py` | serverseitige Abweisung je Rolle und Seite |
+| `tests/test_routen.py` | jede Route ohne Anmeldung abgewiesen (läuft über alle URLs, kurze Ausnahmeliste mit Begründung) |
 | `tests/test_kalender.py` | Feiertage, zählende Tage, Doppelbelegung |
 | `tests/test_planung_api.py` | Einteilen, Verschieben, Konflikte, Feiertagsbestätigung, Protokoll |
 | `tests/test_ablaeufe.py` | Einladung, Sperre, Erwähnungen, Konfliktschutz, Platzhalter (Weiterleitung der Benachrichtigungen), Meine Aufgaben mit betreuten Platzhaltern, Suche |
@@ -99,14 +105,14 @@ Für Rechteprüfung und Einteilungslogik sind automatische Tests Pflicht.
 | `tests/test_mail.py` | E-Mail-Einstellungen, Versand, Einladung, Passwort vergessen |
 | `tests/test_feiern.py`, `tests/test_foto.py` | Feieranimation, Profilfoto |
 | `tests/test_tagesfreigabe.py` | Zeile „Tagesfreigabe“: eigenes Recht (Haken am Konto, nur Admin vergibt ihn, nur mit Teamplaner-Zugang), Protokoll, Stufen, Name, Ein- und Ausschalten |
-| `tests/test_notizen.py`, `tests/test_bestellungen.py` | Notizen (Sichtbarkeit, Ordnerrechte, Markdown, Längengrenze und Frist der Umwandlung) und Bestellungen (Prio, Liefertermin und Warnung, „bestellt“ ausfüllen, Lieferanten-Vorschläge) |
+| `tests/test_notizen.py`, `tests/test_bestellungen.py` | Notizen (Sichtbarkeit, Ordnerrechte als Funktion und über HTTP, Schreibzugriffe auf Fremdes, Markdown, Längengrenze und Frist der Umwandlung) und Bestellungen (Prio, Liefertermin und Warnung, „bestellt“ ausfüllen, Lieferanten-Vorschläge) |
 | `tests/test_heic.py` | HEIC-Fotos werden zu JPEG (Anhänge, Notiz-Anhänge, Profilfoto), Testbild in `tests/daten/` |
 | `tests/test_pdf_vorschau.py` | Vorschau der ersten Seite bei PDF-Anhängen: eine und mehrere Seiten, beschädigt, verschlüsselt, Zeit-, Speicher- und Rechenzeitgrenze, Rechte und Kopfzeilen der Vorschau-Adresse, Löschen mit Anhang, Aufgabe, Notiz, Ordner und beim Aufräumen, Nachtragen mit `pdf_vorschauen` |
 | `tests/test_projektliste.py` | Projektpriorität, Navigation, Mitgliederauswahl, Aufgabe anlegen per Knopf, Protokoll „erledigt“, Posteingang im Kopf, Gesamtansicht |
 | `tests/test_version.py` | Versionsanzeige auf der Seite „Über“ |
 | `tests/test_schichten.py` | Abhängigkeitsrichtung der Apps, keine Importe aus fremden `views.py` |
 | `tests/test_direkt_bearbeiten.py` | Aufgabendetail direkt bearbeiten, Konflikte, Toasts, Gantt-Einstellung am Konto |
-| `tests/test_sicherheit.py` | Zwei-Faktor-Anmeldung, Sitzungen, Konten übernehmen, Passwort-Links und Postausgang, Live-Verbindung, ungültige Eingaben (400 statt 500, NUL-Zeichen) |
+| `tests/test_sicherheit.py` | Zwei-Faktor-Anmeldung und Notfallbefehl `zwei_faktor_zuruecksetzen`, Sitzungen, Konten übernehmen, Passwort-Links und Postausgang, Live-Verbindung (Ende des Streams bei ungültiger Sitzung, Filtern fremder Personen), ungültige Eingaben (400 statt 500, NUL-Zeichen) |
 | `tests/test_admin_konten.py` | Admins herabstufen und deaktivieren, letzter Admin, Schutzfrist, Link per E-Mail, Adresse korrigieren, bereinigte Admins, Deaktivieren beendet Sitzungen, `konto_aendern` |
 | `tests/test_email_wechsel.py` | Eigene E-Mail-Adresse: Passwort und Sperre, Bestätigungslink, Abbrechen, ohne E-Mail-Versand doppelte Eingabe |
 | `tests/test_mailverlauf.py` | Protokollzeilen je E-Mail, Ausgabe des Versanddienstes, `mail_protokoll`, Einladung bei `konto_anlegen`, Seite „E-Mail-Versand“ |
@@ -118,6 +124,10 @@ Für Rechteprüfung und Einteilungslogik sind automatische Tests Pflicht.
 | `tests/test_wiederholung.py` | Wiederkehrende Aufgaben: Regel (Monatsende, Intervalle, vierteljährlich und halbjährlich, Wochentage, Enddatum), Folgeaufgabe auf allen Wegen des Abhakens, kein Doppelanlegen, Unteraufgaben, nicht übernommene Daten, Eingabe im Detail |
 | `tests/test_raeume.py` | Räume: Liste in den Einstellungen (anlegen, umbenennen, sortieren, löschen auch wenn verwendet), Auswahl im Aufgabendetail (Rechte, Verlauf, nicht in der Zeile), Übernahme in die Folgeaufgabe, Filter „Raum“ in der Projektliste allein und kombiniert |
 | `tests/test_vorlagen.py` | Vorlagen ohne mehrzeilige `{# #}`-Kommentare (erscheinen sonst als Text) |
+| `tests/test_notizen_gemeinsam.py` | Notizen gemeinsam bearbeiten: Yjs-Änderungen speichern, nachholen und zusammenfassen, Anwesenheit, Stream (nur diese Notiz, endet ohne Freigabe), Rechte wie beim Bearbeiten |
+| `tests/test_editor_formatierung.py` | Formatierung aus dem Editor: Überschriften, Schriftfarbe und Marker, Bereinigung der Beschreibungen (HTML) und Anzeige der Notizen (Markdown) |
+| `tests/test_faelligkeit.py` | Fälligkeiten als „Gestern“, „Heute“, „Morgen“, überschrittene Termine rot, in Anzeige und Datumsfeldern |
+| `tests/test_mail_sammeln.py` | Benachrichtigungen innerhalb einer Minute als eine E-Mail, HTML-Teil der E-Mails |
 | `frontend/src/teamplaner/*.test.ts` | Rasterlogik und Übersetzung im Browser |
 | `frontend/src/editor/*.test.ts`, `frontend/src/lib/*.test.ts` | Markdown beim Einfügen, Editor-Rundlauf, Zitat, Spaltenbreiten, Personenauswahl, Vorschläge, Restzeit der Admin-Sitzung, nur die jüngste Ladeanfrage zählt (`neueste.ts`), Stand vom Server nach dem Neuladen (`sofort.ts`), Zähler nach dem Abhaken (`offenzaehler.ts`), Schatten und Scrollposition der Projektliste in der Navigation (`seitennav.ts`) |
 | `frontend/src/gantt/logik.test.ts` | Zeitachse, Zeilen, Pfeile (rot nur bei verletzten geplanten Terminen), Warnzeichen je Zeile |

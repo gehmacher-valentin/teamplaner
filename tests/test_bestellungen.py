@@ -2,35 +2,28 @@
 Sortierung offen oben, erhalten unten."""
 
 import pytest
-from django.test import Client
 
 from bestellungen.models import Bestellung
-from kern.models import Rolle
+
+from .conftest import BL, A, L, M, P, angemeldet
 
 pytestmark = pytest.mark.django_db
 
-A, BL, P, M, L = Rolle.ADMIN, Rolle.BEREICHSLEITUNG, Rolle.PLANER, Rolle.MITARBEITER, Rolle.LESEND
-
-
-def client_fuer(konto):
-    c = Client()
-    c.force_login(konto)
-    return c
 
 
 def test_ab_mitarbeiter_eintragen_und_aendern_lesend_nur_lesen(konten):
     from kern.models import Protokolleintrag
 
     for i, rolle in enumerate([A, BL, P, M, L]):
-        antwort = client_fuer(konten[rolle]).post("/bestellungen/neu/", {
+        antwort = angemeldet(konten[rolle]).post("/bestellungen/neu/", {
             "neu-bedarf": f"Bedarf {i}", "neu-aufnahmedatum": "2026-10-23", "neu-projekt": "Neubau Lagerhalle",
             "neu-lieferant": "", "neu-status": "offen",
         })
         assert antwort.status_code == (403 if rolle == L else 302)
     b = Bestellung.objects.get(bedarf="Bedarf 0")
-    assert client_fuer(konten[L]).post(f"/bestellungen/{b.pk}/", {"status": "bestellt"}).status_code == 403
-    assert client_fuer(konten[L]).get("/bestellungen/").status_code == 200
-    antwort = client_fuer(konten[M]).post(f"/bestellungen/{b.pk}/", {"status": "bestellt", "bestellt_am": "2026-10-24"},
+    assert angemeldet(konten[L]).post(f"/bestellungen/{b.pk}/", {"status": "bestellt"}).status_code == 403
+    assert angemeldet(konten[L]).get("/bestellungen/").status_code == 200
+    antwort = angemeldet(konten[M]).post(f"/bestellungen/{b.pk}/", {"status": "bestellt", "bestellt_am": "2026-10-24"},
                                           HTTP_HX_REQUEST="true")
     assert antwort.status_code == 200
     b.refresh_from_db()
@@ -42,7 +35,7 @@ def test_ab_mitarbeiter_eintragen_und_aendern_lesend_nur_lesen(konten):
 def test_sortierung_offen_oben_erhalten_unten(konten):
     for bedarf, status in [("Fertig", "erhalten"), ("Bestellt", "bestellt"), ("Neu", "offen"), ("Problem", "achtung")]:
         Bestellung.objects.create(bedarf=bedarf, status=status)
-    seite = client_fuer(konten[M]).get("/bestellungen/").content.decode()
+    seite = angemeldet(konten[M]).get("/bestellungen/").content.decode()
     positionen = [seite.index(f">{b}</textarea>") for b in ("Neu", "Problem", "Bestellt", "Fertig")]
     assert positionen == sorted(positionen)
 
@@ -51,23 +44,23 @@ def test_status_und_spalte_in_der_liste(konten):
     """Status „erhalten“ und Spalte „Eingetragen“ in der Oberfläche."""
     Bestellung.objects.create(bedarf="Neu", status="offen")
     Bestellung.objects.create(bedarf="Fertig", status="erhalten")
-    seite = client_fuer(konten[M]).get("/bestellungen/").content.decode()
+    seite = angemeldet(konten[M]).get("/bestellungen/").content.decode()
     assert '<option value="erhalten" selected>erhalten</option>' in seite
     assert ">Erhalten</div>" in seite and "<div>Eingetragen</div>" in seite
 
 
 def test_loeschen_nur_eigene_oder_ab_planer(konten):
     b = Bestellung.objects.create(bedarf="Kleber", erstellt_von=konten[M].person)
-    assert client_fuer(konten[L]).post(f"/bestellungen/{b.pk}/loeschen/").status_code == 403
-    assert client_fuer(konten[M]).post(f"/bestellungen/{b.pk}/loeschen/").status_code == 302
+    assert angemeldet(konten[L]).post(f"/bestellungen/{b.pk}/loeschen/").status_code == 403
+    assert angemeldet(konten[M]).post(f"/bestellungen/{b.pk}/loeschen/").status_code == 302
     b = Bestellung.objects.create(bedarf="Schrauben", erstellt_von=konten[M].person)
-    assert client_fuer(konten[P]).post(f"/bestellungen/{b.pk}/loeschen/").status_code == 302
+    assert angemeldet(konten[P]).post(f"/bestellungen/{b.pk}/loeschen/").status_code == 302
     assert not Bestellung.objects.exists()
 
 
 def test_ungueltiger_status_wird_nicht_gespeichert(konten):
     b = Bestellung.objects.create(bedarf="Kleber")
-    antwort = client_fuer(konten[M]).post(f"/bestellungen/{b.pk}/", {"status": "weg"}, HTTP_HX_REQUEST="true")
+    antwort = angemeldet(konten[M]).post(f"/bestellungen/{b.pk}/", {"status": "weg"}, HTTP_HX_REQUEST="true")
     assert antwort["X-Fehler"] == "1"
     b.refresh_from_db()
     assert b.status == "offen"
@@ -80,7 +73,7 @@ def test_prio_setzen_entfernen_protokoll_und_keine_sortierung(konten):
 
     alt = Bestellung.objects.create(bedarf="Alt", aufnahmedatum="2026-10-01")
     neu = Bestellung.objects.create(bedarf="Neu", aufnahmedatum="2026-10-20")
-    c = client_fuer(konten[M])
+    c = angemeldet(konten[M])
     # Die Zeile schickt immer ein verstecktes „false“ und – wenn angehakt – danach „true“
     c.post(f"/bestellungen/{alt.pk}/", {"prio": ["false", "true"], "bedarf": "Alt"}, HTTP_HX_REQUEST="true")
     alt.refresh_from_db()
@@ -101,14 +94,14 @@ def test_prio_setzen_entfernen_protokoll_und_keine_sortierung(konten):
 
 
 def test_prio_in_neuer_zeile_und_lesend_darf_nicht(konten):
-    c = client_fuer(konten[M])
+    c = angemeldet(konten[M])
     c.post("/bestellungen/neu/", {"neu-prio": "true", "neu-bedarf": "Dringend", "neu-aufnahmedatum": "2026-11-03",
                                   "neu-status": "offen"})
     c.post("/bestellungen/neu/", {"neu-bedarf": "Normal", "neu-aufnahmedatum": "2026-11-03", "neu-status": "offen"})
     assert Bestellung.objects.get(bedarf="Dringend").prio is True
     assert Bestellung.objects.get(bedarf="Normal").prio is False
     b = Bestellung.objects.get(bedarf="Normal")
-    assert client_fuer(konten[L]).post(f"/bestellungen/{b.pk}/", {"prio": ["false", "true"]}).status_code == 403
+    assert angemeldet(konten[L]).post(f"/bestellungen/{b.pk}/", {"prio": ["false", "true"]}).status_code == 403
     b.refresh_from_db()
     assert b.prio is False
 
@@ -121,7 +114,7 @@ def test_status_bestellt_fuellt_leere_felder(konten):
     from kern.models import Protokolleintrag
 
     b = Bestellung.objects.create(bedarf="Kleber")
-    c = client_fuer(konten[M])
+    c = angemeldet(konten[M])
     # Die Zeile schickt alle Felder mit, auch die leeren
     c.post(f"/bestellungen/{b.pk}/", {"status": "bestellt", "bestellt_am": "", "bestellt_von": ""},
            HTTP_HX_REQUEST="true")
@@ -133,23 +126,23 @@ def test_status_bestellt_fuellt_leere_felder(konten):
 
 def test_status_bestellt_ueberschreibt_nichts_und_nur_beim_wechsel(konten):
     b = Bestellung.objects.create(bedarf="Schrauben", bestellt_am="2026-10-01", bestellt_von=konten[P].person)
-    client_fuer(konten[M]).post(f"/bestellungen/{b.pk}/", {"status": "bestellt"}, HTTP_HX_REQUEST="true")
+    angemeldet(konten[M]).post(f"/bestellungen/{b.pk}/", {"status": "bestellt"}, HTTP_HX_REQUEST="true")
     b.refresh_from_db()
     assert b.bestellt_am.isoformat() == "2026-10-01" and b.bestellt_von == konten[P].person
 
     # Andere Änderungen (auch „Bestellt am“ von Hand) füllen nichts und ändern den Status nicht
     b = Bestellung.objects.create(bedarf="Dübel")
-    client_fuer(konten[M]).post(f"/bestellungen/{b.pk}/", {"bestellt_am": "2026-10-02"}, HTTP_HX_REQUEST="true")
+    angemeldet(konten[M]).post(f"/bestellungen/{b.pk}/", {"bestellt_am": "2026-10-02"}, HTTP_HX_REQUEST="true")
     b.refresh_from_db()
     assert b.status == "offen" and b.bestellt_von is None
     # Status bleibt „bestellt“, Person wird später geleert → kein erneutes Füllen
     b = Bestellung.objects.create(bedarf="Nägel", status="bestellt")
-    client_fuer(konten[M]).post(f"/bestellungen/{b.pk}/", {"projekt": "X"}, HTTP_HX_REQUEST="true")
+    angemeldet(konten[M]).post(f"/bestellungen/{b.pk}/", {"projekt": "X"}, HTTP_HX_REQUEST="true")
     b.refresh_from_db()
     assert b.bestellt_von is None and b.bestellt_am is None
     # Zurück auf „offen“ lässt Datum und Person stehen
     b = Bestellung.objects.create(bedarf="Leim", status="bestellt", bestellt_am="2026-10-03", bestellt_von=konten[M].person)
-    client_fuer(konten[M]).post(f"/bestellungen/{b.pk}/", {"status": "offen"}, HTTP_HX_REQUEST="true")
+    angemeldet(konten[M]).post(f"/bestellungen/{b.pk}/", {"status": "offen"}, HTTP_HX_REQUEST="true")
     b.refresh_from_db()
     assert b.bestellt_am.isoformat() == "2026-10-03" and b.bestellt_von == konten[M].person
 
@@ -157,7 +150,7 @@ def test_status_bestellt_ueberschreibt_nichts_und_nur_beim_wechsel(konten):
 def test_neue_zeile_gleich_bestellt_und_systemkonto_nicht_eingetragen(konten):
     from django.utils import timezone
 
-    client_fuer(konten[M]).post("/bestellungen/neu/", {"neu-bedarf": "Sofort", "neu-aufnahmedatum": "2026-11-03",
+    angemeldet(konten[M]).post("/bestellungen/neu/", {"neu-bedarf": "Sofort", "neu-aufnahmedatum": "2026-11-03",
                                                      "neu-status": "bestellt"})
     b = Bestellung.objects.get(bedarf="Sofort")
     assert b.bestellt_von == konten[M].person and b.bestellt_am == timezone.localdate()
@@ -166,14 +159,14 @@ def test_neue_zeile_gleich_bestellt_und_systemkonto_nicht_eingetragen(konten):
     system.systemkonto = True
     system.save()
     b = Bestellung.objects.create(bedarf="Toner")
-    client_fuer(system).post(f"/bestellungen/{b.pk}/", {"status": "bestellt"}, HTTP_HX_REQUEST="true")
+    angemeldet(system).post(f"/bestellungen/{b.pk}/", {"status": "bestellt"}, HTTP_HX_REQUEST="true")
     b.refresh_from_db()
     assert b.bestellt_von is None and b.bestellt_am == timezone.localdate()
 
 
 def test_lesend_kann_nicht_bestellt_setzen(konten):
     b = Bestellung.objects.create(bedarf="Kabel")
-    assert client_fuer(konten[L]).post(f"/bestellungen/{b.pk}/", {"status": "bestellt"}).status_code == 403
+    assert angemeldet(konten[L]).post(f"/bestellungen/{b.pk}/", {"status": "bestellt"}).status_code == 403
     b.refresh_from_db()
     assert b.status == "offen" and b.bestellt_von is None
 
@@ -187,7 +180,7 @@ def test_liefertermin_setzen_leeren_und_markierung(konten):
 
     gestern = date.today() - timedelta(days=1)
     b = Bestellung.objects.create(bedarf="Motor")
-    c = client_fuer(konten[M])
+    c = angemeldet(konten[M])
     c.post(f"/bestellungen/{b.pk}/", {"liefertermin": gestern.isoformat()}, HTTP_HX_REQUEST="true")
     b.refresh_from_db()
     assert b.liefertermin == gestern
@@ -205,7 +198,7 @@ def test_liefertermin_setzen_leeren_und_markierung(konten):
     c.post(f"/bestellungen/{b.pk}/", {"liefertermin": ""}, HTTP_HX_REQUEST="true")
     b.refresh_from_db()
     assert b.liefertermin is None
-    assert client_fuer(konten[L]).post(f"/bestellungen/{b.pk}/", {"liefertermin": "2026-01-01"}).status_code == 403
+    assert angemeldet(konten[L]).post(f"/bestellungen/{b.pk}/", {"liefertermin": "2026-01-01"}).status_code == 403
 
 
 def test_warnung_einmal_an_besteller_und_nach_verschieben_erneut(konten, settings):
@@ -255,7 +248,7 @@ def test_warnung_ohne_besteller_an_eingetragen_von_ohne_mail(konten):
     assert w.empfaenger == konten[M].person and w.mail_status == MailStatus.KEINE  # E-Mail Standard aus
     assert not Bestellung.objects.filter(warnung_fuer_termin__isnull=True).exists()
     # Öffnen führt zur Bestellliste
-    antwort = client_fuer(konten[M]).get(f"/posteingang/{w.pk}/")
+    antwort = angemeldet(konten[M]).get(f"/posteingang/{w.pk}/")
     assert antwort.status_code == 302 and antwort["Location"] == "/bestellungen/"
 
 
@@ -284,7 +277,7 @@ def test_lieferanten_vorschlaege_alphabetisch_und_zusammengefasst(konten):
         Bestellung.objects.create(bedarf="x", lieferant=name)
     # häufigste Schreibweise gewinnt, bei Gleichstand die mit großem Anfangsbuchstaben
     assert lieferanten(Bestellung.objects.order_by("id")) == ["Ärztebedarf", "Baumarkt Nord", "Conrad", "Zubehör"]
-    seite = client_fuer(konten[L]).get("/bestellungen/").content.decode()
+    seite = angemeldet(konten[L]).get("/bestellungen/").content.decode()
     assert '<datalist id="lieferanten-vorschlaege"><option value="Ärztebedarf">' in seite
 
 
@@ -301,11 +294,11 @@ def test_projekt_vorschlaege_nur_aktive_projekte_freitext_bleibt(konten):
     Projekt.objects.create(name="Elbe", archiviert_am=timezone.now())
     Bestellung.objects.create(bedarf="x", projekt="Lager")  # früherer Freitext wird nicht vorgeschlagen
     assert projektnamen() == ["Ärmel", "Drau", "Wienfluss"]
-    seite = client_fuer(konten[M]).get("/bestellungen/").content.decode()
+    seite = angemeldet(konten[M]).get("/bestellungen/").content.decode()
     assert '<datalist id="projekt-vorschlaege"><option value="Ärmel"></option><option value="Drau">' in seite
     assert 'name="neu-projekt"' in seite and 'data-vorschlaege="projekt-vorschlaege"' in seite
     b = Bestellung.objects.get(bedarf="x")
-    antwort = client_fuer(konten[M]).post(f"/bestellungen/{b.pk}/", {"projekt": "Werkstatt allgemein"}, HTTP_HX_REQUEST="true")
+    antwort = angemeldet(konten[M]).post(f"/bestellungen/{b.pk}/", {"projekt": "Werkstatt allgemein"}, HTTP_HX_REQUEST="true")
     assert antwort.status_code == 200
     b.refresh_from_db()
     assert b.projekt == "Werkstatt allgemein"

@@ -4,16 +4,31 @@ from contextlib import nullcontext
 
 import pytest
 
-from kern.models import Protokolleintrag, Rolle
+from kern.models import Protokolleintrag
 from planung.models import Abwesenheit, Einteilung, FreierTag, Freitext, Recht
 from projekte.models import Aufgabe, Status
 from zusammenarbeit.models import Benachrichtigung
 
-from .conftest import DI, DO, FEIERTAG, FR, MI, MI2, MO, SA, anzahl_gleich, freigeben
+from .conftest import (
+    BL,
+    DI,
+    DO,
+    FEIERTAG,
+    FR,
+    MI,
+    MI2,
+    MO,
+    SA,
+    A,
+    L,
+    M,
+    P,
+    anzahl_gleich,
+    freigeben,
+)
 
 pytestmark = pytest.mark.django_db
 
-A, BL, P, M, L = Rolle.ADMIN, Rolle.BEREICHSLEITUNG, Rolle.PLANER, Rolle.MITARBEITER, Rolle.LESEND
 URL = "/api/planung/einteilungen"
 
 
