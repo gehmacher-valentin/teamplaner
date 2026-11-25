@@ -348,6 +348,14 @@ msgstr "Language"
 msgid "Feieranimation beim Abhaken"
 msgstr "Celebration when completing a task"
 
+#: templates/kern/einst_darstellung.html:21
+msgid "Figuren der Feieranimation ansehen"
+msgstr "Preview the celebration figures"
+
+#: templates/kern/einst_darstellung.html:22
+msgid "Nächste Figur"
+msgstr "Next figure"
+
 #: kern/models.py:198 templates/kern/einst_darstellung.html:14
 msgid "Unteraufgaben im Gantt aufgeklappt"
 msgstr "Subtasks expanded in the Gantt chart"
@@ -1776,8 +1784,8 @@ msgid "Konzept und Entwicklung: Valentin Gehmacher. Programmiert mit KI-Unterst�
 msgstr "Concept and development: Valentin Gehmacher. Programmed with AI assistance (Claude Code by Anthropic)."
 
 #: templates/kern/einst_ueber.html:12
-msgid "Grafiken der Feieranimation: Fluent Emoji von Microsoft (MIT-Lizenz)."
-msgstr "Celebration graphics: Fluent Emoji by Microsoft (MIT license)."
+msgid "Grafiken der Feieranimation: Fluent Emoji von Microsoft (MIT-Lizenz), Einhorn „Unicorn Rainbow“ von Praveen Singh (LottieFiles, Lottie Simple License)."
+msgstr "Celebration graphics: Fluent Emoji by Microsoft (MIT license), unicorn “Unicorn Rainbow” by Praveen Singh (LottieFiles, Lottie Simple License)."
 
 #: templates/kern/person_bearbeiten.html:8 templates/kern/personen.html:52
 #: verwaltung/templatetags/verwaltung.py:22

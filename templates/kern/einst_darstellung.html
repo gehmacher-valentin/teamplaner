@@ -17,6 +17,10 @@
     </select>
   </div>
   {% translate "Feieranimation beim Abhaken" as titel %}{% include "kern/_schalter.html" with id="feier" feld="feier_animation" an=user.feier_animation url="einst_darstellung_speichern" %}
+  <div class="einstellungszeile">
+    <span class="luecke">{% translate "Figuren der Feieranimation ansehen" %}</span>
+    <button type="button" class="knopf knopf--klein" data-feier-probe>{% translate "Nächste Figur" %}</button>
+  </div>
   {% translate "Unteraufgaben im Gantt aufgeklappt" as titel %}{% include "kern/_schalter.html" with id="unteraufgaben" feld="gantt_unteraufgaben_offen" an=user.gantt_unteraufgaben_offen url="einst_darstellung_speichern" %}
 </section>
 {% endblock %}
