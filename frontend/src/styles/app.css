@@ -118,7 +118,10 @@
   --schatten-toast: 0 8px 24px rgba(26, 29, 27, 0.24);
   --schatten-hinweis: 0 6px 20px rgba(26, 29, 27, 0.16);
   --schatten-leiste: 0 -4px 16px rgba(26, 29, 27, 0.08);
+  --schatten-rollen: rgba(26, 29, 27, 0.14);
   --backdrop: rgba(26, 29, 27, 0.35);
+  /* Höhe der Kopfzeile; main.ts misst sie nach, falls sie umbricht */
+  --kopf-hoehe: 56px;
 }
 
 /* Dunkel: data-theme="dark" am <html> (Konto: Darstellung); "system" folgt der Einstellung des Geräts */
@@ -216,6 +219,7 @@
     --schatten-toast: 0 8px 24px rgba(0, 0, 0, 0.6);
     --schatten-hinweis: 0 6px 20px rgba(0, 0, 0, 0.5);
     --schatten-leiste: 0 -4px 16px rgba(0, 0, 0, 0.4);
+    --schatten-rollen: rgba(0, 0, 0, 0.55);
     --backdrop: rgba(0, 0, 0, 0.6);
     /* Teamplaner und Gantt */
     --info-bg: #3d3510; --info-gelb-text: #f0d97a; --info-gelb-rand: #8a7520; --info-hover: #4a4115;
@@ -320,6 +324,7 @@
     --schatten-toast: 0 8px 24px rgba(0, 0, 0, 0.6);
     --schatten-hinweis: 0 6px 20px rgba(0, 0, 0, 0.5);
     --schatten-leiste: 0 -4px 16px rgba(0, 0, 0, 0.4);
+    --schatten-rollen: rgba(0, 0, 0, 0.55);
     --backdrop: rgba(0, 0, 0, 0.6);
     /* Teamplaner und Gantt */
     --info-bg: #3d3510; --info-gelb-text: #f0d97a; --info-gelb-rand: #8a7520; --info-hover: #4a4115;
@@ -491,11 +496,39 @@ h3 { margin: 0; font-size: 15px; font-weight: 700; }
 }
 
 /* ---------- Grundlayout ---------- */
-.layout { display: flex; min-height: calc(100vh - 56px); }
+.layout { display: flex; min-height: calc(100vh - var(--kopf-hoehe)); }
+/* Am Desktop bleibt die Navigation stehen, während der Inhalt mit der Seite scrollt. Oben (Hauptpunkte,
+   Titel „Projekte“) und unten (Verwaltung) sind fest, nur die Projektliste dazwischen scrollt. Wird das
+   Fenster so niedrig, dass auch die Mindesthöhe der Liste nicht mehr passt, scrollt die ganze Navigation. */
 .seitennav {
   flex: 0 0 240px; background: var(--flaeche); border-right: 1px solid var(--rand);
-  padding: 20px 12px; display: flex; flex-direction: column; gap: 2px; font-size: 14px;
+  padding: 20px 12px 12px; display: flex; flex-direction: column; font-size: 14px;
+  position: sticky; top: var(--kopf-hoehe); align-self: flex-start;
+  height: calc(100vh - var(--kopf-hoehe)); height: calc(100dvh - var(--kopf-hoehe));
+  overflow-y: auto; scrollbar-width: thin;
 }
+.seitennav__oben, .seitennav__unten, .seitennav__projekte { display: flex; flex-direction: column; gap: 2px; }
+.seitennav__oben, .seitennav__unten { flex: none; }
+.seitennav__unten { margin-top: auto; }
+.seitennav__projekte {
+  /* Mindesthöhe: etwa vier Einträge */
+  flex: 1 1 auto; min-height: 9.5rem; overflow-y: auto; overscroll-behavior: contain;
+  scrollbar-width: thin; scrollbar-gutter: stable; margin: 0 -12px; padding: 0 2px 0 12px;
+  border-block: 1px solid transparent;
+}
+/* Nur wenn die Liste nicht hineinpasst: abgesetzte Fläche, Trennlinien und Schatten an dem Rand,
+   hinter dem noch Einträge liegen (Attribute setzt main.ts) */
+.seitennav__projekte[data-ueberlauf] { background: var(--flaeche-2); border-color: var(--rand); }
+.seitennav__projekte::before, .seitennav__projekte::after {
+  content: ""; position: sticky; z-index: 1; display: block; flex: none; height: 10px;
+  margin-inline: -12px 0; pointer-events: none; opacity: 0; transition: opacity 0.15s;
+}
+.seitennav__projekte::before { top: 0; margin-bottom: -10px; background: linear-gradient(var(--schatten-rollen), transparent); }
+.seitennav__projekte::after { bottom: 0; margin-top: -10px; background: linear-gradient(transparent, var(--schatten-rollen)); }
+.seitennav__projekte[data-mehr-oben]::before, .seitennav__projekte[data-mehr-unten]::after { opacity: 1; }
+.seitennav__unten .seitennav__titel { padding-top: 12px; }
+/* Fokusrahmen innen, sonst schneidet der Scrollbereich ihn am ersten und letzten Eintrag ab */
+.seitennav__projekte a:focus-visible { outline-offset: -2px; }
 .seitennav a {
   color: var(--text); text-decoration: none; padding: 9px 12px; border-radius: var(--radius);
   display: flex; gap: 10px; align-items: center; justify-content: space-between;
@@ -538,8 +571,18 @@ h3 { margin: 0; font-size: 15px; font-weight: 700; }
   .kopf__nutzer { padding: 2px; }
   .suche { order: 10; flex: 1 1 100%; min-width: 0; }
   .layout { display: block; }
-  .seitennav { display: none; border-right: 0; border-bottom: 1px solid var(--rand); }
+  /* Am Handy ein aufklappbares Menü: alles in einer Spalte, ohne eigenen Scrollbereich */
+  .seitennav {
+    display: none; border-right: 0; border-bottom: 1px solid var(--rand); gap: 2px;
+    position: static; height: auto; overflow: visible; padding-bottom: 20px;
+  }
   .seitennav.offen { display: flex; }
+  .seitennav__projekte, .seitennav__projekte[data-ueberlauf] {
+    flex: none; min-height: 0; overflow: visible; margin: 0; padding: 0; border: 0; background: none;
+  }
+  .seitennav__projekte::before, .seitennav__projekte::after { display: none; }
+  .seitennav__unten { margin-top: 0; }
+  .seitennav__unten .seitennav__titel { padding-top: 18px; }
   .inhalt { padding: 16px; }
 }
 
@@ -803,7 +846,7 @@ legend { font-size: 13px; font-weight: 600; color: var(--text-2); padding: 0 4px
 .projekt-raster__liste { flex: 1 1 0; min-width: 300px; display: flex; flex-direction: column; gap: 16px; }
 .projekt-raster--zieht { cursor: col-resize; user-select: none; }
 .seitenleiste {
-  --seitenleiste-oben: 72px;
+  --seitenleiste-oben: calc(var(--kopf-hoehe) + 16px);
   flex: 0 1 var(--seitenleiste-breite, clamp(440px, 40vw, 560px)); min-width: 380px; position: sticky; top: var(--seitenleiste-oben);
   height: calc(100dvh - var(--seitenleiste-oben) - 16px); background: var(--flaeche);
   border: 1px solid var(--rand); border-radius: var(--radius-gross);
@@ -1342,7 +1385,7 @@ dialog::backdrop { background: var(--backdrop); }
 /* ---------- Einstellungsbereich: Unternavigation links, Inhalt rechts, einspaltig ---------- */
 .inhalt--einstellungen { padding: 24px 32px 48px; }
 .einst { display: flex; flex-wrap: wrap; gap: 24px 32px; align-items: flex-start; }
-.einst-nav { flex: 1 1 200px; max-width: 220px; display: flex; flex-direction: column; gap: 2px; font-size: 14px; position: sticky; top: 76px; }
+.einst-nav { flex: 1 1 200px; max-width: 220px; display: flex; flex-direction: column; gap: 2px; font-size: 14px; position: sticky; top: calc(var(--kopf-hoehe) + 20px); }
 .einst-nav__gruppe { display: flex; flex-direction: column; gap: 2px; }
 .einst-nav__gruppe--ende { border-top: 1px solid var(--rand); margin: 12px 0 0; padding-top: 6px; }
 .einst-nav__titel { font-size: 12px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; padding: 14px 12px 6px; }
