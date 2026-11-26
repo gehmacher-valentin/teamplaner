@@ -27,6 +27,8 @@ Live-Aktualisierung für alle. Oberfläche auf Deutsch und Englisch, zum Selbsth
   Fälligkeit, Unteraufgaben und Anhängen
 - Direkt in der Liste bearbeiten und per Drag-and-drop sortieren, Filter (auch nach Raum), Volltextsuche
 - Aufgabendetail als Seitenleiste neben der Liste
+- Wiederkehrende Aufgaben: täglich, wöchentlich, monatlich, vierteljährlich, halbjährlich, jährlich; beim Abhaken
+  entsteht die nächste
 - Arbeitstage-Widget: an welchen Tagen an einer Aufgabe gearbeitet wird
 - Kommentare mit @-Erwähnungen, Verlauf jeder Aufgabe, Posteingang als Glocke in der Kopfzeile
 
@@ -57,7 +59,9 @@ Live-Aktualisierung für alle. Oberfläche auf Deutsch und Englisch, zum Selbsth
 - Sperre nach wiederholten Fehlversuchen, je Konto und je IP-Adresse
 - Angemeldet bleiben bis 30 Tage; Admins nach 60 Minuten ohne Aktivität abgemeldet, die Restzeit steht
   in der Kopfzeile und lässt sich per Klick zurücksetzen
-- Konten ändern nur für Personen mit niedrigerer Rolle; Passwort-Links nur per Mail an die Person
+- Konten ändern nur für Personen mit niedrigerer Rolle; andere Admins lassen sich nur herabstufen oder
+  deaktivieren, ihre Passwort-Links gehen nur per E-Mail an die hinterlegte Adresse
+- Eigene E-Mail-Adresse ändern nur mit Passwort und Bestätigungslink an die neue Adresse
 - Löschfristen: Protokolle und Benachrichtigungen nach einem Jahr, persönliche Daten
   deaktivierter Konten nach drei Monaten
 - Strenge Content-Security-Policy, geprüfte Datei-Uploads
@@ -133,4 +137,5 @@ Copyright (C) 2026 Valentin Gehmacher. GNU Affero General Public License, Versio
 in [SECURITY.md](SECURITY.md) beschrieben melden.
 
 Konzept und Entwicklung: Valentin Gehmacher. Programmiert mit KI-Unterstützung (Claude Code von Anthropic).
-Grafiken der Feieranimation: Fluent Emoji von Microsoft (MIT-Lizenz).
+Grafiken der Feieranimation: Fluent Emoji von Microsoft (MIT-Lizenz), Einhorn „Unicorn Rainbow“ von Praveen Singh
+(LottieFiles, Lottie Simple License).

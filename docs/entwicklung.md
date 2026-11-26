@@ -67,7 +67,7 @@ Drag-and-drop, Live-Aktualisierung), prüft Playwright im Chromium:
 ```bash
 cd frontend && npm run build
 npx playwright install chromium    # einmalig
-npm run e2e                        # alle Abläufe, etwa eine Minute
+npm run e2e                        # alle Abläufe, etwa zwei Minuten
 npx playwright test 04 --headed    # ein Ablauf, sichtbar
 ```
 
@@ -129,7 +129,7 @@ Rollenkürzel `A, BL, P, M, L`, `angemeldet(konto)` (Django-Client) und die Fixt
 | `tests/test_faelligkeit.py` | Fälligkeiten als „Gestern“, „Heute“, „Morgen“, überschrittene Termine rot, in Anzeige und Datumsfeldern |
 | `tests/test_mail_sammeln.py` | Benachrichtigungen innerhalb einer Minute als eine E-Mail, HTML-Teil der E-Mails |
 | `frontend/src/teamplaner/*.test.ts` | Rasterlogik und Übersetzung im Browser |
-| `frontend/src/editor/*.test.ts`, `frontend/src/lib/*.test.ts` | Gemeinsam bearbeiten (`gemeinsam-senden.test.ts`: Warteschlange, erneuter Versuch bei 5xx und offline, Neuladen bei 4xx, Abgleich nach fremden Änderungen, Anwesenheit), @-Erwähnungen (Auslösemuster, verstecktes Feld), Nachlauf nach dem Abhaken mit Fake-Timern, Markdown beim Einfügen, Editor-Rundlauf, Zitat, Spaltenbreiten, Personenauswahl, Vorschläge, Restzeit der Admin-Sitzung, nur die jüngste Ladeanfrage zählt (`neueste.ts`), Stand vom Server nach dem Neuladen (`sofort.ts`), Zähler nach dem Abhaken (`offenzaehler.ts`), Schatten und Scrollposition der Projektliste in der Navigation (`seitennav.ts`) |
+| `frontend/src/editor/*.test.ts`, `frontend/src/lib/*.test.ts` | Gemeinsam bearbeiten (`gemeinsam-senden.test.ts`: Warteschlange, erneuter Versuch bei 5xx und offline, Neuladen bei 4xx, Abgleich nach fremden Änderungen, Anwesenheit), @-Erwähnungen (Auslösemuster, verstecktes Feld), Nachlauf nach dem Abhaken mit Fake-Timern, Markdown beim Einfügen, Editor-Rundlauf, Zitat, Spaltenbreiten, Personenauswahl, Vorschläge, Restzeit der Admin-Sitzung, nur die jüngste Ladeanfrage zählt (`neueste.ts`), Stand vom Server nach dem Neuladen (`sofort.ts`), Zähler nach dem Abhaken (`offenzaehler.ts`), Feieranimation ohne dieselbe Figur zweimal hintereinander (`feiern.ts`), Schatten und Scrollposition der Projektliste in der Navigation (`seitennav.ts`) |
 | `frontend/src/gantt/logik.test.ts` | Zeitachse, Zeilen, Pfeile (rot nur bei verletzten geplanten Terminen), Warnzeichen je Zeile |
 
 | `frontend/e2e/01-rundgang.spec.ts` | alle Seiten der Navigation am Desktop und am Handy, Einstellungen, keine Vorlagenreste |
@@ -142,7 +142,8 @@ Rollenkürzel `A, BL, P, M, L`, `angemeldet(konto)` (Django-Client) und die Fixt
 | `frontend/e2e/08-darstellung.spec.ts` | Farbschema mehrfach umstellen: Auswahl und `data-theme` stimmen nach jedem Neuladen |
 | `frontend/e2e/09-meine-aufgaben.spec.ts` | Abgehakte Aufgaben 5 s sichtbar, rückgängig, Folgeaufgabe danach (Meine Aufgaben, Projektliste); betreute Platzhalter in drei Breiten; Einteilungen nebeneinander |
 | `frontend/e2e/10-anhaenge.spec.ts` | Anhänge über die Kachel: auswählen, ziehen, verwerfen, hochladen, zu große Datei, Auswahl in der Seitenleiste, Rückfrage beim Verlassen, Notizen; PDF mit Vorschau der ersten Seite (Aufgabe, Seitenleiste, Notiz) |
-| `frontend/e2e/11-navigation.spec.ts` | Seitennavigation am Desktop: bleibt beim Scrollen stehen, nur die Projektliste scrollt, Verwaltung unten, aktives Projekt sichtbar, Scrollposition beim Seitenwechsel, niedriges Fenster (legt viele Projekte an, läuft deshalb zuletzt) |
+| `frontend/e2e/11-navigation.spec.ts` | Seitennavigation am Desktop: bleibt beim Scrollen stehen, nur die Projektliste scrollt, Verwaltung unten, aktives Projekt sichtbar, Scrollposition beim Seitenwechsel, niedriges Fenster (legt viele Projekte an, läuft deshalb nach den Abläufen mit Projektlisten) |
+| `frontend/e2e/12-feiern.spec.ts` | Feieranimation: alle Figuren über „Nächste Figur“, Einhorn per Lottie, Abhaken feiert, bei „Bewegung reduzieren“ ohne Bewegung in der Mitte |
 
 Dazu prüft `shellcheck` die Betriebs- und Bauskripte.
 
@@ -283,4 +284,7 @@ cd frontend && npm run bildschirmfotos
 ```
 
 Welche Seiten mit welchem Konto aufgenommen werden, steht in `frontend/werkzeuge/bildschirmfotos.mjs`.
+Den Server dafür mit `EMAIL_HOST` starten (z. B. `EMAIL_HOST=localhost`), sonst zeigt die Seite
+Benachrichtigungen den Hinweis auf den fehlenden E-Mail-Versand. Datumsfelder folgen der Sprache des Browsers,
+unter Linux ohne deutsche Systemsprache `LANG=de_AT.UTF-8 npm run bildschirmfotos`.
 Nach größeren Änderungen an der Oberfläche neu aufnehmen.
